@@ -3,7 +3,6 @@ import { Link, useLocation } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
 import {
   Banknote,
-  Bell,
   Coins,
   Eye,
   EyeOff,
@@ -12,7 +11,6 @@ import {
   Landmark,
   PanelLeft,
   PanelLeftClose,
-  Search,
   Settings,
 } from "lucide-react";
 import { useAccount } from "wagmi";
@@ -94,7 +92,6 @@ function SidebarNavItem({
 export function HarmonyAppShell({
   sidebar,
   children,
-  searchPlaceholder,
   onSettingsClick,
 }: {
   sidebar?: HarmonySidebarItem[];
@@ -104,7 +101,6 @@ export function HarmonyAppShell({
 }) {
   const { pathname } = useLocation();
   const { revealed: valuesRevealed, toggle: toggleValuesReveal } = useValuesReveal();
-  const search = searchPlaceholder ?? "Search payments, proposals, positions…";
   const settingsActive = pathname.startsWith("/settings") || pathname.startsWith("/pay/settings");
   const { address, isConnected } = useAccount();
   const shortAddress = address ? `${address.slice(0, 6)}…${address.slice(-4)}` : "";
@@ -253,12 +249,6 @@ export function HarmonyAppShell({
             <ObscuraLogo showWordmark={false} size="sm" tone="light" />
           </Link>
 
-          <label className="dash-search hidden min-w-0 flex-1 min-[420px]:flex">
-            <Search className="h-4 w-4 shrink-0 text-muted-foreground/60" aria-hidden />
-            <input readOnly placeholder={search} aria-label={search} />
-            <kbd className="dash-kbd hidden sm:inline">⌘K</kbd>
-          </label>
-
           <div className="dash-topbar-actions ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
             <button
               type="button"
@@ -279,14 +269,6 @@ export function HarmonyAppShell({
               <span className="hidden sm:inline">
                 {valuesRevealed ? "Encrypt values" : "Decrypt values"}
               </span>
-            </button>
-            <button
-              type="button"
-              className="relative hidden h-9 w-9 place-items-center rounded-full border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground sm:grid"
-              aria-label="Notifications"
-            >
-              <Bell className="h-4 w-4" />
-              <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-red-500" />
             </button>
             <div className="app-wallet-slot">
               <NavRightSlot tone="light" />

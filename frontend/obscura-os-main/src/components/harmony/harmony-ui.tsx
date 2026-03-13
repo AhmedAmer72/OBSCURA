@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { AlertTriangle, ArrowRight, CheckCircle2, ChevronRight, Eye, EyeOff, Inbox, Info, Lock, Send, Shield, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CipherMask } from "@/components/harmony/CipherMask";
@@ -418,13 +419,17 @@ export function HarmonyDrawer({
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
   const widthClass =
     width === "sm" ? "max-w-[420px]" : width === "lg" ? "max-w-[640px]" : "max-w-[520px]";
 
-  return (
-    <div className="fixed inset-0 z-[60] flex" role="dialog" aria-modal="true">
+  return createPortal(
+    <div
+      className="obscura-app dash-premium fixed inset-0 z-[80] flex text-foreground antialiased"
+      role="dialog"
+      aria-modal="true"
+    >
       <button
         type="button"
         aria-label="Close drawer"
@@ -433,7 +438,7 @@ export function HarmonyDrawer({
       />
       <div
         className={cn(
-          "dash-drawer-panel relative ml-auto flex h-full w-full flex-col bg-card",
+          "dash-drawer-panel relative ml-auto flex h-full w-full flex-col border-l border-border bg-card text-foreground",
           widthClass,
           "animate-in slide-in-from-right duration-200",
         )}
@@ -461,7 +466,8 @@ export function HarmonyDrawer({
           <footer className="border-t border-border px-6 py-4">{footer}</footer>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

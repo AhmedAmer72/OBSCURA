@@ -1,15 +1,21 @@
-import { Award, BarChart3, Home, ShieldCheck, Users, Vault, Vote } from "lucide-react";
+import { Award, Home, ShieldCheck, Users, Vault, Vote } from "lucide-react";
 import { AppWorkspaceChrome } from "@/components/harmony/AppWorkspaceChrome";
 
-export type GovernWorkspaceTab = "overview" | "proposals" | "delegation" | "treasury" | "rewards" | "advanced";
+export type GovernWorkspaceTab =
+  | "overview"
+  | "proposals"
+  | "delegation"
+  | "treasury"
+  | "rewards"
+  | "governor";
 
 const GOVERN_TABS = [
   { key: "overview" as const, label: "Overview", icon: Home },
   { key: "proposals" as const, label: "Proposals", icon: Vote },
   { key: "delegation" as const, label: "Delegation", icon: Users },
   { key: "treasury" as const, label: "Treasury", icon: Vault },
+  { key: "governor" as const, label: "Governor", icon: ShieldCheck },
   { key: "rewards" as const, label: "Rewards", icon: Award },
-  { key: "advanced" as const, label: "Advanced", icon: ShieldCheck },
 ];
 
 export function GovernWorkspaceChrome({

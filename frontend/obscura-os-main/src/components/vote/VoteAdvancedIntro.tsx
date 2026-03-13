@@ -8,7 +8,7 @@ export function VoteAdvancedIntro() {
         <div className="min-w-0">
           <p className="text-sm font-semibold text-foreground">For protocol operators</p>
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-            Treasury spends and Governor executes are irreversible. Private ballots stay in Proposals — use Treasury
+            Treasury spends and Governor execution are irreversible. Private ballots stay in Proposals — use Treasury
             or Governor below when you need timelock actions.
           </p>
         </div>

@@ -6,10 +6,9 @@ import { useIsArbitrumSepolia } from "@/hooks/useWalletSessionChainId";
 import {
   BarChart3,
   AlertTriangle,
+  FileText,
   Home,
   Plus,
-  ShieldCheck,
-  Vault,
   Vote,
 } from "lucide-react";
 
@@ -40,9 +39,9 @@ import { VoteAdvancedIntro } from "@/components/vote/VoteAdvancedIntro";
 import { useVoteOwner, useVoteRole } from "@/hooks/useProposals";
 import { Role } from "@/lib/constants";
 
-type VoteSection = "overview" | "proposals" | "participation" | "delegation" | "advanced";
+type VoteSection = "overview" | "proposals" | "participation" | "delegation" | "treasury" | "governor";
 type ProposalMode = "browse" | "create" | "vote" | "results";
-type AdvancedMode = "treasury" | "governor";
+type GovernorSubMode = "proposals" | "new";
 
 const PROPOSAL_MODES: ProposalMode[] = ["browse", "create", "vote", "results"];
 
@@ -50,13 +49,14 @@ function isProposalMode(value: string | null): value is ProposalMode {
   return value != null && PROPOSAL_MODES.includes(value as ProposalMode);
 }
 
-function sectionToGovernTab(section: VoteSection, advancedMode: AdvancedMode): GovernWorkspaceTab {
+function sectionToGovernTab(section: VoteSection): GovernWorkspaceTab {
   if (section === "overview") return "overview";
   if (section === "proposals") return "proposals";
   if (section === "delegation") return "delegation";
   if (section === "participation") return "rewards";
-  if (advancedMode === "treasury") return "treasury";
-  return "advanced";
+  if (section === "treasury") return "treasury";
+  if (section === "governor") return "governor";
+  return "overview";
 }
 
 const VotePage = () => {
@@ -74,16 +74,15 @@ const VotePage = () => {
 
   const [section, setSection] = useState<VoteSection>("overview");
   const [proposalMode, setProposalMode] = useState<ProposalMode>("browse");
-  const [advancedMode, setAdvancedMode] = useState<AdvancedMode>("treasury");
+  const [governorSubMode, setGovernorSubMode] = useState<GovernorSubMode>("proposals");
   const [jumpProposalId, setJumpProposalId] = useState("");
 
   const writeVoteUrl = useCallback(
-    (opts: { tab?: GovernWorkspaceTab; mode?: ProposalMode }) => {
+    (opts: { tab?: GovernWorkspaceTab; mode?: ProposalMode; panel?: GovernorSubMode | "delegation" }) => {
       setSearchParams(
         (prev) => {
           const params = new URLSearchParams(prev);
           params.delete("mode");
-          params.delete("panel");
 
           const tab = opts.tab ?? "overview";
           if (tab === "overview") {
@@ -92,8 +91,23 @@ const VotePage = () => {
             params.set("tab", tab);
           }
 
-          if (tab === "proposals" && opts.mode && opts.mode !== "browse") {
-            params.set("mode", opts.mode);
+          if (tab === "proposals") {
+            if (opts.mode && opts.mode !== "browse") {
+              params.set("mode", opts.mode);
+            } else {
+              params.delete("mode");
+            }
+            params.delete("panel");
+          } else if (tab === "governor") {
+            if (opts.panel === "new") {
+              params.set("panel", "new");
+            } else {
+              params.delete("panel");
+            }
+          } else if (tab === "delegation" && opts.panel === "delegation") {
+            params.set("panel", "delegation");
+          } else {
+            params.delete("panel");
           }
 
           return params;
@@ -136,14 +150,19 @@ const VotePage = () => {
     }
 
     if (urlTab === "treasury") {
-      setSection("advanced");
-      setAdvancedMode("treasury");
+      setSection("treasury");
       return;
     }
 
-    if (urlTab === "advanced") {
-      setSection("advanced");
-      setAdvancedMode("governor");
+    if (urlTab === "new-proposal") {
+      setSection("governor");
+      setGovernorSubMode("new");
+      return;
+    }
+
+    if (urlTab === "governor" || urlTab === "advanced") {
+      setSection("governor");
+      setGovernorSubMode(urlPanel === "new" ? "new" : "proposals");
     }
   }, [searchParams]);
 
@@ -167,6 +186,15 @@ const VotePage = () => {
     [writeVoteUrl],
   );
 
+  const openGovernorSubMode = useCallback(
+    (mode: GovernorSubMode) => {
+      setSection("governor");
+      setGovernorSubMode(mode);
+      writeVoteUrl({ tab: "governor", panel: mode === "new" ? "new" : undefined });
+    },
+    [writeVoteUrl],
+  );
+
   const selectGovernTab = useCallback(
     (tab: GovernWorkspaceTab) => {
       switch (tab) {
@@ -182,25 +210,24 @@ const VotePage = () => {
           writeVoteUrl({ tab: "delegation" });
           break;
         case "treasury":
-          setSection("advanced");
-          setAdvancedMode("treasury");
+          setSection("treasury");
           writeVoteUrl({ tab: "treasury" });
+          break;
+        case "governor":
+          setSection("governor");
+          setGovernorSubMode("proposals");
+          writeVoteUrl({ tab: "governor" });
           break;
         case "rewards":
           setSection("participation");
           writeVoteUrl({ tab: "rewards" });
-          break;
-        case "advanced":
-          setSection("advanced");
-          setAdvancedMode("governor");
-          writeVoteUrl({ tab: "advanced" });
           break;
       }
     },
     [openProposals, writeVoteUrl],
   );
 
-  const governTab = sectionToGovernTab(section, advancedMode);
+  const governTab = sectionToGovernTab(section);
 
   const renderProposalContent = () => {
     switch (proposalMode) {
@@ -277,7 +304,7 @@ const VotePage = () => {
 
             <HarmonyFormCard title="Proposals needing attention" eyebrow="Active governance">
               <div className="harmony-form-inner vote-harmony-panel -mx-2">
-                <ProposalList onVote={(id) => openProposals("vote", id)} initialFilter="active" embedded />
+                <ProposalList onVote={(id) => openProposals("vote", id)} activeOnly embedded />
               </div>
             </HarmonyFormCard>
 
@@ -295,18 +322,16 @@ const VotePage = () => {
         return (
           <div className="vote-harmony-panel">
             <VoteHarmonyTabShell tab="proposals" sub={proposalMode} hideIntro>
-              {proposalMode !== "vote" ? (
-                <VoteHarmonySubNav
-                  active={proposalMode}
-                  onChange={(mode) => openProposals(mode)}
-                  items={[
-                    { key: "browse", label: "Browse", icon: Home },
-                    { key: "vote", label: "Vote", icon: Vote },
-                    { key: "create", label: "Create", icon: Plus },
-                    { key: "results", label: "Results", icon: BarChart3 },
-                  ]}
-                />
-              ) : null}
+              <VoteHarmonySubNav
+                active={proposalMode}
+                onChange={(mode) => openProposals(mode)}
+                items={[
+                  { key: "browse", label: "Browse", icon: Home },
+                  { key: "vote", label: "Vote", icon: Vote },
+                  { key: "create", label: "Create", icon: Plus },
+                  { key: "results", label: "Results", icon: BarChart3 },
+                ]}
+              />
               <AnimatePresence mode="wait">
                 <motion.div
                   key={proposalMode}
@@ -352,35 +377,39 @@ const VotePage = () => {
           </div>
         );
 
-      case "advanced":
+      case "treasury":
         return (
           <div className="vote-harmony-panel">
-            <VoteHarmonyTabShell tab="advanced" hideIntro>
-              <VoteAdvancedIntro />
-              <VoteHarmonySubNav
-                active={advancedMode}
-                onChange={setAdvancedMode}
-                items={[
-                  { key: "treasury", label: "Treasury", icon: Vault },
-                  { key: "governor", label: "Governor", icon: ShieldCheck },
-                ]}
-              />
-              <div className="mt-6">
-                {advancedMode === "treasury" ? (
-                  <VoteHarmonyPanelCard title="Treasury lifecycle" eyebrow="Timelock spends">
-                    <div className="harmony-form-inner">
-                      <TreasuryPanel />
-                    </div>
-                  </VoteHarmonyPanelCard>
-                ) : (
-                  <VoteHarmonyPanelCard title="Executable governance" eyebrow="Governor · Timelock">
-                    <div className="harmony-form-inner -mx-2">
-                      <GovernorPanel wrongNetwork={wrongNetworkConnected} />
-                    </div>
-                  </VoteHarmonyPanelCard>
-                )}
+            <VoteAdvancedIntro />
+            <VoteHarmonyPanelCard title="Treasury lifecycle" eyebrow="Timelock spends">
+              <div className="harmony-form-inner">
+                <TreasuryPanel />
               </div>
-            </VoteHarmonyTabShell>
+            </VoteHarmonyPanelCard>
+          </div>
+        );
+
+      case "governor":
+        return (
+          <div className="vote-harmony-panel">
+            <VoteAdvancedIntro />
+            <VoteHarmonySubNav
+              active={governorSubMode}
+              onChange={openGovernorSubMode}
+              items={[
+                { key: "proposals", label: "Proposals", icon: FileText },
+                { key: "new", label: "New proposal", icon: Plus },
+              ]}
+            />
+            <VoteHarmonyPanelCard title="Executable governance" eyebrow="Governor · Timelock">
+              <div className="harmony-form-inner -mx-2">
+                <GovernorPanel
+                  wrongNetwork={wrongNetworkConnected}
+                  view={governorSubMode === "new" ? "new" : "proposals"}
+                  onSwitchToNew={() => openGovernorSubMode("new")}
+                />
+              </div>
+            </VoteHarmonyPanelCard>
           </div>
         );
     }

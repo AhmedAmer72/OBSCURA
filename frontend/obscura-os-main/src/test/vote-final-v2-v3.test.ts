@@ -16,11 +16,16 @@ describe("Vote V2/V3 information architecture", () => {
     const shell = readSource("components/harmony/VoteHarmonyTabShell.tsx");
     const chrome = readSource("components/harmony/GovernWorkspaceChrome.tsx");
 
-    expect(votePage).toContain('type VoteSection = "overview" | "proposals" | "participation" | "delegation" | "advanced"');
+    expect(votePage).toContain('"treasury"');
+    expect(votePage).toContain('type GovernorSubMode = "proposals" | "new"');
     expect(chrome).toContain('key: "delegation"');
     expect(chrome).toContain('key: "rewards"');
+    expect(chrome).toContain('key: "governor"');
+    expect(chrome).not.toContain('key: "newProposal"');
     expect(votePage).toContain("GOVERN_TABS.map");
-    expect(shell).toContain('"proposals" | "participation" | "delegation" | "advanced"');
+    expect(votePage).toContain('label: "New proposal"');
+    expect(votePage).toContain("openGovernorSubMode");
+    expect(shell).toContain('"proposals" | "participation" | "delegation" | "governor"');
   });
 
   it("keeps advanced governance out of the overview", () => {
@@ -33,8 +38,8 @@ describe("Vote V2/V3 information architecture", () => {
     expect(dashboard).not.toContain("Institutional governance");
     expect(dashboard).not.toContain("OBS · sealed");
     expect(dashboard).not.toContain("Treasury");
-    expect(dashboard).toContain("Final results show aggregate totals only");
-    expect(dashboard).toContain("Totals only, never ballots");
+    expect(dashboard).not.toContain("Totals only, never ballots");
+    expect(dashboard).not.toContain("Final results show aggregate totals only");
   });
 
   it("makes voting the primary proposal path while preserving explicit reveal", () => {
@@ -72,8 +77,8 @@ describe("Vote V2/V3 information architecture", () => {
     expect(dashboard).toContain("vh.kpiGrid");
     expect(dashboard).toContain("h-9 px-3");
     expect(dashboard).toContain("Vote now");
-    expect(proposalList).toContain('initialFilter = "active"');
-    expect(proposalList).toContain("Showing {statusFilter} proposals first");
+    expect(proposalList).toContain("activeOnly");
+    expect(proposalList).toContain("Showing {effectiveFilter} proposals first");
     expect(rewards).toContain("Reward claims appear after you vote privately");
     expect(rewards).toContain("No reward claim is ready if this list is empty");
     expect(rewards).toContain("Nothing is withdrawable yet");

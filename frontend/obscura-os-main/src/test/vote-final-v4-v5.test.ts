@@ -48,7 +48,9 @@ describe("Vote V4/V5 participation and advanced governance", () => {
     const intro = readSource("components/vote/VoteAdvancedIntro.tsx");
 
     expect(votePage).toContain("VoteAdvancedIntro");
-    expect(votePage).toContain('type AdvancedMode = "treasury" | "governor"');
+    expect(votePage).toContain('case "treasury"');
+    expect(votePage).toContain('case "governor"');
+    expect(votePage).toContain("GovernorSubMode");
     expect(intro).toContain("irreversible");
   });
 

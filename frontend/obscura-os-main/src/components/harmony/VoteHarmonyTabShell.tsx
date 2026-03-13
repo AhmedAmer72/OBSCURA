@@ -3,7 +3,7 @@ import { Lock, Network, ShieldCheck, Wallet } from "lucide-react";
 import { HarmonyFormCard, HarmonyPageIntro } from "@/components/harmony/harmony-ui";
 import { AppWorkspaceTabs, type WorkspaceTabItem } from "@/components/harmony/AppWorkspaceTabs";
 
-export type VoteHarmonyTabKey = "proposals" | "participation" | "delegation" | "advanced";
+export type VoteHarmonyTabKey = "proposals" | "participation" | "delegation" | "governor";
 export type VoteVotingSubKey = "browse" | "create" | "vote" | "results";
 
 const TAB_META: Record<
@@ -25,10 +25,10 @@ const TAB_META: Record<
     title: "Delegate voting power",
     description: "Route public voting weight to a trusted delegate. Remove delegation before casting private ballots yourself.",
   },
-  advanced: {
-    eyebrow: "Advanced governance",
-    title: "Advanced Governance",
-    description: "Treasury timelock spends and public Governor execution for protocol operators. Private voting stays in Proposals.",
+  governor: {
+    eyebrow: "Governor",
+    title: "Executable governance",
+    description: "Treasury timelock spends and public Governor proposals for protocol operators. Private voting stays in Proposals.",
   },
 };
 

@@ -161,16 +161,21 @@ export default function ProposalList({
   onVote,
   initialFilter = "active",
   embedded = false,
+  activeOnly = false,
 }: {
   onVote?: (id: number) => void;
   initialFilter?: StatusFilter;
   embedded?: boolean;
+  /** Overview mode: hide search/filters and list active proposals only. */
+  activeOnly?: boolean;
 }) {
   const { data: count, isLoading, refetch } = useProposalCount();
   const proposalCount = Number(count ?? 0);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialFilter);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(activeOnly ? "active" : initialFilter);
   const now = useChainTime();
+  const effectiveFilter: StatusFilter = activeOnly ? "active" : statusFilter;
+  const showControls = !activeOnly;
 
   // Instantly refetch when a new proposal is created on-chain
   useWatchContractEvent({
@@ -222,32 +227,34 @@ export default function ProposalList({
       )}
 
       {/* Search + Filters */}
-      <div className="space-y-3">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search proposals..."
-          className="pay-input"
-          aria-label="Search proposals"
-        />
-        <div className="flex flex-wrap gap-2">
-          {filters.map((f) => (
-            <button
-              key={f.key}
-              type="button"
-              onClick={() => setStatusFilter(f.key)}
-              className={`min-h-[36px] rounded-full border px-3 py-1.5 text-[11px] font-medium transition-all ${
-                statusFilter === f.key
-                  ? "border-[hsl(var(--success))]/40 bg-[hsl(var(--accent))]/12 text-foreground"
-                  : "hairline text-muted-foreground hover:bg-muted/60"
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
+      {showControls ? (
+        <div className="space-y-3">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search proposals..."
+            className="pay-input"
+            aria-label="Search proposals"
+          />
+          <div className="flex flex-wrap gap-2">
+            {filters.map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => setStatusFilter(f.key)}
+                className={`min-h-[36px] rounded-full border px-3 py-1.5 text-[11px] font-medium transition-all ${
+                  statusFilter === f.key
+                    ? "border-[hsl(var(--success))]/40 bg-[hsl(var(--accent))]/12 text-foreground"
+                    : "hairline text-muted-foreground hover:bg-muted/60"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       {isLoading ? (
         <div className="space-y-2">
@@ -261,13 +268,13 @@ export default function ProposalList({
         </div>
       ) : (
         <div className="vote-proposal-list">
-          {statusFilter !== "all" && (
+          {showControls && effectiveFilter !== "all" && (
             <p className="vote-proposal-filter-hint" role="status">
-              Showing {statusFilter} proposals first. If nothing is listed, no {statusFilter} proposal is available for this wallet right now. Use All to review closed history and revealable results.
+              Showing {effectiveFilter} proposals first. If nothing is listed, no {effectiveFilter} proposal is available for this wallet right now. Use All to review closed history and revealable results.
             </p>
           )}
           {Array.from({ length: proposalCount }, (_, i) => (
-            <ProposalRow key={i} proposalId={BigInt(i)} searchQuery={searchQuery} statusFilter={statusFilter} onVote={onVote} now={now} />
+            <ProposalRow key={i} proposalId={BigInt(i)} searchQuery={activeOnly ? "" : searchQuery} statusFilter={effectiveFilter} onVote={onVote} now={now} />
           ))}
         </div>
       )}

@@ -12,7 +12,7 @@
  *  - Copy never mentions "euint", "ctHash", "CoFHE", "ACL", or "permit"
  */
 import { useEffect, useCallback, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAccount, usePublicClient } from "wagmi";
 import {
@@ -29,7 +29,6 @@ import {
   Coins,
   Gauge,
   Landmark,
-  WalletCards,
   Bell,
   X,
   Loader2,
@@ -85,7 +84,6 @@ import { useCreditAlerts } from "@/hooks/useCreditAlerts";
 import { ActivityFeed } from "@/components/harmony/ActivityFeed";
 import { useNotificationPrefs } from "@/hooks/useNotificationPrefs";
 import { BETA_POOL_LABEL } from "@/hooks/useBetaBorrowLimit";
-import { useCardCipherReveal } from "@/contexts/ValuesRevealContext";
 
 const CREDIT_NOTIFICATION_TYPES = [
   "credit.borrowed",
@@ -154,116 +152,77 @@ function BorrowTab({
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <CreditHarmonyStatChip label="Beta pool supplied" value={formatCreditUsd(totalSupplied)} />
         <CreditHarmonyStatChip label="Private credit open" value={formatCreditUsd(totalBorrowed)} />
         <CreditHarmonyStatChip label="Beta liquidity" value={formatCreditUsd(availableLiquidity)} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-        <div className="space-y-4">
-          <div className="rounded-2xl hairline bg-card p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Start here</p>
-                <p className="mt-1 text-sm text-muted-foreground">Private money builds reputation, then unlocks private credit from the beta pool.</p>
-              </div>
-              <button type="button" onClick={onSetup} className="btn-pay btn-pay-ghost btn-pay-sm">
-                <ShieldCheck className="h-3.5 w-3.5" /> Guided setup
-              </button>
-            </div>
-            <div className="mt-4 grid gap-2">
-              {[
-                { label: "Start with Pay", body: "Make USDC private once and reuse the same ocUSDC here." },
-                { label: "Add reputation", body: "Pay, Credit, and Vote signals raise beta access over time." },
-                { label: "Borrow privately", body: `Draw from ${BETA_POOL_LABEL} after collateral settles.` },
-              ].map((item, index) => (
-                <div key={item.label} className="grid grid-cols-[auto_1fr] gap-3 rounded-xl border border-border/60 bg-muted/30 p-3">
-                  <span className="grid h-6 w-6 place-items-center rounded-full bg-foreground text-[11px] font-medium text-background">{index + 1}</span>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{item.label}</p>
-                    <p className="text-xs leading-relaxed text-muted-foreground">{item.body}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <button type="button" onClick={() => { window.location.href = "/pay"; }} className="btn-pay btn-pay-emerald">
-                <WalletCards className="h-3.5 w-3.5" /> Open Pay
-              </button>
-              <button type="button" onClick={onSetup} className="btn-pay btn-pay-ghost">
-                <ShieldCheck className="h-3.5 w-3.5" /> Set up credit
-              </button>
-            </div>
+      <CreditHarmonyPanelCard title="Borrow privately" eyebrow="Private transaction">
+        {!primary ? (
+          <p className="text-sm text-muted-foreground">No Credit market configured yet.</p>
+        ) : (
+          <BorrowForm market={primary} markets={markets} onSelect={selectMarket} onRefresh={onRefresh} onGoToCollateral={onSetup} />
+        )}
+      </CreditHarmonyPanelCard>
+
+      {primary ? (
+        <div className="overflow-hidden rounded-2xl hairline bg-card">
+          <div className="border-b border-border p-4">
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Canonical beta market</p>
           </div>
-
-          {primary ? (
-            <div className="overflow-hidden rounded-2xl hairline bg-card">
-              <div className="border-b border-border p-4">
-                <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Canonical beta market</p>
-              </div>
-              <div className="p-4">
-                <MarketCard market={primary} compact />
-              </div>
-              <div className="flex border-t border-border">
-                <button
-                  onClick={onGoEarn}
-                  className="flex-1 py-2.5 text-sm text-[hsl(var(--success))] hover:bg-accent/10 transition-colors flex items-center justify-center gap-1.5"
-                >
-                  <ArrowUpFromLine className="w-3 h-3" /> Supply liquidity
-                </button>
-                <button
-                  onClick={onRefresh}
-                  className="flex-1 border-l border-border py-2.5 text-sm text-muted-foreground hover:bg-muted transition-colors flex items-center justify-center gap-1.5"
-                >
-                  <RefreshCcw className="w-3 h-3" /> Refresh
-                </button>
-              </div>
-            </div>
-          ) : (
-            <p className="rounded-2xl hairline bg-card p-5 text-sm text-muted-foreground">No Credit market configured yet.</p>
-          )}
-
-          <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="p-4">
+            <MarketCard market={primary} compact />
+          </div>
+          <div className="flex border-t border-border">
             <button
-              type="button"
-              onClick={onToggleAdvanced}
-              className="rounded-full hairline px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
-              aria-pressed={showingAdvanced}
+              onClick={onGoEarn}
+              className="flex flex-1 items-center justify-center gap-1.5 py-2.5 text-sm text-[hsl(var(--success))] transition-colors hover:bg-accent/10"
             >
-              {showingAdvanced ? "Hide advanced" : "Advanced"}
+              <ArrowUpFromLine className="w-3 h-3" /> Supply liquidity
+            </button>
+            <button
+              onClick={onRefresh}
+              className="flex flex-1 items-center justify-center gap-1.5 border-l border-border py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted"
+            >
+              <RefreshCcw className="w-3 h-3" /> Refresh
             </button>
           </div>
-
-          {showingAdvanced && markets.length > 1 && (
-            <div className="rounded-2xl hairline bg-card p-4">
-              <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Advanced markets</p>
-              <div className="space-y-2">
-                {markets.slice(1).map((m) => (
-                  <button
-                    key={m.address ?? m.label}
-                    type="button"
-                    onClick={() => selectMarket(m)}
-                    className="w-full rounded-xl hairline bg-muted/40 p-3 text-left hover:bg-muted"
-                  >
-                    <span className="block text-sm text-foreground">{m.label}</span>
-                    <span className="mt-1 block text-[11px] text-muted-foreground">{m.riskTier} · {m.lltvBps / 100}% LLTV · advanced market</span>
-                  </button>
-                ))}
-              </div>
-              <p className="mt-3 text-[11px] text-muted-foreground">Legacy markets remain hidden for cleanup, repay, withdraw, and alternate collateral flows.</p>
-            </div>
-          )}
         </div>
+      ) : (
+        <p className="rounded-2xl hairline bg-card p-5 text-sm text-muted-foreground">No Credit market configured yet.</p>
+      )}
 
-        <CreditHarmonyPanelCard title="Borrow privately" eyebrow="Private transaction">
-          {!primary ? (
-            <p className="text-sm text-muted-foreground">No Credit market configured yet.</p>
-          ) : (
-            <BorrowForm market={primary} markets={markets} onSelect={selectMarket} onRefresh={onRefresh} onGoToCollateral={onSetup} />
-          )}
-        </CreditHarmonyPanelCard>
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={onToggleAdvanced}
+          className="rounded-full hairline px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+          aria-pressed={showingAdvanced}
+        >
+          {showingAdvanced ? "Hide advanced" : "Advanced"}
+        </button>
       </div>
+
+      {showingAdvanced && markets.length > 1 && (
+        <div className="rounded-2xl hairline bg-card p-4">
+          <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Advanced markets</p>
+          <div className="space-y-2">
+            {markets.slice(1).map((m) => (
+              <button
+                key={m.address ?? m.label}
+                type="button"
+                onClick={() => selectMarket(m)}
+                className="w-full rounded-xl hairline bg-muted/40 p-3 text-left hover:bg-muted"
+              >
+                <span className="block text-sm text-foreground">{m.label}</span>
+                <span className="mt-1 block text-[11px] text-muted-foreground">{m.riskTier} · {m.lltvBps / 100}% LLTV · advanced market</span>
+              </button>
+            ))}
+          </div>
+          <p className="mt-3 text-[11px] text-muted-foreground">Legacy markets remain hidden for cleanup, repay, withdraw, and alternate collateral flows.</p>
+        </div>
+      )}
 
       <div className="rounded-2xl hairline bg-card px-5 py-3">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
@@ -278,6 +237,7 @@ function BorrowTab({
 
 // ─── Position tab ─────────────────────────────────────────────────────────
 type PosAction = "borrow" | "repay" | "collateral" | "supply" | null;
+const DEFAULT_POSITION_ACTION: Exclude<PosAction, null> = "borrow";
 
 function PositionTab({
   markets,
@@ -287,9 +247,12 @@ function PositionTab({
   onRefresh: () => void;
 }) {
   const [selectedAddr, setSelectedAddr] = useState<`0x${string}` | undefined>(markets[0]?.address);
-  const positionReveal = useCardCipherReveal();
-  const [action, setAction] = useState<PosAction>(null);
+  const [suppliedRevealed, setSuppliedRevealed] = useState(false);
+  const [borrowRevealed, setBorrowRevealed] = useState(false);
+  const [collateralRevealed, setCollateralRevealed] = useState(false);
+  const [action, setAction] = useState<PosAction>(DEFAULT_POSITION_ACTION);
   const [revealError, setRevealError] = useState<string | null>(null);
+  const anyRevealed = suppliedRevealed || borrowRevealed || collateralRevealed;
 
   const market = useMemo(
     () => markets.find((m) => m.address === selectedAddr) ?? markets[0],
@@ -315,10 +278,71 @@ function PositionTab({
     }
   }, [pos]);
 
+  const hideAllBalances = useCallback(() => {
+    setSuppliedRevealed(false);
+    setBorrowRevealed(false);
+    setCollateralRevealed(false);
+  }, []);
+
+  const revealBalance = useCallback(
+    async (setter: (value: boolean) => void) => {
+      setRevealError(null);
+      try {
+        if (pos.mySupply === null && pos.myBorrow === null && pos.myCollateral === null) {
+          await handleRevealAll();
+        }
+        setter(true);
+      } catch {
+        // handleRevealAll already sets revealError
+      }
+    },
+    [handleRevealAll, pos.myBorrow, pos.myCollateral, pos.mySupply],
+  );
+
+  const toggleSuppliedReveal = useCallback(async () => {
+    if (suppliedRevealed) {
+      setSuppliedRevealed(false);
+      return;
+    }
+    await revealBalance(setSuppliedRevealed);
+  }, [revealBalance, suppliedRevealed]);
+
+  const toggleBorrowReveal = useCallback(async () => {
+    if (borrowRevealed) {
+      setBorrowRevealed(false);
+      return;
+    }
+    await revealBalance(setBorrowRevealed);
+  }, [borrowRevealed, revealBalance]);
+
+  const toggleCollateralReveal = useCallback(async () => {
+    if (collateralRevealed) {
+      setCollateralRevealed(false);
+      return;
+    }
+    await revealBalance(setCollateralRevealed);
+  }, [collateralRevealed, revealBalance]);
+
+  const toggleRevealAll = useCallback(async () => {
+    if (anyRevealed) {
+      hideAllBalances();
+      return;
+    }
+    setRevealError(null);
+    try {
+      await handleRevealAll();
+      setSuppliedRevealed(true);
+      setBorrowRevealed(true);
+      setCollateralRevealed(true);
+    } catch {
+      // handleRevealAll already sets revealError
+    }
+  }, [anyRevealed, handleRevealAll, hideAllBalances]);
+
   useEffect(() => {
-    if (!positionReveal.isVisible) return;
-    void handleRevealAll().catch(() => undefined);
-  }, [positionReveal.isVisible, selectedAddr]); // eslint-disable-line react-hooks/exhaustive-deps
+    hideAllBalances();
+    setRevealError(null);
+  }, [selectedAddr, hideAllBalances]);
 
   const fmt = (v: bigint | null) =>
     v === null ? null : (Number(v) / 1e6).toLocaleString(undefined, { maximumFractionDigits: 6 });
@@ -349,7 +373,7 @@ function PositionTab({
             <button
               key={m.address ?? m.label}
               type="button"
-              onClick={() => { setSelectedAddr(m.address); setAction(null); setRevealError(null); }}
+              onClick={() => { setSelectedAddr(m.address); setAction(DEFAULT_POSITION_ACTION); setRevealError(null); }}
               className={`app-workspace-tab min-w-0 ${m.address === selectedAddr ? "app-workspace-tab-active" : ""}`}
               aria-current={m.address === selectedAddr ? "page" : undefined}
             >
@@ -359,18 +383,24 @@ function PositionTab({
         </nav>
       )}
 
-      <section className="dash-card space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="dash-eyebrow">Your position</h3>
+      <section className="dash-card space-y-5 p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="dash-eyebrow text-[10px]">Your position</p>
+            <h3 className="mt-1 font-display text-2xl tracking-tight text-foreground">Encrypted Credit balances</h3>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              Supplied, borrowed, and collateral balances stay sealed until you reveal them. Health factor remains visible so you can manage risk quickly.
+            </p>
+          </div>
           <button
             type="button"
-            onClick={positionReveal.toggle}
+            onClick={() => { void toggleRevealAll(); }}
             disabled={pos.sharesLoading}
             className="ref-ghost-action disabled:opacity-40"
           >
             {pos.sharesLoading ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : positionReveal.isVisible ? (
+            ) : anyRevealed ? (
               <><EyeOff className="h-3.5 w-3.5" /> Hide all</>
             ) : (
               <><Eye className="h-3.5 w-3.5" /> Reveal all</>
@@ -379,22 +409,28 @@ function PositionTab({
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <EncryptedTile
-            label="Supplied" symbol={market?.loanSymbol ?? "ocUSDC"}
-            displayValue={fmt(pos.mySupply)} revealed={positionReveal.isVisible}
-            loading={pos.sharesLoading} onReveal={positionReveal.toggle}
-            onExpire={() => positionReveal.toggle()} accent="emerald"
+            label="Supplied liquidity"
+            description="Private USDC you supplied to earn from this market."
+            symbol={market?.loanSymbol ?? "ocUSDC"}
+            displayValue={fmt(pos.mySupply)} revealed={suppliedRevealed}
+            loading={pos.sharesLoading} onReveal={() => { void toggleSuppliedReveal(); }}
+            onExpire={() => setSuppliedRevealed(false)} accent="emerald"
           />
           <EncryptedTile
-            label="Borrowed" symbol={market?.loanSymbol ?? "ocUSDC"}
-            displayValue={fmt(pos.myBorrow)} revealed={positionReveal.isVisible}
-            loading={pos.sharesLoading} onReveal={positionReveal.toggle}
-            onExpire={() => positionReveal.toggle()} accent="violet"
+            label="Private debt"
+            description="Amount you borrowed from the Credit market."
+            symbol={market?.loanSymbol ?? "ocUSDC"}
+            displayValue={fmt(pos.myBorrow)} revealed={borrowRevealed}
+            loading={pos.sharesLoading} onReveal={() => { void toggleBorrowReveal(); }}
+            onExpire={() => setBorrowRevealed(false)} accent="violet"
           />
           <EncryptedTile
-            label="Collateral" symbol={market?.collateralSymbol ?? "ocUSDC"}
-            displayValue={fmt(pos.myCollateral)} revealed={positionReveal.isVisible}
-            loading={pos.sharesLoading} onReveal={positionReveal.toggle}
-            onExpire={() => positionReveal.toggle()} accent="amber"
+            label="Collateral locked"
+            description="Encrypted collateral backing your borrow capacity."
+            symbol={market?.collateralSymbol ?? "ocUSDC"}
+            displayValue={fmt(pos.myCollateral)} revealed={collateralRevealed}
+            loading={pos.sharesLoading} onReveal={() => { void toggleCollateralReveal(); }}
+            onExpire={() => setCollateralRevealed(false)} accent="amber"
           />
         </div>
         {(revealError || pos.decryptError) && (
@@ -865,6 +901,7 @@ function SettingsSlideOver({
 
 // ─── Main page ────────────────────────────────────────────────────────────
 const CreditPage = () => {
+  const navigate = useNavigate();
   const { isConnected } = useAccount();
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = parseCreditTab(searchParams.get("tab"));
@@ -919,12 +956,12 @@ const CreditPage = () => {
   const handleBorrowFromMarket = useCallback((m: CreditMarketMeta) => {
     setActiveMarketAddress(m.address);
     setTab("borrow");
-  }, []);
+  }, [setTab]);
 
   const handleSupplyFromMarket = useCallback((m: CreditMarketMeta) => {
     setActiveMarketAddress(m.address);
     setTab("earn");
-  }, []);
+  }, [setTab]);
 
   const harmonySidebar = CREDIT_TABS.map((item) => ({
     key: item.key,
@@ -943,7 +980,7 @@ const CreditPage = () => {
     >
       <CreditWorkspaceChrome tab={tab} onSelectTab={setTab} unreadCount={unreadCount} />
 
-      <div className="relative z-20 mb-6 flex scroll-mt-20 flex-wrap items-center justify-end gap-2">
+      <div className="relative mb-6 flex scroll-mt-20 flex-wrap items-center justify-end gap-2">
         {isConnected && (
           <button
             type="button"
@@ -965,7 +1002,7 @@ const CreditPage = () => {
       </div>
 
       {isConnected && tab !== "overview" && (
-        <div className="sticky top-3 z-30 mb-6">
+        <div className="sticky top-3 z-10 mb-6">
           <HealthRibbon
             onRepay={(w) => {
               setActiveMarketAddress(w.market.address);
@@ -995,6 +1032,9 @@ const CreditPage = () => {
                 onSupply={() => setTab("earn")}
                 onBorrow={() => setTab("borrow")}
                 onOpenVault={() => setTab("earn")}
+                onOpenPay={() => navigate("/pay?tab=pay&sub=convert")}
+                onSetup={() => setSetupOpen(true)}
+                onPosition={() => setTab("position")}
               />
               <div className="mt-10">
                 <ActivityFeed

@@ -18,7 +18,7 @@ import {
   categoryScore,
   governanceEventCount,
 } from "@/lib/reputationCategories";
-import { VoteKpi, VoteNotice, vh } from "@/components/harmony/voteHarmonyUi";
+import { VoteKpi, vh } from "@/components/harmony/voteHarmonyUi";
 
 function CategoryRow({ label, value, icon: Icon }: { label: string; value: number; icon: LucideIcon }) {
   const width = Math.min(100, value * 8);
@@ -151,11 +151,6 @@ export function VoteParticipationProfile() {
           )}
         </div>
       </section>
-
-      <VoteNotice icon={ShieldCheck}>
-        Reputation is derived from the shared worker index. Vote activity records proposal participation only — never
-        which option you selected. Use ballot history below to verify your own encrypted choices on this device.
-      </VoteNotice>
     </div>
   );
 }

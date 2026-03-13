@@ -6,7 +6,14 @@ import { useProposalCount, useProposal, useProposalOptions, CATEGORY_LABELS } fr
 import { useVoteTally, type TallyResult as TallyResultData } from "@/hooks/useVoteTally";
 import { OBSCURA_VOTE_ABI, OBSCURA_VOTE_ADDRESS } from "@/config/contracts";
 import { arbitrumSepolia } from "viem/chains";
-import AsyncStepper from "@/components/shared/AsyncStepper";
+import {
+  VoteTxDecryptProgress,
+  VoteTxSuccess,
+  VoteTxSummaryCard,
+  VoteTxValueBadge,
+  VoteTxWalletProgress,
+} from "@/components/vote/VoteTransactionFlow";
+import { mapFheToDecryptPhase, useVoteTransactionFlow } from "@/hooks/useVoteTransactionFlow";
 import { FHEStepStatus } from "@/lib/constants";
 
 import { useChainTime } from "@/hooks/useChainTime";
@@ -92,11 +99,13 @@ function TallyResult({
   const { data: optionLabels } = useProposalOptions(proposalId);
   const options = (optionLabels as string[]) ?? [];
   const numOptions = proposal?.numOptions ?? 2;
-  const { tallies, decryptTally, status, stepIndex } = useVoteTally(proposalId, numOptions);
+  const { tallies, decryptTally, status } = useVoteTally(proposalId, numOptions);
   const { writeContractAsync, isPending: isFinalizePending } = useWriteContract();
+  const finalizeFlow = useVoteTransactionFlow();
   const [error, setError] = useState<string | null>(null);
   const [finalizeTxHash, setFinalizeTxHash] = useState<string | null>(null);
   const [isFinalizeConfirming, setIsFinalizeConfirming] = useState(false);
+  const [showFinalizeReview, setShowFinalizeReview] = useState(false);
 
   // Must be called before any early return to satisfy Rules of Hooks
   const now = useChainTime();
@@ -128,13 +137,14 @@ function TallyResult({
   async function handleFinalize() {
     setError(null);
     setFinalizeTxHash(null);
+    setShowFinalizeReview(false);
     try {
+      finalizeFlow.startPrepare();
       const block = await publicClient!.getBlock();
       const baseFee = block.baseFeePerGas ?? 20_000_000n;
       const maxFeePerGas = baseFee * 3n;
       const maxPriorityFeePerGas = baseFee;
 
-      // Simulate first to surface revert reason without spending gas
       await publicClient!.simulateContract({
         address: OBSCURA_VOTE_ADDRESS!,
         abi: OBSCURA_VOTE_ABI,
@@ -143,6 +153,7 @@ function TallyResult({
         account: address,
       });
 
+      finalizeFlow.startWallet();
       const hash = await writeContractAsync({
         address: OBSCURA_VOTE_ADDRESS!,
         abi: OBSCURA_VOTE_ABI,
@@ -156,13 +167,17 @@ function TallyResult({
       });
       setFinalizeTxHash(hash);
       setIsFinalizeConfirming(true);
+      finalizeFlow.startConfirm(hash);
       const receipt = await publicClient!.waitForTransactionReceipt({ hash });
       if (receipt.status !== "success") {
         throw new Error("Finalize transaction reverted");
       }
+      finalizeFlow.complete();
       await refetchProposal();
     } catch (err: unknown) {
-      setError(formatWriteError(err, "Finalization failed"));
+      const msg = formatWriteError(err, "Finalization failed");
+      setError(msg);
+      finalizeFlow.fail(msg);
     } finally {
       setIsFinalizeConfirming(false);
     }
@@ -242,16 +257,76 @@ function TallyResult({
             </div>
           )}
           {quorumMet && isCreator && (
-          <motion.button
-            onClick={handleFinalize}
-            disabled={isFinalizePending || isFinalizeConfirming}
-            whileHover={{ scale: 1.005 }}
-            whileTap={{ scale: 0.99 }}
-            className="btn-pay btn-pay-amber w-full py-2.5"
-          >
-            <Unlock className="w-3.5 h-3.5 inline mr-2" />
-            {isFinalizePending ? "Sign in Wallet..." : isFinalizeConfirming ? "Confirming..." : "Finalize My Proposal"}
-          </motion.button>
+          <>
+            {showFinalizeReview && (
+              <VoteTxSummaryCard
+                title="Finalize proposal"
+                subtitle="Publish encrypted tallies on-chain so anyone can decrypt aggregate results"
+                badges={["private", "gas_only"]}
+                valueBadge={<VoteTxValueBadge gasNote="network gas only" />}
+                rows={[
+                  { label: "Proposal", value: `#${proposalId.toString()} · ${proposal.title}` },
+                  { label: "Voters", value: proposal.totalVoters.toString() },
+                  { label: "Quorum", value: proposal.quorum > 0n ? `${proposal.totalVoters}/${proposal.quorum}` : "None" },
+                  { label: "Options", value: proposal.numOptions.toString() },
+                ]}
+              />
+            )}
+            {(finalizeFlow.phase !== "idle" || isFinalizePending || isFinalizeConfirming) && (
+              <VoteTxWalletProgress
+                phase={
+                  finalizeFlow.phase !== "idle"
+                    ? finalizeFlow.phase
+                    : isFinalizePending
+                      ? "wallet"
+                      : isFinalizeConfirming
+                        ? "confirm"
+                        : "idle"
+                }
+                txHash={finalizeTxHash}
+                error={error}
+              />
+            )}
+            {finalizeFlow.phase === "done" && finalizeTxHash && (
+              <VoteTxSuccess
+                title="Proposal finalized"
+                message="Encrypted tallies are on-chain. Decrypt below to reveal aggregate totals."
+                txHash={finalizeTxHash}
+              />
+            )}
+            {!showFinalizeReview && finalizeFlow.phase === "idle" && (
+              <motion.button
+                onClick={() => setShowFinalizeReview(true)}
+                whileHover={{ scale: 1.005 }}
+                whileTap={{ scale: 0.99 }}
+                className="btn-pay btn-pay-amber w-full py-2.5"
+              >
+                <Unlock className="w-3.5 h-3.5 inline mr-2" />
+                Review & finalize
+              </motion.button>
+            )}
+            {showFinalizeReview && finalizeFlow.phase === "idle" && (
+              <div className="flex flex-wrap gap-2">
+                <motion.button
+                  onClick={handleFinalize}
+                  disabled={isFinalizePending || isFinalizeConfirming}
+                  whileHover={{ scale: 1.005 }}
+                  whileTap={{ scale: 0.99 }}
+                  className="btn-pay btn-pay-amber flex-1 py-2.5"
+                >
+                  <Unlock className="w-3.5 h-3.5 inline mr-2" />
+                  {isFinalizePending ? "Sign in wallet…" : isFinalizeConfirming ? "Confirming…" : "Confirm finalize"}
+                </motion.button>
+                <button
+                  type="button"
+                  onClick={() => setShowFinalizeReview(false)}
+                  className="rounded-full border border-border bg-white px-4 py-2 text-sm text-muted-foreground hover:text-foreground"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </>
           )}
         </div>
       )}
@@ -266,7 +341,7 @@ function TallyResult({
         </div>
       )}
 
-      {finalizeTxHash && (
+      {finalizeTxHash && finalizeFlow.phase !== "done" && (
         <div className="text-xs text-muted-foreground flex items-center gap-1">
           Finalize TX:{" "}
           <a
@@ -281,12 +356,21 @@ function TallyResult({
         </div>
       )}
 
-      {status !== FHEStepStatus.IDLE && status !== FHEStepStatus.READY && (
-        <AsyncStepper
-          status={status}
-          stepIndex={stepIndex}
-          labels={["Connecting", "Decrypting", "Revealed"]}
+      {isFinalized && !tallies && status === FHEStepStatus.IDLE && (
+        <VoteTxSummaryCard
+          title="Decrypt public tally"
+          subtitle="Read encrypted on-chain totals and decrypt locally in your browser"
+          badges={["private", "fhe_read"]}
+          rows={[
+            { label: "Proposal", value: `#${proposalId.toString()} · ${proposal.title}` },
+            { label: "Options", value: proposal.numOptions.toString() },
+            { label: "Privacy", value: "Aggregate totals only · individual ballots stay sealed" },
+          ]}
         />
+      )}
+
+      {status !== FHEStepStatus.IDLE && status !== FHEStepStatus.READY && (
+        <VoteTxDecryptProgress phase={mapFheToDecryptPhase(status)} error={error} />
       )}
 
       {tallies ? (

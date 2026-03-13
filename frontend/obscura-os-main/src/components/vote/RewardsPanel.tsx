@@ -19,6 +19,13 @@ import {
 } from "@/hooks/useRewards";
 import { useProposalCount, useProposal, useHasVoted } from "@/hooks/useProposals";
 import { VoteKpi, VoteNotice, VoteTabs, vh } from "@/components/harmony/voteHarmonyUi";
+import { useWalletPhaseFromFlags } from "@/hooks/useVoteTransactionFlow";
+import {
+  VoteTxSuccess,
+  VoteTxSummaryCard,
+  VoteTxValueBadge,
+  VoteTxWalletProgress,
+} from "@/components/vote/VoteTransactionFlow";
 
 const ARBISCAN = "https://sepolia.arbiscan.io";
 const REWARD_PER_VOTE_ETH = "0.001"; // 1_000_000 gwei
@@ -46,6 +53,14 @@ function ProposalRewardRow({
   const { data: hasVoted } = useHasVoted(BigInt(proposalId), voterAddress);
   const { data: accruedAlready } = useRewardAccrued(BigInt(proposalId), voterAddress);
   const { accrue, isPending, isConfirming, isSuccess, txHash, error } = useAccrueReward();
+  const [showClaimReview, setShowClaimReview] = useState(false);
+  const claimPhase = useWalletPhaseFromFlags({
+    isPending,
+    isConfirming,
+    isSuccess,
+    error,
+    txHash,
+  });
 
   // Only show finalized proposals where user voted
   if (!proposal?.exists || !proposal.isFinalized || proposal.isCancelled) return null;
@@ -62,18 +77,44 @@ function ProposalRewardRow({
           <span className="flex items-center gap-1 text-xs text-foreground">
             <CheckCircle className="h-3.5 w-3.5" /> Accrued
           </span>
-        ) : isSuccess ? (
-          <span className="flex items-center gap-1 text-xs text-foreground">
-            <CheckCircle className="h-3.5 w-3.5" /> Done <TxLink hash={txHash} />
-          </span>
+        ) : isSuccess && claimPhase === "done" ? (
+          <VoteTxSuccess title="Reward accrued" message={`${REWARD_PER_VOTE_ETH} ETH added to your encrypted balance.`} txHash={txHash} />
+        ) : showClaimReview ? (
+          <div className="space-y-2 text-right">
+            <VoteTxSummaryCard
+              title="Claim vote reward"
+              subtitle="Accrues reward for this finalized proposal into your encrypted balance"
+              badges={["private", "gas_only"]}
+              valueBadge={<VoteTxValueBadge gasNote="network gas only" />}
+              rows={[
+                { label: "Proposal", value: `#${proposalId} · ${proposal.title}` },
+                { label: "Reward amount", value: `${REWARD_PER_VOTE_ETH} ETH` },
+              ]}
+            />
+            <div className="flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => { setShowClaimReview(false); void accrue(BigInt(proposalId)); }}
+                disabled={isPending || isConfirming}
+                className={`${vh.btnPrimary} px-3 py-1 text-xs disabled:opacity-50`}
+              >
+                {isPending || isConfirming ? <Loader2 className="h-3 w-3 animate-spin" /> : <Coins className="h-3 w-3" />}
+                Confirm claim
+              </button>
+              <button type="button" onClick={() => setShowClaimReview(false)} className="text-xs text-muted-foreground hover:text-foreground">
+                Cancel
+              </button>
+            </div>
+            <VoteTxWalletProgress phase={claimPhase} txHash={txHash} error={error} />
+          </div>
         ) : (
           <button
-            onClick={() => accrue(BigInt(proposalId))}
+            onClick={() => setShowClaimReview(true)}
             disabled={isPending || isConfirming}
             className={`${vh.btnPrimary} px-3 py-1 text-xs disabled:opacity-50`}
           >
-            {isPending || isConfirming ? <Loader2 className="h-3 w-3 animate-spin" /> : <Coins className="h-3 w-3" />}
-            Claim
+            <Coins className="h-3 w-3" />
+            Review claim
           </button>
         )}
         {error && <p className="text-xs text-red-400 mt-0.5">{error.slice(0, 60)}</p>}
@@ -99,6 +140,31 @@ export function RewardsPanel() {
   const [fundInput, setFundInput] = useState("");
   const [activeTab, setActiveTab] = useState<"earn" | "withdraw" | "fund">("earn");
   const [tabMessage, setTabMessage] = useState<string | null>(null);
+  const [showRequestReview, setShowRequestReview] = useState(false);
+  const [showWithdrawReview, setShowWithdrawReview] = useState(false);
+  const [showFundReview, setShowFundReview] = useState(false);
+
+  const requestPhase = useWalletPhaseFromFlags({
+    isPending: requesting,
+    isConfirming: requestConfirming,
+    isSuccess: requestSuccess,
+    error: requestErr,
+    txHash: requestTx,
+  });
+  const withdrawPhase = useWalletPhaseFromFlags({
+    isPending: withdrawing,
+    isConfirming: withdrawConfirming,
+    isSuccess: withdrawSuccess,
+    error: withdrawErr,
+    txHash: withdrawTx,
+  });
+  const fundPhase = useWalletPhaseFromFlags({
+    isPending: funding,
+    isConfirming: fundConfirming,
+    isSuccess: fundSuccess,
+    error: fundErr,
+    txHash: fundTx,
+  });
 
   const poolEth = poolWei ? parseFloat(formatEther(poolWei as bigint)).toFixed(4) : "0";
   const pendingEth = pendingWei ? parseFloat(formatEther(pendingWei as bigint)).toFixed(4) : "0";
@@ -218,15 +284,41 @@ export function RewardsPanel() {
                   <p className="text-xs text-muted-foreground/30">
                     Grants you Fhenix FHE decryption permission for your encrypted balance. You can then verify the amount via the gateway.
                   </p>
-                  <button
-                    onClick={async () => { await request(); refetchWithdrawal(); }}
-                    disabled={requesting || requestConfirming || !hasPending || !!withdrawalReady}
-                    className={`${vh.btnGhost} disabled:opacity-50`}
-                  >
-                    {requesting || requestConfirming ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Lock className="h-3.5 w-3.5" />}
-                    {withdrawalReady ? "Balance Revealed" : requestConfirming ? "Confirming…" : requesting ? "Requesting…" : "Request Withdrawal"}
-                  </button>
-                  {requestSuccess && requestTx && <div className="flex items-center gap-1.5 text-xs text-foreground"><CheckCircle className="h-3 w-3" /> FHE permission granted <TxLink hash={requestTx} /></div>}
+                  {!showRequestReview ? (
+                    <button
+                      onClick={() => setShowRequestReview(true)}
+                      disabled={requesting || requestConfirming || !hasPending || !!withdrawalReady}
+                      className={`${vh.btnGhost} disabled:opacity-50`}
+                    >
+                      <Lock className="h-3.5 w-3.5" />
+                      {withdrawalReady ? "Balance revealed" : "Review reveal request"}
+                    </button>
+                  ) : (
+                    <>
+                      <VoteTxSummaryCard
+                        title="Request withdrawal permission"
+                        subtitle="On-chain permission to decrypt your encrypted reward balance locally"
+                        badges={["private", "gas_only"]}
+                        valueBadge={<VoteTxValueBadge gasNote="network gas only" />}
+                        rows={[
+                          { label: "Pending balance", value: `${pendingEth} ETH (encrypted)` },
+                          { label: "Action", value: "Grant local decrypt permission — no ETH transfer" },
+                        ]}
+                      />
+                      <button
+                        onClick={async () => { setShowRequestReview(false); await request(); refetchWithdrawal(); }}
+                        disabled={requesting || requestConfirming || !hasPending || !!withdrawalReady}
+                        className={`${vh.btnGhost} disabled:opacity-50`}
+                      >
+                        {requesting || requestConfirming ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Lock className="h-3.5 w-3.5" />}
+                        Confirm reveal request
+                      </button>
+                    </>
+                  )}
+                  <VoteTxWalletProgress phase={requestPhase} txHash={requestTx} error={requestErr} />
+                  {requestSuccess && requestTx && requestPhase === "done" && (
+                    <VoteTxSuccess title="Balance revealed" message="You can now withdraw your accrued ETH." txHash={requestTx} />
+                  )}
                   {requestErr && <p className="text-xs text-red-400">{requestErr}</p>}
                 </div>
 
@@ -250,16 +342,44 @@ export function RewardsPanel() {
                         </div>
                       </div>
                     )}
-                    <motion.button
-                      onClick={async () => { await withdrawReward(); refetchPending(); refetchWithdrawal(); }}
-                      disabled={withdrawing || withdrawConfirming || !hasPending || !!poolInsufficient}
-                      whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
-                      className={`${vh.btnPrimary} disabled:opacity-50`}
-                    >
-                      {withdrawing || withdrawConfirming ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Coins className="h-3.5 w-3.5" />}
-                      {withdrawConfirming ? "Confirming…" : withdrawing ? "Withdrawing…" : `Withdraw ${pendingEth} ETH`}
-                    </motion.button>
-                    {withdrawSuccess && withdrawTx && <div className="flex items-center gap-1.5 text-xs text-foreground"><CheckCircle className="h-3 w-3" /> Withdrawn! <TxLink hash={withdrawTx} /></div>}
+                    {!showWithdrawReview ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowWithdrawReview(true)}
+                        disabled={withdrawing || withdrawConfirming || !hasPending || !!poolInsufficient}
+                        className={`${vh.btnPrimary} disabled:opacity-50`}
+                      >
+                        <Coins className="h-3.5 w-3.5" />
+                        Review withdraw
+                      </button>
+                    ) : (
+                      <>
+                        <VoteTxSummaryCard
+                          title="Withdraw rewards"
+                          subtitle="Receive ETH from the reward pool and zero your encrypted balance"
+                          badges={poolInsufficient ? ["public"] : ["public"]}
+                          valueBadge={<VoteTxValueBadge receiveEth={pendingEth} gasNote="network gas only" />}
+                          rows={[
+                            { label: "You receive", value: `${pendingEth} ETH` },
+                            { label: "Pool balance", value: `${poolEth} ETH` },
+                            { label: "Pool status", value: poolInsufficient ? "Insufficient — fund pool first" : "Sufficient for withdrawal" },
+                          ]}
+                        />
+                        <motion.button
+                          onClick={async () => { setShowWithdrawReview(false); await withdrawReward(); refetchPending(); refetchWithdrawal(); }}
+                          disabled={withdrawing || withdrawConfirming || !hasPending || !!poolInsufficient}
+                          whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+                          className={`${vh.btnPrimary} disabled:opacity-50`}
+                        >
+                          {withdrawing || withdrawConfirming ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Coins className="h-3.5 w-3.5" />}
+                          Confirm withdraw {pendingEth} ETH
+                        </motion.button>
+                      </>
+                    )}
+                    <VoteTxWalletProgress phase={withdrawPhase} txHash={withdrawTx} error={withdrawErr} />
+                    {withdrawSuccess && withdrawTx && withdrawPhase === "done" && (
+                      <VoteTxSuccess title="Rewards withdrawn" message={`${pendingEth} ETH sent to your wallet.`} txHash={withdrawTx} />
+                    )}
                     {withdrawErr && <p className="text-xs text-red-400">{withdrawErr}</p>}
                   </div>
                 )}
@@ -277,16 +397,44 @@ export function RewardsPanel() {
           </p>
           <div className="flex gap-2">
             <input type="number" step="0.001" placeholder="ETH amount (e.g. 0.1)"
-              value={fundInput} onChange={e => setFundInput(e.target.value)}
+              value={fundInput} onChange={e => { setFundInput(e.target.value); setShowFundReview(false); }}
               className="flex-1 rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-foreground/40 focus:outline-none" />
-            <button onClick={() => fund(fundInput)} disabled={funding || fundConfirming || !fundInput}
+            <button
+              type="button"
+              onClick={() => setShowFundReview(true)}
+              disabled={funding || fundConfirming || !fundInput}
               className={`${vh.btnPrimary} disabled:opacity-50`}>
-              {funding || fundConfirming ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Gift className="h-3.5 w-3.5" />}
-              Fund
+              <Gift className="h-3.5 w-3.5" />
+              Review fund
             </button>
           </div>
+          {showFundReview && fundInput && (
+            <VoteTxSummaryCard
+              title="Fund reward pool"
+              subtitle="Send ETH to the shared voter incentives pool"
+              badges={["public"]}
+              valueBadge={<VoteTxValueBadge sendEth={fundInput} gasNote="network gas only" />}
+              rows={[
+                { label: "You send", value: `${fundInput} ETH` },
+                { label: "Current pool", value: `${poolEth} ETH` },
+              ]}
+            >
+              <button
+                type="button"
+                onClick={() => { setShowFundReview(false); void fund(fundInput); }}
+                disabled={funding || fundConfirming}
+                className={`${vh.btnPrimary} disabled:opacity-50`}
+              >
+                {funding || fundConfirming ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Gift className="h-3.5 w-3.5" />}
+                Confirm fund
+              </button>
+            </VoteTxSummaryCard>
+          )}
           {fundErr && <p className="text-xs text-red-400 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{fundErr}</p>}
-          {fundSuccess && fundTx && <div className="flex items-center gap-1.5 text-xs text-foreground"><CheckCircle className="h-3 w-3" /> Funded! <TxLink hash={fundTx} /></div>}
+          <VoteTxWalletProgress phase={fundPhase} txHash={fundTx} error={fundErr} />
+          {fundSuccess && fundTx && fundPhase === "done" && (
+            <VoteTxSuccess title="Pool funded" message={`${fundInput || "ETH"} added to the reward pool.`} txHash={fundTx} />
+          )}
         </div>
       )}
     </div>

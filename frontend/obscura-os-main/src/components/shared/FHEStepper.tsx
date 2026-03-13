@@ -79,19 +79,31 @@ export default function FHEStepper({ status, error, className = "" }: Props) {
         <motion.div
           animate={isError ? { x: [0, -4, 4, -3, 3, 0] } : {}}
           transition={{ duration: 0.4 }}
-          className={`harmony-fhe-stepper harmony-fhe-stepper--toast mt-3 rounded-xl hairline p-4 ${
+          className={`harmony-fhe-stepper mt-3 w-full max-w-full rounded-xl hairline p-3 sm:p-4 ${
             isError ? "border-destructive/30 bg-destructive/5" : "bg-card"
           }`}
         >
-          <div className="flex items-stretch gap-1">
+          <div className="relative grid grid-cols-5 gap-1.5 sm:gap-2">
+            <div className="pointer-events-none absolute left-[10%] right-[10%] top-3.5 h-px bg-border" aria-hidden />
+            <motion.div
+              className="pointer-events-none absolute left-[10%] top-3.5 h-px bg-[hsl(var(--dash-forest))]"
+              initial={false}
+              animate={{
+                width:
+                  idx <= 0
+                    ? `${Math.max(0, Math.min(1, etaPct)) * 20}%`
+                    : `${Math.min(80, (idx / Math.max(PHASES.length - 1, 1)) * 80 + etaPct * 20)}%`,
+              }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              aria-hidden
+            />
             {PHASES.map((phase, i) => {
               const done   = !isError && idx > i;
               const active = !isError && idx === i;
-              const next   = i + 1 < PHASES.length;
               return (
-                <div key={phase.key} className="flex-1 flex items-center gap-1">
-                  <div className="flex flex-col items-center gap-1 min-w-0 flex-1">
-                    <div className={`relative flex h-7 w-7 items-center justify-center rounded-full transition-colors duration-300 ${
+                <div key={phase.key} className="relative z-[1] min-w-0">
+                  <div className="flex min-w-0 flex-col items-center gap-1">
+                    <div className={`relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors duration-300 ${
                       done   ? "border border-[hsl(var(--success))]/40 bg-accent/20" :
                       active ? "border border-[hsl(var(--dash-forest))]/40 bg-[hsl(var(--dash-mint))]" :
                                 "hairline bg-muted"
@@ -121,33 +133,19 @@ export default function FHEStepper({ status, error, className = "" }: Props) {
                       {phase.label}
                     </span>
                   </div>
-                  {next && (
-                    <div className="relative mb-3 h-px flex-1 overflow-hidden rounded-full bg-border">
-                      <motion.div
-                        className={
-                          done ? "h-full bg-[hsl(var(--success))]" :
-                          active ? "h-full bg-[hsl(var(--dash-forest))]" :
-                          "h-full bg-transparent"
-                        }
-                        initial={false}
-                        animate={{ width: done ? "100%" : active ? `${Math.max(15, etaPct * 100)}%` : "0%" }}
-                        transition={{ duration: 0.4, ease: "easeOut" }}
-                      />
-                    </div>
-                  )}
                 </div>
               );
             })}
           </div>
 
           {activePhase && !isError && (
-            <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
-              <span className="flex items-center gap-1.5">
+            <div className="mt-3 grid gap-1 text-[11px] text-muted-foreground sm:flex sm:items-center sm:justify-between">
+              <span className="flex min-w-0 items-center gap-1.5">
                 <span className="font-medium text-foreground">{activePhase.label}</span>
                 <span>·</span>
-                <span>{activePhase.hint}</span>
+                <span className="min-w-0 truncate">{activePhase.hint}</span>
               </span>
-              <span className="font-mono">
+              <span className="font-mono sm:text-right">
                 {elapsed.toFixed(1)}s {activePhase.etaSec > 0 && `/ ~${activePhase.etaSec}s`}
               </span>
             </div>

@@ -2,19 +2,16 @@ import { motion } from "framer-motion";
 import {
   ArrowRight,
   Award,
-  BarChart3,
   FileText,
-  RotateCcw,
   ShieldCheck,
   TrendingUp,
-  Vote as VoteIcon,
 } from "lucide-react";
 import { useAccount } from "wagmi";
 import { formatEther } from "viem";
 import { useProposalCount } from "@/hooks/useProposals";
 import { useReputationSummary } from "@/hooks/useReputationSummary";
 import { usePendingReward } from "@/hooks/useRewards";
-import { VoteKpi, VoteNotice, vh } from "@/components/harmony/voteHarmonyUi";
+import { VoteKpi, vh } from "@/components/harmony/voteHarmonyUi";
 
 const TIER_LABEL: Record<string, string> = {
   new: "New",
@@ -86,27 +83,6 @@ export function VoteHarmonyDashboard({
         </motion.section>
       ) : null}
 
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="grid gap-3 sm:grid-cols-3"
-      >
-        {[
-          { i: VoteIcon, l: "Vote", v: "Your choice stays sealed", c: "text-[hsl(var(--success))]" },
-          { i: RotateCcw, l: "Revote", v: "Change before deadline", c: "text-amber-700" },
-          { i: BarChart3, l: "Reveal", v: "Totals only, never ballots", c: "text-sky-800" },
-        ].map((k) => (
-          <div key={k.l} className="dash-card p-4">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <k.i className={`h-4 w-4 ${k.c}`} />
-              <span className="dash-eyebrow text-[9px]">{k.l}</span>
-            </div>
-            <p className="mt-2 text-sm font-medium text-foreground">{k.v}</p>
-          </div>
-        ))}
-      </motion.div>
-
       <div className="dash-card p-4 sm:p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -133,11 +109,6 @@ export function VoteHarmonyDashboard({
           </div>
         </div>
       </div>
-
-      <VoteNotice icon={ShieldCheck}>
-        Proposal titles and participation counts are public. Your selected option stays encrypted until you
-        explicitly verify it on this device. Final results show aggregate totals only.
-      </VoteNotice>
     </div>
   );
 }

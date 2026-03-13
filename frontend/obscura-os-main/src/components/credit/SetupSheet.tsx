@@ -14,8 +14,10 @@
  * The stealth disburse toggle wires Router.setupAndBorrowStealth for legacy markets.
  */
 import { useState, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAccount, usePublicClient, useWalletClient, useWriteContract } from "wagmi";
+import type { Abi } from "viem";
 import { arbitrumSepolia } from "viem/chains";
 import {
   X,
@@ -50,6 +52,15 @@ import type { CreditMarketMeta } from "@/config/credit";
 const OPERATOR_EXPIRY_DAYS = 7;
 const OPERATOR_EXPIRY_SEC  = OPERATOR_EXPIRY_DAYS * 24 * 60 * 60;
 
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error && typeof error === "object") {
+    const candidate = error as { shortMessage?: unknown; message?: unknown };
+    if (typeof candidate.shortMessage === "string") return candidate.shortMessage;
+    if (typeof candidate.message === "string") return candidate.message;
+  }
+  return fallback;
+}
+
 interface SetupSheetProps {
   open: boolean;
   onClose: () => void;
@@ -61,6 +72,7 @@ interface SetupSheetProps {
 type SetupStep = "funding" | "operator" | "borrow" | "done";
 
 export default function SetupSheet({ open, onClose, market, onSuccess }: SetupSheetProps) {
+  const navigate = useNavigate();
   const { address } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
@@ -97,8 +109,8 @@ export default function SetupSheet({ open, onClose, market, onSuccess }: SetupSh
   const setupExceedsBetaLimit = requestedBorrow > 0n && requestedBorrow > betaLimit.remaining;
 
   const openPay = useCallback(() => {
-    window.location.href = "/pay";
-  }, []);
+    navigate("/pay?tab=pay&sub=convert");
+  }, [navigate]);
 
   // Legacy/testnet faucet claim — skipped for the canonical Pay-backed market.
   const handleFaucet = useCallback(async () => {
@@ -160,8 +172,8 @@ export default function SetupSheet({ open, onClose, market, onSuccess }: SetupSh
 
       fhe.setStep(FHEStepStatus.READY);
       setStep("operator");
-    } catch (e: any) {
-      setError(e?.shortMessage ?? e?.message ?? "Faucet claim failed");
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, "Faucet claim failed"));
       fhe.setStep(FHEStepStatus.IDLE);
     } finally {
       setBusy(false);
@@ -198,8 +210,8 @@ export default function SetupSheet({ open, onClose, market, onSuccess }: SetupSh
 
       fhe.setStep(FHEStepStatus.READY);
       setStep("borrow");
-    } catch (e: any) {
-      setError(e?.shortMessage ?? e?.message ?? "Operator approval failed");
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, "Operator approval failed"));
       fhe.setStep(FHEStepStatus.IDLE);
     } finally {
       setBusy(false);
@@ -247,7 +259,7 @@ export default function SetupSheet({ open, onClose, market, onSuccess }: SetupSh
       const fees = await estimateCappedFees(publicClient);
       fhe.setStep(FHEStepStatus.SENDING);
 
-      const routerAbi = CREDIT_ROUTER_ABI as any;
+      const routerAbi = CREDIT_ROUTER_ABI as Abi;
 
       if (stealthToggle) {
         // Announce a stealth address (derive from user key; simplified here to use same address + random metadata)
@@ -304,8 +316,8 @@ export default function SetupSheet({ open, onClose, market, onSuccess }: SetupSh
       fhe.setStep(FHEStepStatus.READY);
       setStep("done");
       onSuccess?.();
-    } catch (e: any) {
-      setError(e?.shortMessage ?? e?.message ?? "Setup failed");
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, "Setup failed"));
       fhe.setStep(FHEStepStatus.IDLE);
     } finally {
       setBusy(false);
@@ -379,19 +391,20 @@ export default function SetupSheet({ open, onClose, market, onSuccess }: SetupSh
                         <p className="text-sm text-muted-foreground mb-4">
                           Private money from Pay builds private reputation, then unlocks private Credit inside one ocUSDC system.
                         </p>
-                        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-5">Pay-backed ocUSDC · beta liquidity pool · no faucet</p>
+                        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-5">Already have ocUSDC? Continue. Need private USDC? Open Pay first.</p>
+                        <button
+                          onClick={() => setStep("borrow")}
+                          className="btn-pay btn-pay-emerald w-full py-3 flex items-center justify-center gap-2 text-sm font-semibold"
+                        >
+                          Continue with private USDC
+                        </button>
                         <button
                           type="button"
                           onClick={openPay}
-                          className="btn-pay btn-pay-emerald w-full py-3 flex items-center justify-center gap-2"
+                          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[hsl(var(--dash-forest))]/20 bg-background px-4 py-3 text-sm font-medium text-foreground transition-colors hover:border-[hsl(var(--dash-forest))]/40 hover:bg-muted"
                         >
-                          <ExternalLink className="w-4 h-4" /> Open Pay
-                        </button>
-                        <button
-                          onClick={() => setStep("borrow")}
-                          className="w-full mt-2 py-2 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          Continue with private USDC
+                          <ExternalLink className="w-4 h-4" />
+                          I do not have ocUSDC — open Pay
                         </button>
                       </>
                     ) : (

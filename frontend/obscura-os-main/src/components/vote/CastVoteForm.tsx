@@ -6,8 +6,12 @@ import { useAccount, useReadContract, usePublicClient, useWalletClient } from "w
 import { useEncryptedVote } from "@/hooks/useEncryptedVote";
 import { useProposalCount, useProposal, useProposalOptions, useHasVoted } from "@/hooks/useProposals";
 import { OBSCURA_TOKEN_ABI, OBSCURA_TOKEN_ADDRESS, OBSCURA_VOTE_ABI, OBSCURA_VOTE_ADDRESS } from "@/config/contracts";
-import AsyncStepper from "@/components/shared/AsyncStepper";
 import { FHEStepStatus } from "@/lib/constants";
+import {
+  VoteTxFHEProgress,
+  VoteTxSummaryCard,
+  VoteTxValueBadge,
+} from "@/components/vote/VoteTransactionFlow";
 import { initFHEClient } from "@/lib/fhe";
 
 import { useChainTime } from "@/hooks/useChainTime";
@@ -45,7 +49,7 @@ export default function CastVoteForm({ initialProposalId = "", embedded = false,
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
-  const { castVote, txHash, isTxPending, status, stepIndex, error: fheError, reset } = useEncryptedVote();
+  const { castVote, txHash, isTxPending, status, error: fheError, reset } = useEncryptedVote();
   const { data: count } = useProposalCount();
   const proposalCount = Number(count ?? 0);
   const now = useChainTime();
@@ -275,13 +279,23 @@ export default function CastVoteForm({ initialProposalId = "", embedded = false,
           </VoteFormField>
         )}
 
-        {/* FHE stepper */}
-        {status !== FHEStepStatus.IDLE && (
-          <AsyncStepper
-            status={status}
-            stepIndex={stepIndex}
-            labels={["Encrypting Vote", "Submitting TX", "Vote Recorded"]}
+        {selectedOption !== null && optionLabels && status === FHEStepStatus.IDLE && !txHash && (
+          <VoteTxSummaryCard
+            title="Confirm private vote"
+            subtitle="Review before your wallet opens"
+            badges={["private", "gas_only"]}
+            valueBadge={<VoteTxValueBadge gasNote="network gas only" />}
+            rows={[
+              { label: "Proposal", value: proposal?.title ? `#${selectedProposal} · ${proposal.title}` : `#${selectedProposal}` },
+              { label: "Your choice", value: (optionLabels as string[])[selectedOption] ?? `Option ${selectedOption + 1}` },
+              { label: "Vote weight", value: String(effectiveWeight) },
+              { label: "Privacy", value: "Encrypted ballot · aggregate totals only at finalization" },
+            ]}
           />
+        )}
+
+        {status !== FHEStepStatus.IDLE && (
+          <VoteTxFHEProgress status={status} error={fheError} />
         )}
 
         {/* Error */}

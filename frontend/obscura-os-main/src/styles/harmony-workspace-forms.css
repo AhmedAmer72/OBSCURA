@@ -607,6 +607,72 @@
   box-shadow: var(--dash-shadow-input-focus) !important;
 }
 
+.obscura-app.dash-premium .vote-create-form {
+  --vote-create-surface: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(145 30% 98%) 100%);
+}
+
+.obscura-app.dash-premium .vote-create-form > .rounded-2xl.border,
+.obscura-app.dash-premium .vote-create-step-card {
+  border-color: hsl(var(--dash-forest) / 0.16) !important;
+  background: var(--vote-create-surface) !important;
+  box-shadow: var(--dash-surface-shadow-sm);
+}
+
+.obscura-app.dash-premium .vote-create-form input.pay-input,
+.obscura-app.dash-premium .vote-create-form textarea.pay-input,
+.obscura-app.dash-premium .vote-create-form select.pay-select {
+  min-height: 3rem;
+  border: 1px solid hsl(var(--dash-forest) / 0.18) !important;
+  background: hsl(0 0% 100%) !important;
+  color: hsl(var(--foreground)) !important;
+  box-shadow: var(--dash-shadow-input);
+}
+
+.obscura-app.dash-premium .vote-create-form textarea.pay-input {
+  min-height: 4.75rem;
+}
+
+.obscura-app.dash-premium .vote-create-form input.pay-input::placeholder,
+.obscura-app.dash-premium .vote-create-form textarea.pay-input::placeholder {
+  color: hsl(var(--dash-forest) / 0.44) !important;
+}
+
+.obscura-app.dash-premium .vote-create-form input.pay-input:focus,
+.obscura-app.dash-premium .vote-create-form textarea.pay-input:focus,
+.obscura-app.dash-premium .vote-create-form select.pay-select:focus {
+  border-color: hsl(var(--dash-forest) / 0.5) !important;
+  box-shadow: var(--dash-shadow-input-focus) !important;
+}
+
+.obscura-app.dash-premium .vote-create-form .vote-create-pill {
+  border-color: hsl(var(--dash-forest) / 0.18);
+  background: hsl(0 0% 100%);
+  box-shadow: var(--dash-shadow-input);
+}
+
+.obscura-app.dash-premium .vote-create-form .vote-create-pill:hover {
+  border-color: hsl(var(--dash-forest) / 0.28);
+  background: hsl(var(--dash-mint) / 0.75);
+}
+
+.obscura-app.dash-premium .vote-create-form .vote-create-pill--active {
+  border-color: hsl(var(--dash-forest)) !important;
+  background: hsl(var(--dash-forest)) !important;
+  color: hsl(96 18% 97%) !important;
+  box-shadow: var(--dash-shadow-btn);
+}
+
+.obscura-app.dash-premium .vote-tx-summary {
+  border-color: hsl(var(--dash-forest) / 0.16) !important;
+  background: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(145 30% 98%) 100%);
+  box-shadow: var(--dash-surface-shadow-sm);
+}
+
+.obscura-app.dash-premium .vote-tx-flow .vote-tx-stepper,
+.obscura-app.dash-premium .vote-tx-flow .harmony-fhe-stepper {
+  box-shadow: var(--dash-shadow-input);
+}
+
 @media (max-width: 639px) {
   .obscura-app .vote-harmony-panel .rounded-2xl.hairline.bg-card {
     padding: 1rem;

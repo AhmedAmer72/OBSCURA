@@ -14,7 +14,6 @@ import {
 import { useAccount, useWriteContract, usePublicClient, useReadContract } from "wagmi";
 import { useIsArbitrumSepolia } from "@/hooks/useWalletSessionChainId";
 import { OBSCURA_VOTE_ABI, OBSCURA_VOTE_ADDRESS, OBSCURA_TOKEN_ABI, OBSCURA_TOKEN_ADDRESS } from "@/config/contracts";
-import { CATEGORY_LABELS } from "@/hooks/useProposals";
 import { arbitrumSepolia } from "viem/chains";
 import { useChainTime } from "@/hooks/useChainTime";
 import {
@@ -23,6 +22,14 @@ import {
   VoteWizardSteps,
   vh,
 } from "@/components/harmony/voteHarmonyUi";
+import { CATEGORY_LABELS } from "@/hooks/useProposals";
+import { useVoteTransactionFlow } from "@/hooks/useVoteTransactionFlow";
+import {
+  VoteTxSuccess,
+  VoteTxSummaryCard,
+  VoteTxValueBadge,
+  VoteTxWalletProgress,
+} from "@/components/vote/VoteTransactionFlow";
 
 const TEMPLATES = [
   { label: "Yes / No", options: ["Yes", "No"] },
@@ -64,6 +71,7 @@ export default function CreateProposalForm({ onSuccess, embedded = false }: Crea
   const { isWrongNetwork, sessionChainId } = useIsArbitrumSepolia();
   const publicClient = usePublicClient();
   const { writeContractAsync, isPending } = useWriteContract();
+  const txFlow = useVoteTransactionFlow();
 
   const { data: lastClaimRaw } = useReadContract({
     address: OBSCURA_TOKEN_ADDRESS,
@@ -185,11 +193,13 @@ export default function CreateProposalForm({ onSuccess, embedded = false }: Crea
     const deadlineUnix = getDeadlineUnix();
 
     try {
+      txFlow.startPrepare();
       const block = await publicClient!.getBlock();
       const baseFee = block.baseFeePerGas ?? 20_000_000n;
       const maxFeePerGas = baseFee * 3n;
       const maxPriorityFeePerGas = baseFee;
 
+      txFlow.startWallet();
       const hash = await writeContractAsync({
         address: OBSCURA_VOTE_ADDRESS!,
         abi: OBSCURA_VOTE_ABI,
@@ -210,12 +220,14 @@ export default function CreateProposalForm({ onSuccess, embedded = false }: Crea
       });
 
       setIsConfirming(true);
+      txFlow.startConfirm(hash);
       const receipt = await publicClient!.waitForTransactionReceipt({ hash });
       if (receipt.status !== "success") {
         throw new Error("Proposal creation transaction reverted");
       }
 
       setTxHash(hash);
+      txFlow.complete();
       setTitle("");
       setDescription("");
       setOptions(["Yes", "No"]);
@@ -224,7 +236,9 @@ export default function CreateProposalForm({ onSuccess, embedded = false }: Crea
       setStep(0);
       window.setTimeout(() => onSuccess?.(), 1200);
     } catch (err: unknown) {
-      setError(formatWriteError(err, "Failed to create proposal"));
+      const msg = formatWriteError(err, "Failed to create proposal");
+      setError(msg);
+      txFlow.fail(msg);
     } finally {
       setIsConfirming(false);
     }
@@ -234,7 +248,7 @@ export default function CreateProposalForm({ onSuccess, embedded = false }: Crea
   const durationLabel = DURATION_PRESETS[selectedDuration].label;
 
   return (
-    <div className="space-y-5">
+    <div className="vote-create-form space-y-5">
       {!embedded && (
         <VotePanelHeader
           icon={Plus}
@@ -260,7 +274,7 @@ export default function CreateProposalForm({ onSuccess, embedded = false }: Crea
         )}
 
         {step === 0 && (
-          <div className="space-y-4 rounded-2xl border border-border bg-muted/25 p-4 sm:p-5">
+          <div className="vote-create-step-card space-y-5 rounded-2xl border p-4 sm:p-5">
             <VoteFormField label="Start from a template" hint="Pick a common format or customize later.">
               <div className="flex flex-wrap gap-2">
                 {TEMPLATES.map((t, i) => (
@@ -268,10 +282,10 @@ export default function CreateProposalForm({ onSuccess, embedded = false }: Crea
                     key={t.label}
                     type="button"
                     onClick={() => applyTemplate(i)}
-                    className={`min-h-[40px] rounded-full border px-3 py-2 text-xs font-medium transition-colors ${
+                    className={`vote-create-pill min-h-[40px] rounded-full border px-3 py-2 text-xs font-semibold transition-colors ${
                       selectedTemplate === i
-                        ? "border-[hsl(var(--success))]/40 bg-[hsl(var(--accent))]/12 text-foreground"
-                        : "hairline text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                        ? "vote-create-pill--active"
+                        : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     {t.label}
@@ -315,7 +329,7 @@ export default function CreateProposalForm({ onSuccess, embedded = false }: Crea
         )}
 
         {step === 1 && (
-          <div className="space-y-4 rounded-2xl border border-border bg-muted/25 p-4 sm:p-5">
+          <div className="vote-create-step-card space-y-5 rounded-2xl border p-4 sm:p-5">
             <VoteFormField label={`Voting choices (${options.length}/10)`} hint="Voters pick exactly one option. Ballots stay private.">
               <div className="space-y-2">
                 {options.map((opt, i) => (
@@ -336,7 +350,7 @@ export default function CreateProposalForm({ onSuccess, embedded = false }: Crea
                       <button
                         type="button"
                         onClick={() => removeOption(i)}
-                        className="grid h-10 w-10 shrink-0 place-items-center rounded-lg hairline text-muted-foreground hover:text-destructive"
+                        className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-border bg-white text-muted-foreground shadow-[var(--dash-shadow-input)] hover:border-destructive/30 hover:text-destructive"
                         aria-label={`Remove option ${i + 1}`}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -363,7 +377,7 @@ export default function CreateProposalForm({ onSuccess, embedded = false }: Crea
                   <button
                     type="button"
                     onClick={addOption}
-                    className="shrink-0 rounded-full hairline px-4 text-sm font-medium hover:bg-muted/60"
+                    className="shrink-0 rounded-full border border-[hsl(var(--dash-forest)/0.26)] bg-white px-4 text-sm font-semibold text-[hsl(var(--dash-forest))] shadow-[var(--dash-shadow-input)] hover:bg-[hsl(var(--dash-mint))]"
                   >
                     Add
                   </button>
@@ -374,7 +388,7 @@ export default function CreateProposalForm({ onSuccess, embedded = false }: Crea
         )}
 
         {step === 2 && (
-          <div className="space-y-4 rounded-2xl border border-border bg-muted/25 p-4 sm:p-5">
+          <div className="vote-create-step-card space-y-5 rounded-2xl border p-4 sm:p-5">
             <VoteFormField label="Category">
               <select value={category} onChange={(e) => setCategory(Number(e.target.value))} className="pay-select">
                 {CATEGORY_LABELS.map((label, i) => (
@@ -392,10 +406,10 @@ export default function CreateProposalForm({ onSuccess, embedded = false }: Crea
                     key={d.label}
                     type="button"
                     onClick={() => setSelectedDuration(i)}
-                    className={`min-h-[40px] rounded-full border px-3 py-2 text-xs font-medium transition-colors ${
+                    className={`vote-create-pill min-h-[40px] rounded-full border px-3 py-2 text-xs font-semibold transition-colors ${
                       selectedDuration === i
-                        ? "border-[hsl(var(--success))]/40 bg-[hsl(var(--accent))]/12 text-foreground"
-                        : "hairline text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                        ? "vote-create-pill--active"
+                        : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     {d.label}
@@ -425,53 +439,38 @@ export default function CreateProposalForm({ onSuccess, embedded = false }: Crea
         )}
 
         {step === 3 && (
-          <div className="space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-5">
-            <p className="text-sm font-medium text-foreground">Review before publishing</p>
-            <dl className="space-y-3 text-sm">
-              <div className="rounded-xl hairline bg-muted/35 px-3 py-2.5">
-                <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">Title</dt>
-                <dd className="mt-1 font-medium text-foreground">{title.trim() || "—"}</dd>
-              </div>
-              {description.trim() && (
-                <div className="rounded-xl hairline bg-muted/35 px-3 py-2.5">
-                  <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">Description</dt>
-                  <dd className="mt-1 text-muted-foreground">{description.trim()}</dd>
-                </div>
-              )}
-              <div className="rounded-xl hairline bg-muted/35 px-3 py-2.5">
-                <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">Choices</dt>
-                <dd className="mt-1 flex flex-wrap gap-1.5">
-                  {options.map((o, i) => (
-                    <span key={i} className="rounded-full hairline bg-background px-2.5 py-0.5 text-xs">
-                      {o}
-                    </span>
-                  ))}
-                </dd>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-xl hairline bg-muted/35 px-3 py-2.5">
-                  <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">Category</dt>
-                  <dd className="mt-1 font-medium">{CATEGORY_LABELS[category]}</dd>
-                </div>
-                <div className="rounded-xl hairline bg-muted/35 px-3 py-2.5">
-                  <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">Duration</dt>
-                  <dd className="mt-1 font-medium">{durationLabel}</dd>
-                </div>
-                <div className="rounded-xl hairline bg-muted/35 px-3 py-2.5">
-                  <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">Quorum</dt>
-                  <dd className="mt-1 font-medium">{quorum || "0"}</dd>
-                </div>
-              </div>
-              {deadlinePreview > 0n && (
-                <p className="text-xs text-muted-foreground">
-                  Closes {new Date(Number(deadlinePreview) * 1000).toLocaleString()}
-                </p>
-              )}
-            </dl>
+          <VoteTxSummaryCard
+            title="Publish private proposal"
+            subtitle="Review all fields before your wallet opens"
+            badges={["private", "gas_only"]}
+            valueBadge={<VoteTxValueBadge gasNote="network gas only" />}
+            rows={[
+              { label: "Title", value: title.trim() || "—" },
+              ...(description.trim()
+                ? [{ label: "Description", value: description.trim().slice(0, 120) + (description.length > 120 ? "…" : "") }]
+                : []),
+              { label: "Choices", value: options.join(" · ") },
+              { label: "Category", value: CATEGORY_LABELS[category] },
+              { label: "Duration", value: durationLabel },
+              { label: "Quorum", value: quorum || "0" },
+              ...(deadlinePreview > 0n
+                ? [{ label: "Closes", value: new Date(Number(deadlinePreview) * 1000).toLocaleString() }]
+                : []),
+              { label: "Contract", value: OBSCURA_VOTE_ADDRESS ? `${OBSCURA_VOTE_ADDRESS.slice(0, 10)}…` : "—", mono: true },
+            ]}
+          >
             <p className="text-xs leading-relaxed text-muted-foreground">
               After publishing, voters can cast encrypted ballots until the deadline. Only aggregate totals are revealed at finalization.
             </p>
-          </div>
+          </VoteTxSummaryCard>
+        )}
+
+        {(txFlow.phase !== "idle" || isPending || isConfirming) && step === 3 && (
+          <VoteTxWalletProgress
+            phase={txFlow.phase !== "idle" ? txFlow.phase : isPending ? "wallet" : isConfirming ? "confirm" : "idle"}
+            txHash={txHash}
+            error={error}
+          />
         )}
 
         {error && (
@@ -481,19 +480,12 @@ export default function CreateProposalForm({ onSuccess, embedded = false }: Crea
           </div>
         )}
 
-        {txHash && (
-          <div className="flex items-center gap-2 rounded-xl border border-[hsl(var(--success))]/25 bg-[hsl(var(--accent))]/10 p-3 text-sm text-foreground">
-            <CheckCircle className="h-4 w-4 shrink-0 text-[hsl(var(--success))]" />
-            <span>Proposal confirmed!</span>
-            <a
-              href={`https://sepolia.arbiscan.io/tx/${txHash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ml-auto inline-flex items-center gap-1 text-[hsl(var(--success))] hover:underline"
-            >
-              Arbiscan <ExternalLink className="h-3 w-3" />
-            </a>
-          </div>
+        {txHash && txFlow.phase === "done" && (
+          <VoteTxSuccess
+            title="Proposal published"
+            message="Your private proposal is live. Voters can now cast encrypted ballots."
+            txHash={txHash}
+          />
         )}
 
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
@@ -501,7 +493,7 @@ export default function CreateProposalForm({ onSuccess, embedded = false }: Crea
             <button
               type="button"
               onClick={goBack}
-              className="inline-flex h-11 min-h-[44px] items-center justify-center gap-2 rounded-full hairline px-5 text-sm font-medium hover:bg-muted/60"
+              className="inline-flex h-11 min-h-[44px] items-center justify-center gap-2 rounded-full border border-[hsl(var(--dash-forest)/0.18)] bg-white px-5 text-sm font-semibold text-[hsl(var(--dash-forest))] shadow-[var(--dash-shadow-input)] hover:bg-[hsl(var(--dash-mint))]"
             >
               <ChevronLeft className="h-4 w-4" />
               Back
@@ -514,7 +506,7 @@ export default function CreateProposalForm({ onSuccess, embedded = false }: Crea
             <button
               type="button"
               onClick={goNext}
-              className="inline-flex h-11 min-h-[44px] items-center justify-center gap-2 rounded-full bg-foreground px-5 text-sm font-medium text-background"
+              className="inline-flex h-11 min-h-[44px] items-center justify-center gap-2 rounded-full bg-[hsl(var(--dash-forest))] px-5 text-sm font-semibold text-[hsl(96_18%_97%)] shadow-[var(--dash-shadow-btn)] hover:bg-[hsl(var(--dash-forest-hover))]"
             >
               Continue
               <ChevronRight className="h-4 w-4" />
@@ -525,7 +517,7 @@ export default function CreateProposalForm({ onSuccess, embedded = false }: Crea
               disabled={!isConnected || !hasClaimed || isPending || isConfirming || !OBSCURA_VOTE_ADDRESS || isWrongNetwork}
               whileHover={{ scale: 1.005 }}
               whileTap={{ scale: 0.99 }}
-              className="inline-flex h-12 min-h-[48px] w-full items-center justify-center rounded-full bg-foreground px-6 text-base font-semibold text-background disabled:opacity-50 sm:w-auto"
+              className="inline-flex h-12 min-h-[48px] w-full items-center justify-center rounded-full bg-[hsl(var(--dash-forest))] px-6 text-base font-semibold text-[hsl(96_18%_97%)] shadow-[var(--dash-shadow-btn)] hover:bg-[hsl(var(--dash-forest-hover))] disabled:opacity-50 sm:w-auto"
             >
               {!isConnected
                 ? "Connect wallet"

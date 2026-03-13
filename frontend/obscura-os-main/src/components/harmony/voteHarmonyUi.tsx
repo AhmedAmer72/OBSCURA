@@ -16,10 +16,6 @@ export const vh = {
   notice: "dash-card p-4 flex gap-3 text-sm leading-relaxed text-foreground/75",
   noticeWarn:
     "rounded-xl border border-amber-500/30 bg-amber-50 p-4 flex gap-3 text-sm leading-relaxed text-amber-950",
-  tabRow: "flex gap-1 rounded-full border border-border bg-muted/50 p-1",
-  tabBtn: "flex-1 rounded-full px-4 py-2.5 text-sm font-medium transition-colors",
-  tabActive: "bg-[hsl(var(--dash-mint))] text-foreground border border-[hsl(var(--dash-mint-border))]",
-  tabIdle: "text-muted-foreground hover:text-foreground",
   listCard: "rounded-2xl border border-border bg-white p-5 shadow-[var(--dash-surface-shadow-sm)]",
   section: "overflow-hidden rounded-2xl border border-border bg-white shadow-[var(--dash-surface-shadow)]",
   sectionHead: "border-b border-border bg-muted/20 px-5 py-4",
@@ -89,18 +85,22 @@ export function VoteTabs<T extends string>({
   onChange: (k: T) => void;
 }) {
   return (
-    <div className={vh.tabRow}>
-      {tabs.map((t) => (
-        <button
-          key={t.key}
-          type="button"
-          onClick={() => onChange(t.key)}
-          className={`${vh.tabBtn} ${active === t.key ? vh.tabActive : vh.tabIdle}`}
-        >
-          {t.label}
-        </button>
-      ))}
-    </div>
+    <nav className="app-workspace-tabs app-workspace-tabs--sub w-full" aria-label="Sections">
+      {tabs.map((t) => {
+        const isActive = active === t.key;
+        return (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => onChange(t.key)}
+            className={cn("app-workspace-tab min-w-0", isActive && "app-workspace-tab-active")}
+            aria-current={isActive ? "page" : undefined}
+          >
+            {t.label}
+          </button>
+        );
+      })}
+    </nav>
   );
 }
 

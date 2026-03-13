@@ -1,21 +1,84 @@
 /**
  * CreditAlertDrawer — bell icon + slide-over panel listing alerts.
  *
- * Categories are color-coded; "Mark all read" + "Clear" + "Enable notifications"
- * controls are inline.
+ * Uses HarmonyDrawer + dash-premium styling so alerts match the Credit workspace.
  */
-import { Bell, BellOff, ShieldAlert, Gavel, Droplet, TrendingUp, Info, CheckCheck, Trash2 } from "lucide-react";
-import { useState } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useCreditAlerts, type AlertCategory } from "@/hooks/useCreditAlerts";
+import {
+  Bell,
+  BellOff,
+  CheckCheck,
+  Droplet,
+  Gavel,
+  Info,
+  ShieldAlert,
+  Trash2,
+  TrendingUp,
+} from "lucide-react";
+import { useState, type ElementType } from "react";
+import { HarmonyDrawer } from "@/components/harmony/harmony-ui";
+import { useCreditAlerts, type AlertCategory, type CreditAlert } from "@/hooks/useCreditAlerts";
+import { cn } from "@/lib/utils";
 
-const CATEGORY: Record<AlertCategory, { icon: React.ElementType; color: string; tint: string }> = {
-  liquidation: { icon: ShieldAlert, color: "text-destructive",          tint: "bg-destructive/10 border-destructive/25" },
-  auction:     { icon: Gavel,       color: "text-amber-700",            tint: "bg-amber-500/10 border-amber-500/25" },
-  faucet:      { icon: Droplet,     color: "text-[hsl(var(--accent))]", tint: "bg-accent/10 border-accent/25" },
-  interest:    { icon: TrendingUp,  color: "text-[hsl(var(--success))]", tint: "bg-accent/10 border-accent/25" },
-  info:        { icon: Info,        color: "text-muted-foreground",     tint: "bg-muted/50 border-border" },
+type AlertPresentation = {
+  icon: ElementType;
+  iconWrap: string;
+  badge: string;
+  border: string;
 };
+
+function getAlertPresentation(alert: CreditAlert): AlertPresentation {
+  if (alert.category === "liquidation") {
+    if (alert.severity === "critical") {
+      return {
+        icon: ShieldAlert,
+        iconWrap: "border-red-500/20 bg-red-500/8 text-red-600",
+        badge: "border-red-500/20 bg-red-500/8 text-red-700",
+        border: "border-red-500/15",
+      };
+    }
+    return {
+      icon: ShieldAlert,
+      iconWrap: "border-amber-500/25 bg-amber-500/10 text-amber-700",
+      badge: "border-amber-500/25 bg-amber-500/10 text-amber-800",
+      border: "border-amber-500/20",
+    };
+  }
+
+  const byCategory: Record<AlertCategory, AlertPresentation> = {
+    liquidation: {
+      icon: ShieldAlert,
+      iconWrap: "border-amber-500/25 bg-amber-500/10 text-amber-700",
+      badge: "border-amber-500/25 bg-amber-500/10 text-amber-800",
+      border: "border-amber-500/20",
+    },
+    auction: {
+      icon: Gavel,
+      iconWrap: "border-[hsl(var(--dash-forest)/0.18)] bg-[hsl(var(--dash-mint)/0.75)] text-[hsl(var(--dash-forest))]",
+      badge: "border-[hsl(var(--dash-forest)/0.18)] bg-[hsl(var(--dash-mint)/0.8)] text-[hsl(var(--dash-forest))]",
+      border: "border-[hsl(var(--dash-forest)/0.12)]",
+    },
+    faucet: {
+      icon: Droplet,
+      iconWrap: "border-[hsl(var(--dash-forest)/0.18)] bg-[hsl(var(--dash-mint)/0.75)] text-[hsl(var(--dash-forest))]",
+      badge: "border-[hsl(var(--dash-forest)/0.18)] bg-[hsl(var(--dash-mint)/0.8)] text-[hsl(var(--dash-forest))]",
+      border: "border-[hsl(var(--dash-forest)/0.12)]",
+    },
+    interest: {
+      icon: TrendingUp,
+      iconWrap: "border-[hsl(var(--success)/0.25)] bg-[hsl(var(--success)/0.08)] text-[hsl(var(--success))]",
+      badge: "border-[hsl(var(--success)/0.25)] bg-[hsl(var(--success)/0.08)] text-[hsl(var(--success))]",
+      border: "border-[hsl(var(--success)/0.18)]",
+    },
+    info: {
+      icon: Info,
+      iconWrap: "border-border bg-muted/50 text-muted-foreground",
+      badge: "border-border bg-muted/50 text-muted-foreground",
+      border: "border-border/70",
+    },
+  };
+
+  return byCategory[alert.category];
+}
 
 function ago(ts: number): string {
   const s = Math.floor((Date.now() - ts) / 1000);
@@ -36,94 +99,136 @@ export default function CreditAlertDrawer() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="relative flex h-10 w-10 items-center justify-center rounded-full hairline text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="relative grid h-9 w-9 place-items-center rounded-[var(--dash-radius-btn)] border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         aria-label={`${unreadCount} unread alerts`}
       >
-        <Bell className="w-4 h-4" />
+        <Bell className="h-3.5 w-3.5" />
         {unreadCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-medium text-destructive-foreground">
+          <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[hsl(var(--dash-forest))] px-1 text-[9px] font-semibold text-white">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
       </button>
 
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="w-[88vw] sm:w-[400px] bg-card/95 backdrop-blur-2xl border-l border-border p-0 text-foreground">
-          <SheetHeader className="border-b border-border px-5 pb-3 pt-5">
-            <SheetTitle className="flex items-center gap-2 font-mono text-sm uppercase tracking-[0.18em] text-muted-foreground">
-              <Bell className="w-3.5 h-3.5" /> Alerts
-              {unreadCount > 0 && <span className="text-[10px] text-foreground">({unreadCount} new)</span>}
-            </SheetTitle>
-          </SheetHeader>
-
-          <div className="flex items-center gap-2 border-b border-border px-3 py-3 text-[11px]">
+      <HarmonyDrawer
+        open={open}
+        onClose={() => setOpen(false)}
+        eyebrow="Credit · Risk"
+        title={unreadCount > 0 ? `Alerts (${unreadCount} new)` : "Alerts"}
+        width="sm"
+      >
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-2 border-b border-border/70 pb-4">
             <button
               type="button"
               onClick={markAllRead}
               disabled={unreadCount === 0}
-              className="inline-flex items-center gap-1 rounded px-2 py-1 text-muted-foreground hover:text-foreground disabled:opacity-30"
+              className="ref-ghost-action disabled:opacity-40"
             >
-              <CheckCheck className="w-3 h-3" /> Mark read
+              <CheckCheck className="h-3.5 w-3.5" />
+              Mark read
             </button>
             <button
               type="button"
               onClick={clear}
               disabled={alerts.length === 0}
-              className="inline-flex items-center gap-1 rounded px-2 py-1 text-muted-foreground hover:text-destructive disabled:opacity-30"
+              className="ref-ghost-action disabled:opacity-40"
             >
-              <Trash2 className="w-3 h-3" /> Clear
+              <Trash2 className="h-3.5 w-3.5" />
+              Clear
             </button>
             <div className="ml-auto">
               {permission === "granted" ? (
-                <span className="inline-flex items-center gap-1 text-[hsl(var(--success))]">
-                  <Bell className="w-3 h-3" /> Browser notifications on
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--success)/0.25)] bg-[hsl(var(--success)/0.08)] px-2.5 py-1 text-[11px] font-medium text-[hsl(var(--success))]">
+                  <Bell className="h-3 w-3" />
+                  Browser notifications on
                 </span>
               ) : (
                 <button
                   type="button"
                   onClick={() => void requestPermission()}
-                  className="inline-flex items-center gap-1 text-foreground hover:opacity-75"
+                  className="ref-ghost-action"
                 >
-                  <BellOff className="w-3 h-3" /> Enable notifications
+                  <BellOff className="h-3.5 w-3.5" />
+                  Enable notifications
                 </button>
               )}
             </div>
           </div>
 
-          <div className="overflow-y-auto h-[calc(100vh-130px)] px-3 py-3">
-            {alerts.length === 0 ? (
-              <div className="mt-8 text-center text-[12px] text-muted-foreground">
-                <BellOff className="w-6 h-6 mx-auto mb-2 text-muted-foreground/50" />
-                No alerts yet. You'll be notified when your health factor or auctions need attention.
-              </div>
-            ) : (
-              <ul className="grid gap-2">
-                {alerts.map((a) => {
-                  const c = CATEGORY[a.category];
-                  const Icon = c.icon;
-                  return (
-                    <li
-                      key={a.id}
-                      className={`rounded-lg border ${c.tint} p-3 ${a.read ? "opacity-60" : ""}`}
-                    >
-                      <div className="flex items-start gap-2.5">
-                        <Icon className={`w-3.5 h-3.5 mt-0.5 flex-shrink-0 ${c.color}`} />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-baseline justify-between gap-2">
-                            <span className={`text-[12px] font-medium ${c.color}`}>{a.title}</span>
-                            <span className="font-mono text-[9.5px] text-muted-foreground">{ago(a.createdAt)}</span>
+          {alerts.length === 0 ? (
+            <div className="rounded-2xl border border-[hsl(var(--dash-forest)/0.12)] bg-[hsl(var(--dash-mint)/0.45)] px-5 py-8 text-center">
+              <span className="mx-auto grid h-10 w-10 place-items-center rounded-xl border border-[hsl(var(--dash-forest)/0.12)] bg-white/80 text-[hsl(var(--dash-forest))]">
+                <BellOff className="h-4 w-4" />
+              </span>
+              <p className="mt-4 text-sm font-medium text-foreground">No alerts yet</p>
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                You will be notified when your health factor or liquidation auctions need attention.
+              </p>
+            </div>
+          ) : (
+            <ul className="grid gap-3">
+              {alerts.map((alert) => {
+                const presentation = getAlertPresentation(alert);
+                const Icon = presentation.icon;
+
+                return (
+                  <li
+                    key={alert.id}
+                    className={cn(
+                      "relative overflow-hidden rounded-2xl border bg-white/95 p-4 shadow-[0_1px_2px_hsl(var(--dash-forest)/0.08)]",
+                      presentation.border,
+                      alert.read ? "opacity-70" : "border-[hsl(var(--dash-forest)/0.18)]",
+                    )}
+                  >
+                    {!alert.read ? (
+                      <span
+                        className="absolute inset-y-3 left-0 w-0.5 rounded-full bg-[hsl(var(--dash-forest))]"
+                        aria-hidden
+                      />
+                    ) : null}
+
+                    <div className="flex items-start gap-3 pl-1">
+                      <span
+                        className={cn(
+                          "grid h-9 w-9 shrink-0 place-items-center rounded-xl border",
+                          presentation.iconWrap,
+                        )}
+                      >
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <span
+                              className={cn(
+                                "inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]",
+                                presentation.badge,
+                              )}
+                            >
+                              {alert.title}
+                            </span>
                           </div>
-                          <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">{a.body}</p>
+                          <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                            {ago(alert.createdAt)}
+                          </span>
                         </div>
+                        <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
+                          {alert.body}
+                        </p>
                       </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            Alerts stay generic and never include position amounts. Review details from Position or Risk.
+          </p>
+        </div>
+      </HarmonyDrawer>
     </>
   );
 }

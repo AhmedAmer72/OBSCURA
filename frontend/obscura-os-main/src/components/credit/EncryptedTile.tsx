@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 
 interface EncryptedTileProps {
   label: string;
+  description?: string;
   symbol: string;
   displayValue: string | null;
   revealed: boolean;
@@ -19,15 +20,32 @@ interface EncryptedTileProps {
   className?: string;
 }
 
-const ACCENT_CLASSES: Record<string, { text: string; ring: string }> = {
-  emerald: { text: "text-[hsl(var(--success))]", ring: "#34d399" },
-  violet: { text: "text-violet-600", ring: "#7c3aed" },
-  amber: { text: "text-amber-600", ring: "#d97706" },
-  blue: { text: "text-blue-600", ring: "#2563eb" },
+const ACCENT_CLASSES: Record<string, { text: string; ring: string; wash: string }> = {
+  emerald: {
+    text: "text-[hsl(var(--dash-forest))]",
+    ring: "hsl(var(--dash-forest))",
+    wash: "bg-[hsl(var(--dash-mint)/0.7)]",
+  },
+  violet: {
+    text: "text-[hsl(var(--dash-forest))]",
+    ring: "hsl(var(--dash-forest))",
+    wash: "bg-[hsl(var(--dash-mint)/0.55)]",
+  },
+  amber: {
+    text: "text-[hsl(var(--dash-forest))]",
+    ring: "hsl(var(--dash-forest))",
+    wash: "bg-[hsl(var(--dash-mint)/0.55)]",
+  },
+  blue: {
+    text: "text-[hsl(var(--dash-forest))]",
+    ring: "hsl(var(--dash-forest))",
+    wash: "bg-[hsl(var(--dash-mint)/0.55)]",
+  },
 };
 
 export default function EncryptedTile({
   label,
+  description,
   symbol,
   displayValue,
   revealed,
@@ -67,11 +85,18 @@ export default function EncryptedTile({
   const dash = revealed ? circumference * (secondsLeft / revealDurationSec) : circumference;
 
   return (
-    <div className={cn("ref-mini-card flex flex-col gap-2.5 select-none", className)}>
+    <div className={cn("flex min-h-[8.5rem] select-none flex-col gap-3 rounded-2xl border border-[hsl(var(--dash-forest)/0.12)] bg-white/90 p-4 shadow-[0_1px_2px_hsl(var(--dash-forest)/0.08)]", className)}>
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5">
-          <Shield className="h-3 w-3 text-[hsl(var(--success))]/70" />
-          <span className="dash-eyebrow text-[9px]">{label}</span>
+        <div className="flex min-w-0 items-start gap-2">
+          <span className={cn("mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-[hsl(var(--dash-forest)/0.14)]", ac.wash)}>
+            <Shield className={cn("h-3.5 w-3.5", ac.text)} />
+          </span>
+          <div className="min-w-0">
+            <span className="block text-sm font-semibold leading-tight text-foreground">{label}</span>
+            {description ? (
+              <span className="mt-1 block text-[11px] leading-snug text-muted-foreground">{description}</span>
+            ) : null}
+          </div>
         </div>
 
         {revealed && (
@@ -89,7 +114,7 @@ export default function EncryptedTile({
               strokeLinecap="round"
               style={{ transform: "rotate(-90deg)", transformOrigin: "center", transition: "stroke-dasharray 1s linear" }}
             />
-            <text x="13" y="17" textAnchor="middle" fontSize="7" fill="hsl(var(--muted-foreground))" fontFamily="Inter, sans-serif">
+            <text x="13" y="17" textAnchor="middle" fontSize="7" fill="hsl(var(--dash-forest))" fontFamily="Inter, sans-serif">
               {secondsLeft}
             </text>
           </svg>
@@ -135,9 +160,9 @@ export default function EncryptedTile({
         <button
           type="button"
           onClick={onReveal}
-          className="inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+          className="mt-auto inline-flex items-center gap-1.5 text-[12px] font-medium text-[hsl(var(--dash-forest)/0.75)] transition-colors hover:text-[hsl(var(--dash-forest))]"
         >
-          <Eye className="h-3 w-3" /> Tap to reveal
+          <Eye className="h-3.5 w-3.5" /> Reveal sealed value
         </button>
       )}
 
@@ -145,9 +170,9 @@ export default function EncryptedTile({
         <button
           type="button"
           onClick={onExpire}
-          className="inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+          className="mt-auto inline-flex items-center gap-1.5 text-[12px] font-medium text-[hsl(var(--dash-forest)/0.75)] transition-colors hover:text-[hsl(var(--dash-forest))]"
         >
-          <EyeOff className="h-3 w-3" /> Hide
+          <EyeOff className="h-3.5 w-3.5" /> Hide value
         </button>
       )}
     </div>

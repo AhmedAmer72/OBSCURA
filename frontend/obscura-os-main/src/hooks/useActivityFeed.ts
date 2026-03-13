@@ -102,6 +102,34 @@ export const VOTE_ACTIVITY_EVENT_NAMES = [
   ]),
 ];
 
+function eventMatchesAnyPrefix(eventName: string, prefixes: string[]) {
+  return prefixes.some((prefix) => eventName === prefix || eventName.startsWith(`${prefix}.`));
+}
+
+export function isCreditActivityEvent(eventName: string) {
+  return (
+    CREDIT_ACTIVITY_EVENT_NAMES.includes(eventName) ||
+    eventMatchesAnyPrefix(eventName, [
+      ...CREDIT_MARKET_PREFIXES,
+      ...CREDIT_VAULT_PREFIXES,
+      ...CREDIT_AUCTION_PREFIXES,
+      ...CREDIT_SCORE_PREFIXES,
+    ])
+  );
+}
+
+export function isVoteActivityEvent(eventName: string) {
+  return (
+    VOTE_ACTIVITY_EVENT_NAMES.includes(eventName) ||
+    eventMatchesAnyPrefix(eventName, [
+      "ObscuraVote",
+      "ObscuraGovernor",
+      "ObscuraTreasury",
+      "ObscuraRewards",
+    ])
+  );
+}
+
 interface UseActivityFeedResult {
   items:      ActivityItem[];
   isLoading:  boolean;
@@ -142,7 +170,8 @@ export function useActivityFeed(initialFilter: ActivityEventType = "all"): UseAc
 
     try {
       const params = new URLSearchParams();
-      if (filter !== "all") params.set("filter", filter);
+      const serverFilter = filter === "credit" || filter === "vote" ? "all" : filter;
+      if (serverFilter !== "all") params.set("filter", serverFilter);
       if (pageIndex > 0) params.set("page", String(pageIndex));
       params.set("pageSize", String(PAGE_SIZE));
       const qs = params.toString();

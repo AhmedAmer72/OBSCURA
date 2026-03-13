@@ -23,6 +23,8 @@ import {
 import { useAccount } from "wagmi";
 import {
   useActivityFeed,
+  isCreditActivityEvent,
+  isVoteActivityEvent,
   type ActivityEventType,
   type ActivityItem,
 } from "@/hooks/useActivityFeed";
@@ -229,8 +231,16 @@ export function ActivityFeed({
   }, [mode, filter, setFilter]);
 
   const visibleItems = useMemo(
-    () => filterActivityByPrivacyMode(items, mode),
-    [items, mode],
+    () => {
+      const scopedItems =
+        filter === "credit"
+          ? items.filter((item) => isCreditActivityEvent(item.event_name))
+          : filter === "vote"
+            ? items.filter((item) => isVoteActivityEvent(item.event_name))
+            : items;
+      return filterActivityByPrivacyMode(scopedItems, mode);
+    },
+    [items, mode, filter],
   );
   const isEmpty = !isLoading && visibleItems.length === 0;
   const allowedFilters = filters ? new Set(filters) : null;

@@ -27,7 +27,7 @@ import {
   TimerReset,
 } from "lucide-react";
 import { useAccount } from "wagmi";
-import { encodeFunctionData, isAddress } from "viem";
+import { encodeFunctionData, formatEther, isAddress } from "viem";
 import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
@@ -36,7 +36,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { VoteKpi, VoteTabs, vh } from "@/components/harmony/voteHarmonyUi";
+import { VoteKpi, vh } from "@/components/harmony/voteHarmonyUi";
+import {
+  VoteTxConfirmBlock,
+  VoteTxSuccess,
+  VoteTxSummaryCard,
+  VoteTxValueBadge,
+  VoteTxWalletProgress,
+} from "@/components/vote/VoteTransactionFlow";
 
 import {
   OBSCURA_GOVERNOR_ADDRESS,
@@ -123,7 +130,7 @@ const VotesBar = ({
   );
 };
 
-const ProposalCard = ({ row }: { row: ProposalRow }) => {
+const ProposalCard = ({ row, voterWeight }: { row: ProposalRow; voterWeight: string }) => {
   const { label, refetch: refetchState } = useProposalState(row.proposalId);
   const { for: f, against, abstain, refetch: refetchVotes } = useProposalVotes(row.proposalId);
   const { hasVoted, refetch: refetchVoted } = useHasVotedGovernor(row.proposalId);
@@ -131,40 +138,64 @@ const ProposalCard = ({ row }: { row: ProposalRow }) => {
   const { queue, isPending: queueing } = useQueueProposal();
   const { execute, isPending: executing } = useExecuteProposal();
   const [confirmAction, setConfirmAction] = useState<"queue" | "execute" | null>(null);
+  const [pendingVoteSupport, setPendingVoteSupport] = useState<0 | 1 | 2 | null>(null);
+  const [actionTxHash, setActionTxHash] = useState<string | null>(null);
+  const [actionKind, setActionKind] = useState<"vote" | "queue" | "execute" | null>(null);
+
+  const votePhase = voting ? "wallet" as const : actionKind === "vote" && actionTxHash ? "done" as const : "idle" as const;
+  const queuePhase = queueing ? "wallet" as const : actionKind === "queue" && actionTxHash ? "done" as const : "idle" as const;
+  const executePhase = executing ? "wallet" as const : actionKind === "execute" && actionTxHash ? "done" as const : "idle" as const;
+
+  const supportLabel = (s: 0 | 1 | 2) => (s === 1 ? "For" : s === 0 ? "Against" : "Abstain");
+  const ethValuesTotal = row.values.reduce((sum, v) => sum + v, 0n);
+  const ethValuesLabel = ethValuesTotal > 0n ? formatEther(ethValuesTotal) : "0";
 
   const { title, body } = parseProposalDescription(row.description);
   const idStr = `0x${row.proposalId.toString(16).slice(0, 12)}…`;
 
   const doVote = async (support: 0 | 1 | 2) => {
     try {
+      setActionKind("vote");
+      setActionTxHash(null);
       const hash = await castVote(row.proposalId, support);
+      setActionTxHash(hash);
       toast.success("Vote cast", { description: `tx ${hash.slice(0, 10)}…` });
+      setPendingVoteSupport(null);
       refetchVoted();
       refetchVotes();
       refetchState();
     } catch (e) {
+      setActionKind(null);
       toast.error("Vote failed", { description: (e as Error).message });
     }
   };
 
   const doQueue = async () => {
     try {
+      setActionKind("queue");
+      setActionTxHash(null);
       const hash = await queue(row);
+      setActionTxHash(hash);
       toast.success("Queued in timelock", { description: `tx ${hash.slice(0, 10)}…` });
       setConfirmAction(null);
       refetchState();
     } catch (e) {
+      setActionKind(null);
       toast.error("Queue failed", { description: (e as Error).message });
     }
   };
 
   const doExecute = async () => {
     try {
+      setActionKind("execute");
+      setActionTxHash(null);
       const hash = await execute(row);
+      setActionTxHash(hash);
       toast.success("Executed", { description: `tx ${hash.slice(0, 10)}…` });
       setConfirmAction(null);
       refetchState();
     } catch (e) {
+      setActionKind(null);
       toast.error("Execute failed", { description: (e as Error).message });
     }
   };
@@ -242,23 +273,45 @@ const ProposalCard = ({ row }: { row: ProposalRow }) => {
 
         <Separator className="bg-muted/60" />
 
+        {pendingVoteSupport !== null && (
+          <VoteTxSummaryCard
+            title="Cast Governor vote"
+            subtitle="Public on-chain vote — your support choice is visible"
+            badges={["public", "gas_only"]}
+            valueBadge={<VoteTxValueBadge gasNote="network gas only" />}
+            rows={[
+              { label: "Proposal", value: title || idStr },
+              { label: "Support", value: supportLabel(pendingVoteSupport) },
+              { label: "Your weight", value: voterWeight },
+            ]}
+          >
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" onClick={() => doVote(pendingVoteSupport)} disabled={voting}>
+                {voting ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : null}
+                Confirm vote
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setPendingVoteSupport(null)}>Cancel</Button>
+            </div>
+            <VoteTxWalletProgress phase={votePhase} txHash={actionKind === "vote" ? actionTxHash : null} />
+          </VoteTxSummaryCard>
+        )}
+
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2 flex-wrap">
             <Button
               size="sm"
               variant="outline"
-              onClick={() => doVote(1)}
-              disabled={voting || hasVoted || label !== "Active"}
+              onClick={() => setPendingVoteSupport(1)}
+              disabled={voting || hasVoted || label !== "Active" || pendingVoteSupport !== null}
               className="border-foreground/30 text-foreground hover:bg-muted/60"
             >
-              {voting ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : null}
               For
             </Button>
             <Button
               size="sm"
               variant="outline"
-              onClick={() => doVote(0)}
-              disabled={voting || hasVoted || label !== "Active"}
+              onClick={() => setPendingVoteSupport(0)}
+              disabled={voting || hasVoted || label !== "Active" || pendingVoteSupport !== null}
               className="border-red-500/30 text-red-300 hover:bg-red-500/10"
             >
               Against
@@ -266,44 +319,75 @@ const ProposalCard = ({ row }: { row: ProposalRow }) => {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => doVote(2)}
-              disabled={voting || hasVoted || label !== "Active"}
+              onClick={() => setPendingVoteSupport(2)}
+              disabled={voting || hasVoted || label !== "Active" || pendingVoteSupport !== null}
             >
               Abstain
             </Button>
           </div>
           <div className="flex items-center gap-2">
-            {label === "Succeeded" && (
-              confirmAction === "queue" ? (
-                <div className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/25 bg-amber-500/8 px-3 py-2">
-                  <span className="text-xs text-amber-900">Queue into timelock? This starts the delay before execution.</span>
-                  <Button size="sm" onClick={doQueue} disabled={queueing}>
-                    {queueing ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : null}
-                    Confirm queue
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setConfirmAction(null)}>Cancel</Button>
-                </div>
-              ) : (
-                <Button size="sm" onClick={() => setConfirmAction("queue")} disabled={queueing}>
-                  Queue
-                </Button>
-              )
+            {label === "Succeeded" && confirmAction !== "queue" && (
+              <Button size="sm" onClick={() => setConfirmAction("queue")} disabled={queueing}>
+                Review queue
+              </Button>
             )}
-            {label === "Queued" && (
-              confirmAction === "execute" ? (
-                <div className="flex flex-wrap items-center gap-2 rounded-lg border border-destructive/25 bg-destructive/8 px-3 py-2">
-                  <span className="text-xs text-destructive">Execute irreversible on-chain action?</span>
-                  <Button size="sm" variant="destructive" onClick={doExecute} disabled={executing}>
-                    {executing ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : null}
-                    Confirm execute
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setConfirmAction(null)}>Cancel</Button>
-                </div>
-              ) : (
-                <Button size="sm" onClick={() => setConfirmAction("execute")} disabled={executing}>
-                  Execute
-                </Button>
-              )
+            {label === "Succeeded" && confirmAction === "queue" && (
+              <div className="w-full space-y-2">
+                <VoteTxSummaryCard
+                  title="Queue in timelock"
+                  subtitle="Starts the 2-day delay before execution is allowed"
+                  badges={["public", "gas_only"]}
+                  valueBadge={<VoteTxValueBadge gasNote="network gas only" />}
+                  rows={[
+                    { label: "Proposal", value: title || idStr },
+                    { label: "Actions", value: `${row.targets.length} target(s)` },
+                    { label: "ETH values total", value: `${ethValuesLabel} ETH` },
+                    { label: "Timelock", value: "2 days after queue" },
+                  ]}
+                />
+                <VoteTxConfirmBlock
+                  title="Queue proposal?"
+                  message="This schedules the proposal in the TimelockController. Execution becomes available after the delay."
+                  confirmLabel={queueing ? "Queueing…" : "Confirm queue"}
+                  onConfirm={doQueue}
+                  onCancel={() => setConfirmAction(null)}
+                  loading={queueing}
+                  disabled={queueing}
+                />
+                <VoteTxWalletProgress phase={queuePhase} txHash={actionKind === "queue" ? actionTxHash : null} />
+              </div>
+            )}
+            {label === "Queued" && confirmAction !== "execute" && (
+              <Button size="sm" onClick={() => setConfirmAction("execute")} disabled={executing}>
+                Review execute
+              </Button>
+            )}
+            {label === "Queued" && confirmAction === "execute" && (
+              <div className="w-full space-y-2">
+                <VoteTxSummaryCard
+                  title="Execute Governor proposal"
+                  subtitle="Irreversible on-chain actions will run through the timelock"
+                  badges={["irreversible", "public"]}
+                  valueBadge={<VoteTxValueBadge sendEth={ethValuesTotal > 0n ? ethValuesLabel : undefined} gasNote="network gas only" />}
+                  rows={[
+                    { label: "Proposal", value: title || idStr },
+                    { label: "Targets", value: row.targets.map(truncate).join(", ") },
+                    { label: "ETH values total", value: `${ethValuesLabel} ETH` },
+                    { label: "State", value: "Queued · timelock elapsed required" },
+                  ]}
+                />
+                <VoteTxConfirmBlock
+                  title="Execute irreversible action?"
+                  message={`This will execute ${row.calldatas.length} on-chain action(s) with ${ethValuesLabel} ETH total value.`}
+                  confirmLabel={executing ? "Executing…" : "Confirm execute"}
+                  onConfirm={doExecute}
+                  onCancel={() => setConfirmAction(null)}
+                  loading={executing}
+                  disabled={executing}
+                  destructive
+                />
+                <VoteTxWalletProgress phase={executePhase} txHash={actionKind === "execute" ? actionTxHash : null} />
+              </div>
             )}
           </div>
         </div>
@@ -329,13 +413,16 @@ const TREASURY_STREAMER_ABI_FRAG = [
 
 const NewProposalForm = ({ onCreated }: { onCreated: () => void }) => {
   const { isConnected } = useAccount();
-  const { propose, isPending } = useGovernorPropose();
+  const { propose, isPending, txHash: proposeTxHash } = useGovernorPropose();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [recipient, setRecipient] = useState("");
   const [ratePerSecond, setRatePerSecond] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  const [showReview, setShowReview] = useState(false);
+
+  const proposePhase = isPending ? "wallet" as const : proposeTxHash ? "done" as const : "idle" as const;
 
   const description = useMemo(() => {
     const t = title.trim();
@@ -353,6 +440,7 @@ const NewProposalForm = ({ onCreated }: { onCreated: () => void }) => {
 
   const submit = async () => {
     if (!canSubmit) return;
+    setShowReview(false);
     const calldata = encodeFunctionData({
       abi: TREASURY_STREAMER_ABI_FRAG,
       functionName: "openStream",
@@ -382,6 +470,13 @@ const NewProposalForm = ({ onCreated }: { onCreated: () => void }) => {
       toast.error("Propose failed", { description: (e as Error).message });
     }
   };
+
+  const streamDurationSec = startTime && endTime && BigInt(endTime) > BigInt(startTime)
+    ? Number(BigInt(endTime) - BigInt(startTime))
+    : 0;
+  const totalStreamUnits = ratePerSecond && streamDurationSec
+    ? (BigInt(ratePerSecond) * BigInt(streamDurationSec)).toString()
+    : "—";
 
   if (!isConnected) {
     return <NotConnected message="Connect your wallet to create a treasury proposal." />;
@@ -460,30 +555,67 @@ const NewProposalForm = ({ onCreated }: { onCreated: () => void }) => {
           Voting weight is your <span className="text-foreground/80">on-chain participation</span> — a public count. Your
           encrypted ballots in Vote stay sealed.
         </p>
-        <Button onClick={submit} disabled={!canSubmit || isPending}>
-          {isPending ? (
-            <>
-              <Loader2 className="w-3 h-3 mr-2 animate-spin" />
-              Submitting…
-            </>
-          ) : (
-            <>
-              <Plus className="w-3 h-3 mr-2" />
-              Submit proposal
-            </>
-          )}
-        </Button>
+        {!showReview ? (
+          <Button onClick={() => setShowReview(true)} disabled={!canSubmit || isPending}>
+            Review proposal
+          </Button>
+        ) : (
+          <Button variant="ghost" onClick={() => setShowReview(false)}>Edit</Button>
+        )}
       </div>
+
+      {showReview && canSubmit && (
+        <VoteTxSummaryCard
+          title="Submit Governor proposal"
+          subtitle="Creates a public proposal — funds move only after vote, queue, and timelock"
+          badges={["public", "gas_only"]}
+          valueBadge={<VoteTxValueBadge gasNote="network gas only" />}
+          rows={[
+            { label: "Title", value: title.trim() },
+            { label: "Recipient", value: truncate(recipient), mono: true },
+            { label: "Stream rate / sec", value: ratePerSecond },
+            { label: "Start / end", value: `${startTime} → ${endTime}` },
+            { label: "Total stream (approx)", value: totalStreamUnits },
+            { label: "Target", value: truncate(OBSCURA_TREASURY_STREAMER_ADDRESS), mono: true },
+            { label: "ETH value", value: "0 ETH" },
+          ]}
+        >
+          <Button onClick={submit} disabled={!canSubmit || isPending}>
+            {isPending ? (
+              <>
+                <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                Submitting…
+              </>
+            ) : (
+              <>
+                <Plus className="w-3 h-3 mr-2" />
+                Confirm submit
+              </>
+            )}
+          </Button>
+          <VoteTxWalletProgress phase={proposePhase} txHash={proposeTxHash} />
+          {proposePhase === "done" && proposeTxHash && (
+            <VoteTxSuccess title="Proposal submitted" message="Your Governor proposal is live for voting." txHash={proposeTxHash} />
+          )}
+        </VoteTxSummaryCard>
+      )}
     </Card>
   );
 };
 
-export function GovernorPanel({ wrongNetwork = false }: { wrongNetwork?: boolean }) {
+export function GovernorPanel({
+  wrongNetwork = false,
+  view = "proposals",
+  onSwitchToNew,
+}: {
+  wrongNetwork?: boolean;
+  view?: "proposals" | "new";
+  onSwitchToNew?: () => void;
+}) {
   const { isConnected, address } = useAccount();
   const cfg = useGovernorConfig();
   const { proposals, isLoading, refresh } = useGovernorProposals();
   const participation = useVoterParticipation(address);
-  const [govTab, setGovTab] = useState<"proposals" | "new">("proposals");
 
   const yourWeight =
     (participation.data as bigint | undefined) !== undefined ? (participation.data as bigint).toString() : "—";
@@ -550,16 +682,7 @@ export function GovernorPanel({ wrongNetwork = false }: { wrongNetwork?: boolean
         </div>
       </div>
 
-      <VoteTabs
-        tabs={[
-          { key: "proposals", label: "Proposals" },
-          { key: "new", label: "New proposal" },
-        ]}
-        active={govTab}
-        onChange={setGovTab}
-      />
-
-      {govTab === "proposals" && (
+      {view === "proposals" && (
         <div className="space-y-3">
           {isLoading && proposals.length === 0 && (
             <div className={`${vh.empty} text-sm text-muted-foreground`}>
@@ -575,22 +698,26 @@ export function GovernorPanel({ wrongNetwork = false }: { wrongNetwork?: boolean
               </div>
               <p className="font-display text-lg text-foreground">No proposals yet</p>
               <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
-                Be the first to propose a treasury action. Switch to the{" "}
-                <button type="button" onClick={() => setGovTab("new")} className="font-medium text-[hsl(var(--success))] hover:underline">
+                Be the first to propose a treasury action. Switch to{" "}
+                <button
+                  type="button"
+                  onClick={() => onSwitchToNew?.()}
+                  className="font-medium text-[hsl(var(--success))] hover:underline"
+                >
                   New proposal
-                </button>{" "}
-                tab.
+                </button>
+                .
               </p>
             </div>
           )}
 
           {proposals.map((p) => (
-            <ProposalCard key={p.proposalId.toString()} row={p} />
+            <ProposalCard key={p.proposalId.toString()} row={p} voterWeight={yourWeight} />
           ))}
         </div>
       )}
 
-      {govTab === "new" && <NewProposalForm onCreated={refresh} />}
+      {view === "new" && <NewProposalForm onCreated={refresh} />}
 
       <p className="pt-2 text-center text-sm text-muted-foreground">
         Public executable governance · TimelockController ·{" "}

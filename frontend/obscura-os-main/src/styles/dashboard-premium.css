@@ -1037,6 +1037,8 @@
 /* ─── Drawer / modal polish ───────────────────────────────────────────────── */
 .obscura-app.dash-premium .dash-drawer-panel {
   box-shadow: var(--dash-shadow-drawer);
+  background: var(--dash-surface-bg);
+  color: hsl(var(--foreground));
 }
 
 .obscura-app.dash-premium .dash-drawer-backdrop {

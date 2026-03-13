@@ -3,8 +3,9 @@ import { History, CheckCircle, Clock, XCircle, Eye, AlertCircle, Ban } from "luc
 import { useAccount } from "wagmi";
 import { useProposalCount, useProposal, useProposalOptions, useHasVoted, CATEGORY_LABELS } from "@/hooks/useProposals";
 import { useMyVote } from "@/hooks/useVoteTally";
-import AsyncStepper from "@/components/shared/AsyncStepper";
 import { FHEStepStatus } from "@/lib/constants";
+import { mapFheToDecryptPhase } from "@/hooks/useVoteTransactionFlow";
+import { VoteTxDecryptProgress } from "@/components/vote/VoteTransactionFlow";
 import { useChainTime } from "@/hooks/useChainTime";
 import {
   VotePanelHeader,
@@ -34,7 +35,7 @@ function HistoryRow({
   const { proposal } = useProposal(BigInt(index));
   const { data: voted } = useHasVoted(BigInt(index), address);
   const { data: optionLabels } = useProposalOptions(BigInt(index));
-  const { myVoteIndex, decryptMyVote, status, stepIndex, error: fheError } = useMyVote(BigInt(index));
+  const { myVoteIndex, decryptMyVote, status, error: fheError } = useMyVote(BigInt(index));
   const [error, setError] = useState<string | null>(null);
   const now = useChainTime();
 
@@ -119,7 +120,7 @@ function HistoryRow({
             ) : (
               <>
                 {status !== FHEStepStatus.IDLE && status !== FHEStepStatus.READY && (
-                  <AsyncStepper status={status} stepIndex={stepIndex} labels={["Connecting", "Decrypting", "Verified"]} />
+                  <VoteTxDecryptProgress phase={mapFheToDecryptPhase(status)} error={error || fheError} />
                 )}
                 <button
                   type="button"

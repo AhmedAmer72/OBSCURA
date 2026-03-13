@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
 import { motion } from "framer-motion";
 import {
-  Vault, ArrowDownToLine, Lock, CheckCircle, AlertCircle,
-  Loader2, ExternalLink, Clock, Shield, Info, Settings, Timer,
+  Vault, ArrowDownToLine, Lock, AlertCircle,
+  Loader2, Clock, Shield, Info, Settings, Timer,
 } from "lucide-react";
-import { formatEther } from "viem";
 import {
+  formatTreasuryEth,
   useTreasuryBalance,
+  useTreasuryPendingSpendTotal,
   useSpendRequest,
   useAttachSpend,
   useRecordFinalization,
@@ -19,34 +20,49 @@ import {
 import { useProposalCount, useProposal } from "@/hooks/useProposals";
 import { useChainTime } from "@/hooks/useChainTime";
 import { useVoteOwner, useVoteRole } from "@/hooks/useProposals";
-import { Role, FHEStepStatus } from "@/lib/constants";
-import AsyncStepper from "@/components/shared/AsyncStepper";
+import { Role } from "@/lib/constants";
+import { useWalletPhaseFromFlags } from "@/hooks/useVoteTransactionFlow";
+import {
+  VoteTxConfirmBlock,
+  VoteTxFHEProgress,
+  VoteTxSuccess,
+  VoteTxSummaryCard,
+  VoteTxValueBadge,
+  VoteTxWalletProgress,
+} from "@/components/vote/VoteTransactionFlow";
 import { VoteKpi, VoteNotice, VoteTabs, vh } from "@/components/harmony/voteHarmonyUi";
-
-const ARBISCAN = "https://sepolia.arbiscan.io";
-
-function TxLink({ hash }: { hash?: `0x${string}` }) {
-  if (!hash) return null;
-  return (
-    <a href={`${ARBISCAN}/tx/${hash}`} target="_blank" rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 text-foreground hover:underline text-xs">
-      View tx <ExternalLink className="h-3 w-3" />
-    </a>
-  );
-}
 
 // ─── Spend Request Row ─────────────────────────────────────────────────────
 
 function SpendRequestRow({ proposalId }: { proposalId: number }) {
   const { proposal } = useProposal(BigInt(proposalId));
   const { data: req } = useSpendRequest(BigInt(proposalId));
+  const { data: timelockRaw } = useTimelockDuration();
   const now = useChainTime();
   const [confirmExecute, setConfirmExecute] = useState(false);
+  const [confirmTimelock, setConfirmTimelock] = useState(false);
 
-  const { record, isPending: recording, txHash: recordTx, error: recordErr } = useRecordFinalization();
+  const { record, isPending: recording, isConfirming: recordConfirming, isSuccess: recordSuccess, txHash: recordTx, error: recordErr } = useRecordFinalization();
   const {
-    execute, isPending: executing, txHash: executeTx, error: executeErr,
+    execute, isPending: executing, isConfirming: executeConfirming, isSuccess: executeSuccess, txHash: executeTx, error: executeErr,
   } = useExecuteSpend();
+
+  const recordPhase = useWalletPhaseFromFlags({
+    isPending: recording,
+    isConfirming: recordConfirming,
+    isSuccess: recordSuccess,
+    error: recordErr,
+    txHash: recordTx,
+  });
+  const executePhase = useWalletPhaseFromFlags({
+    isPending: executing,
+    isConfirming: executeConfirming,
+    isSuccess: executeSuccess,
+    error: executeErr,
+    txHash: executeTx,
+  });
+
+  const timelockSeconds = timelockRaw ? Number(timelockRaw as bigint) : 172800;
 
   // req is a tuple: [recipient, executed, exists, timelockEnds, amountGwei]
   const reqTuple = req as readonly [`0x${string}`, boolean, boolean, bigint, bigint] | undefined;
@@ -111,49 +127,103 @@ function SpendRequestRow({ proposalId }: { proposalId: number }) {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {canRecord && (
-          <button onClick={() => record(BigInt(proposalId))} disabled={recording}
-            className="flex items-center gap-1.5 rounded-lg border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-xs text-violet-400 hover:bg-violet-500/20 disabled:opacity-50 transition-colors">
-            {recording ? <Loader2 className="h-3 w-3 animate-spin" /> : <Clock className="h-3 w-3" />}
-            Start Timelock
+        {canRecord && !confirmTimelock && (
+          <button
+            type="button"
+            onClick={() => setConfirmTimelock(true)}
+            disabled={recording || recordConfirming}
+            className="flex items-center gap-1.5 rounded-lg border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-xs text-violet-400 hover:bg-violet-500/20 disabled:opacity-50 transition-colors"
+          >
+            <Clock className="h-3 w-3" />
+            Review timelock
           </button>
+        )}
+        {canRecord && confirmTimelock && (
+          <div className="w-full space-y-2">
+            <VoteTxSummaryCard
+              title="Start spend timelock"
+              subtitle="Begins the delay before this treasury transfer can execute"
+              badges={["private", "gas_only"]}
+              valueBadge={<VoteTxValueBadge gasNote="network gas only" />}
+              rows={[
+                { label: "Proposal", value: `#${proposalId} · ${proposal.title}` },
+                { label: "Recipient", value: `${reqRecipient.slice(0, 10)}…`, mono: true },
+                { label: "Amount", value: `${reqAmountEth} ETH (encrypted until execution)` },
+                { label: "Timelock delay", value: timelockSeconds < 3600 ? `${Math.round(timelockSeconds / 60)} min` : `${Math.round(timelockSeconds / 3600)} hours` },
+                {
+                  label: "Executable after",
+                  value: new Date((Number(now) + timelockSeconds) * 1000).toLocaleString(),
+                },
+              ]}
+            />
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => { setConfirmTimelock(false); void record(BigInt(proposalId)); }}
+                disabled={recording || recordConfirming}
+                className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--dash-forest))] px-4 py-2 text-xs font-semibold text-[hsl(96_18%_97%)] disabled:opacity-50"
+              >
+                {recording || recordConfirming ? <Loader2 className="h-3 w-3 animate-spin" /> : <Clock className="h-3 w-3" />}
+                Confirm start timelock
+              </button>
+              <button type="button" onClick={() => setConfirmTimelock(false)} className="text-xs text-muted-foreground hover:text-foreground">
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+        {recordPhase !== "idle" && (
+          <VoteTxWalletProgress phase={recordPhase} txHash={recordTx} error={recordErr} />
+        )}
+        {recordSuccess && recordTx && recordPhase === "done" && (
+          <VoteTxSuccess title="Timelock started" message="Execution will unlock after the delay elapses." txHash={recordTx} />
         )}
         {!reqExecuted && timelockEnds > 0n && !timelockElapsed && (
           <p className="text-xs text-muted-foreground/40 self-center">
             Timelock: {timeLeftLabel} remaining before execution is allowed.
           </p>
         )}
-        {canExecute && (
-          confirmExecute ? (
-            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-destructive/25 bg-destructive/8 px-3 py-2">
-              <span className="text-xs text-destructive">
-                Execute {reqAmountEth} ETH to {reqRecipient.slice(0, 8)}…? This transfer is irreversible.
-              </span>
-              <button
-                type="button"
-                onClick={() => execute(BigInt(proposalId))}
-                disabled={executing}
-                className="inline-flex items-center gap-1.5 rounded-full bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground disabled:opacity-50"
-              >
-                {executing ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowDownToLine className="h-3 w-3" />}
-                Confirm execute
-              </button>
-              <button type="button" onClick={() => setConfirmExecute(false)} className="text-xs text-muted-foreground hover:text-foreground">
-                Cancel
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setConfirmExecute(true)}
-              className="flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-800 hover:bg-amber-500/20 transition-colors"
-            >
-              <ArrowDownToLine className="h-3 w-3" />
-              Execute spend ({reqAmountEth} ETH)
-            </button>
-          )
+        {canExecute && !confirmExecute && (
+          <button
+            type="button"
+            onClick={() => setConfirmExecute(true)}
+            className="flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-800 hover:bg-amber-500/20 transition-colors"
+          >
+            <ArrowDownToLine className="h-3 w-3" />
+            Review execute ({reqAmountEth} ETH)
+          </button>
         )}
-        {(recordTx || executeTx) && <TxLink hash={(executeTx ?? recordTx) as `0x${string}` | undefined} />}
+        {canExecute && confirmExecute && (
+          <div className="w-full space-y-2">
+            <VoteTxSummaryCard
+              title="Execute treasury spend"
+              subtitle="This irreversible transfer sends ETH from the treasury"
+              badges={["irreversible"]}
+              valueBadge={<VoteTxValueBadge sendEth={reqAmountEth} gasNote="network gas only" />}
+              rows={[
+                { label: "Proposal", value: `#${proposalId} · ${proposal.title}` },
+                { label: "Recipient", value: reqRecipient, mono: true },
+                { label: "Transfer amount", value: `${reqAmountEth} ETH` },
+              ]}
+            />
+            <VoteTxConfirmBlock
+              title="Irreversible transfer"
+              message={`Send exactly ${reqAmountEth} ETH to ${reqRecipient.slice(0, 10)}…? This cannot be undone.`}
+              confirmLabel={executing || executeConfirming ? "Executing…" : "Confirm execute"}
+              onConfirm={() => execute(BigInt(proposalId))}
+              onCancel={() => setConfirmExecute(false)}
+              disabled={executing || executeConfirming}
+              loading={executing || executeConfirming}
+              destructive
+            />
+          </div>
+        )}
+        {executePhase !== "idle" && (
+          <VoteTxWalletProgress phase={executePhase} txHash={executeTx} error={executeErr} />
+        )}
+        {executeSuccess && executeTx && executePhase === "done" && (
+          <VoteTxSuccess title="Spend executed" message={`${reqAmountEth} ETH transferred to recipient.`} txHash={executeTx} />
+        )}
       </div>
 
       {(executeErr || recordErr) && (
@@ -169,9 +239,20 @@ function SpendRequestRow({ proposalId }: { proposalId: number }) {
 
 export function TreasuryPanel() {
   const { address, isConnected } = useAccount();
-  const { data: balanceWei } = useTreasuryBalance();
+  const {
+    data: balanceWei,
+    isLoading: balanceLoading,
+    isError: balanceError,
+    refetch: refetchBalance,
+  } = useTreasuryBalance();
   const { data: count } = useProposalCount();
   const proposalCount = Number(count ?? 0);
+  const {
+    pendingWei,
+    isLoading: pendingLoading,
+    isError: pendingError,
+    refetch: refetchPending,
+  } = useTreasuryPendingSpendTotal(proposalCount);
 
   const {
     proposalIdInput, setProposalIdInput,
@@ -179,7 +260,7 @@ export function TreasuryPanel() {
     ethAmountInput, setEthAmountInput,
     isPending: attaching, isConfirming: attachConfirming, isSuccess: attachSuccess,
     txHash: attachTx, error: attachError, handleAttach,
-    status: attachStatus, stepIndex: attachStepIndex,
+    status: attachStatus,
   } = useAttachSpend();
 
   const {
@@ -189,6 +270,9 @@ export function TreasuryPanel() {
 
   const [depositInput, setDepositInput] = useState("");
   const [activeTab, setActiveTab] = useState<"requests" | "attach" | "fund" | "settings">("requests");
+  const [showAttachReview, setShowAttachReview] = useState(false);
+  const [showDepositReview, setShowDepositReview] = useState(false);
+  const [pendingTimelockSeconds, setPendingTimelockSeconds] = useState<number | null>(null);
 
   const { data: ownerAddress } = useVoteOwner();
   const { data: userRoleRaw } = useVoteRole(address);
@@ -196,7 +280,7 @@ export function TreasuryPanel() {
   const isAdmin = (userRoleRaw as number) === Role.ADMIN || isOwner;
 
   const { data: timelockRaw, refetch: refetchTimelock } = useTimelockDuration();
-  const { setDuration, isPending: settingTimelock, receipt: timelockReceipt, error: timelockError } = useSetTimelockDuration();
+  const { setDuration, isPending: settingTimelock, txHash: timelockTxHash, receipt: timelockReceipt, error: timelockError } = useSetTimelockDuration();
   const timelockSeconds = timelockRaw ? Number(timelockRaw as bigint) : 172800;
 
   const TIMELOCK_PRESETS = [
@@ -215,7 +299,42 @@ export function TreasuryPanel() {
     return `${Math.round(secs / 86400)} hour${secs >= 172800 ? "s" : ""} (${Math.round(secs / 86400)}d)`;
   }
 
-  const balanceEth = balanceWei ? formatEther(balanceWei as bigint) : "0";
+  useEffect(() => {
+    if (depositSuccess || attachSuccess) {
+      void refetchBalance();
+      void refetchPending();
+    }
+  }, [attachSuccess, depositSuccess, refetchBalance, refetchPending]);
+
+  const attachWalletPhase = useWalletPhaseFromFlags({
+    isPending: attaching,
+    isConfirming: attachConfirming,
+    isSuccess: attachSuccess,
+    error: attachError,
+    txHash: attachTx,
+  });
+  const depositWalletPhase = useWalletPhaseFromFlags({
+    isPending: depositing,
+    isConfirming: depositConfirming,
+    isSuccess: depositSuccess,
+    error: depositError,
+    txHash: depositTx,
+  });
+  const timelockWalletPhase = useWalletPhaseFromFlags({
+    isPending: settingTimelock,
+    isConfirming: timelockReceipt.isLoading,
+    isSuccess: timelockReceipt.isSuccess,
+    error: timelockError,
+    txHash: timelockTxHash,
+  });
+  const treasuryBalanceLabel = formatTreasuryEth(balanceWei as bigint | undefined, {
+    loading: balanceLoading,
+    error: balanceError,
+  });
+  const pendingAllocationLabel = formatTreasuryEth(pendingWei, {
+    loading: pendingLoading,
+    error: pendingError,
+  });
 
   const tabItems = [
     { key: "requests" as const, label: "Spend requests" },
@@ -227,8 +346,20 @@ export function TreasuryPanel() {
   return (
     <div className={vh.panel}>
       <div className={vh.kpiGrid2}>
-        <VoteKpi icon={Vault} label="Treasury balance" value={`${parseFloat(balanceEth).toFixed(4)} ETH`} iconClass="text-amber-700" />
-        <VoteKpi icon={Lock} label="FHE privacy" value="Amounts encrypted" sub="Until execution" iconClass="text-foreground" />
+        <VoteKpi
+          icon={Vault}
+          label="Treasury balance"
+          value={treasuryBalanceLabel}
+          sub="On-chain ETH in ObscuraTreasury"
+          iconClass="text-amber-700"
+        />
+        <VoteKpi
+          icon={Lock}
+          label="Pending allocations"
+          value={pendingAllocationLabel}
+          sub="Sealed spend requests · hidden until execution"
+          iconClass="text-foreground"
+        />
       </div>
 
       <VoteNotice icon={Info}>
@@ -284,27 +415,47 @@ export function TreasuryPanel() {
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none" />
                 <div className="flex gap-2">
                   <input type="number" step="0.0001" placeholder="Amount in ETH (e.g. 0.05)"
-                    value={ethAmountInput} onChange={e => setEthAmountInput(e.target.value)}
+                    value={ethAmountInput} onChange={e => { setEthAmountInput(e.target.value); setShowAttachReview(false); }}
                     className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none" />
-                  <motion.button onClick={handleAttach}
+                  <motion.button
+                    type="button"
+                    onClick={() => setShowAttachReview(true)}
                     disabled={attaching || attachConfirming || !proposalIdInput || !recipientInput || !ethAmountInput}
                     whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
                     className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-background disabled:opacity-50">
-                    {attaching || attachConfirming ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Lock className="h-3.5 w-3.5" />}
-                    {attachConfirming ? "Confirming…" : attaching ? "Encrypting…" : "Attach"}
+                    <Lock className="h-3.5 w-3.5" />
+                    Review attach
                   </motion.button>
                 </div>
-                {attachError && <p className="text-xs text-red-400 flex items-center gap-1"><AlertCircle className="h-3 w-3" /> {attachError}</p>}
-                {attachStatus !== FHEStepStatus.IDLE && (
-                  <div className="pt-1">
-                    <AsyncStepper
-                      status={attachStatus}
-                      stepIndex={attachStepIndex}
-                      labels={["Encrypting Amount", "Submitting TX", "Spend Attached"]}
-                    />
-                  </div>
+                {showAttachReview && proposalIdInput && recipientInput && ethAmountInput && (
+                  <VoteTxSummaryCard
+                    title="Attach encrypted spend"
+                    subtitle="FHE encrypts the amount before submitting to treasury"
+                    badges={["private", "gas_only"]}
+                    valueBadge={<VoteTxValueBadge gasNote="network gas only" />}
+                    rows={[
+                      { label: "Proposal ID", value: proposalIdInput },
+                      { label: "Recipient", value: recipientInput.slice(0, 10) + "…", mono: true },
+                      { label: "Amount", value: `${ethAmountInput} ETH (encrypted on-chain)` },
+                    ]}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => { setShowAttachReview(false); void handleAttach(); }}
+                      disabled={attaching || attachConfirming}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--dash-forest))] px-4 py-2 text-sm font-semibold text-[hsl(96_18%_97%)] disabled:opacity-50"
+                    >
+                      {attaching || attachConfirming ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Lock className="h-3.5 w-3.5" />}
+                      Confirm attach
+                    </button>
+                  </VoteTxSummaryCard>
                 )}
-                {attachSuccess && attachTx && <div className="flex items-center gap-2 text-xs text-foreground"><CheckCircle className="h-3 w-3" /> Attached! <TxLink hash={attachTx} /></div>}
+                {attachError && <p className="text-xs text-red-400 flex items-center gap-1"><AlertCircle className="h-3 w-3" /> {attachError}</p>}
+                <VoteTxFHEProgress status={attachStatus} error={attachError} />
+                <VoteTxWalletProgress phase={attachWalletPhase} txHash={attachTx} error={attachError} />
+                {attachSuccess && attachTx && attachWalletPhase === "done" && (
+                  <VoteTxSuccess title="Spend attached" message="Encrypted spend request linked to proposal." txHash={attachTx} />
+                )}
               </div>
             </>
           )}
@@ -319,16 +470,45 @@ export function TreasuryPanel() {
           </p>
           <div className="flex gap-2">
             <input type="number" step="0.001" placeholder="ETH amount (e.g. 0.1)"
-              value={depositInput} onChange={e => setDepositInput(e.target.value)}
+              value={depositInput} onChange={e => { setDepositInput(e.target.value); setShowDepositReview(false); }}
               className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none" />
-            <button onClick={() => deposit(depositInput)} disabled={depositing || depositConfirming || !depositInput}
+            <button
+              type="button"
+              onClick={() => setShowDepositReview(true)}
+              disabled={depositing || depositConfirming || !depositInput}
               className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-background disabled:opacity-50">
-              {depositing || depositConfirming ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowDownToLine className="h-3.5 w-3.5" />}
-              Deposit
+              <ArrowDownToLine className="h-3.5 w-3.5" />
+              Review deposit
             </button>
           </div>
+          {showDepositReview && depositInput && (
+            <VoteTxSummaryCard
+              title="Fund treasury"
+              subtitle="Send ETH directly to the protocol treasury contract"
+              badges={["public"]}
+              valueBadge={<VoteTxValueBadge sendEth={depositInput} gasNote="network gas only" />}
+              rows={[
+                { label: "Deposit amount", value: `${depositInput} ETH` },
+                { label: "Current balance", value: treasuryBalanceLabel },
+                { label: "After deposit", value: "Balance increases by deposit amount" },
+              ]}
+            >
+              <button
+                type="button"
+                onClick={() => { setShowDepositReview(false); void deposit(depositInput); }}
+                disabled={depositing || depositConfirming}
+                className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--dash-forest))] px-4 py-2 text-sm font-semibold text-[hsl(96_18%_97%)] disabled:opacity-50"
+              >
+                {depositing || depositConfirming ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowDownToLine className="h-3.5 w-3.5" />}
+                Confirm deposit
+              </button>
+            </VoteTxSummaryCard>
+          )}
           {depositError && <p className="text-xs text-red-400 flex items-center gap-1"><AlertCircle className="h-3 w-3" /> {depositError}</p>}
-          {depositSuccess && depositTx && <div className="flex items-center gap-2 text-xs text-foreground"><CheckCircle className="h-3 w-3" /> Deposited! <TxLink hash={depositTx} /></div>}
+          <VoteTxWalletProgress phase={depositWalletPhase} txHash={depositTx} error={depositError} />
+          {depositSuccess && depositTx && depositWalletPhase === "done" && (
+            <VoteTxSuccess title="Treasury funded" message={`${depositInput || "ETH"} deposited successfully.`} txHash={depositTx} />
+          )}
 
           <div className="rounded-xl border border-border bg-muted p-4 space-y-1.5 mt-2">
             <p className="text-xs font-semibold text-muted-foreground/40 uppercase tracking-wider flex items-center gap-1.5">
@@ -363,7 +543,8 @@ export function TreasuryPanel() {
                 return (
                   <button
                     key={p.seconds}
-                    onClick={() => { setDuration(p.seconds); }}
+                    type="button"
+                    onClick={() => setPendingTimelockSeconds(p.seconds)}
                     disabled={settingTimelock || isActive}
                     className={`py-2 rounded-lg border text-xs font-medium transition-all ${
                       isActive
@@ -371,22 +552,51 @@ export function TreasuryPanel() {
                         : "border-border bg-muted text-muted-foreground/60 hover:border-violet-500/30 hover:text-violet-300 disabled:opacity-40"
                     }`}
                   >
-                    {settingTimelock && !isActive ? <Loader2 className="h-3 w-3 animate-spin mx-auto" /> : p.label}
+                    {p.label}
                   </button>
                 );
               })}
             </div>
           </div>
 
+          {pendingTimelockSeconds !== null && pendingTimelockSeconds !== timelockSeconds && (
+            <VoteTxSummaryCard
+              title="Set treasury timelock"
+              subtitle="Applies to new spend finalizations — existing pending requests keep their delay"
+              badges={["public", "gas_only"]}
+              valueBadge={<VoteTxValueBadge gasNote="network gas only" />}
+              rows={[
+                { label: "Current duration", value: formatDuration(timelockSeconds) },
+                { label: "New duration", value: formatDuration(pendingTimelockSeconds) },
+                { label: "Governance impact", value: "Longer delays give more time to review before execution" },
+              ]}
+            >
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setDuration(pendingTimelockSeconds); setPendingTimelockSeconds(null); void refetchTimelock(); }}
+                  disabled={settingTimelock}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--dash-forest))] px-4 py-2 text-sm font-semibold text-[hsl(96_18%_97%)] disabled:opacity-50"
+                >
+                  {settingTimelock ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Settings className="h-3.5 w-3.5" />}
+                  Confirm timelock change
+                </button>
+                <button type="button" onClick={() => setPendingTimelockSeconds(null)} className="text-sm text-muted-foreground hover:text-foreground">
+                  Cancel
+                </button>
+              </div>
+            </VoteTxSummaryCard>
+          )}
+
+          <VoteTxWalletProgress phase={timelockWalletPhase} txHash={timelockTxHash} error={timelockError} />
+
           {timelockError && (
             <p className="text-xs text-red-400 flex items-center gap-1">
               <AlertCircle className="h-3 w-3" /> {timelockError}
             </p>
           )}
-          {timelockReceipt?.isSuccess && (
-            <p className="text-xs text-foreground flex items-center gap-1">
-              <CheckCircle className="h-3 w-3" /> Timelock updated successfully!
-            </p>
+          {timelockReceipt.isSuccess && timelockWalletPhase === "done" && (
+            <VoteTxSuccess title="Timelock updated" message="New spend requests will use the updated delay." txHash={timelockTxHash} />
           )}
 
           <div className="rounded-lg border border-amber-500/10 bg-amber-500/[0.04] p-3 text-xs text-amber-300/60 flex items-start gap-2">

@@ -8,6 +8,13 @@ import {
   useDelegateTo, useVoteWeight, useDelegationWrite, useDelegators,
 } from "@/hooks/useDelegation";
 import { VoteSection, vh } from "@/components/harmony/voteHarmonyUi";
+import { useWalletPhaseFromFlags } from "@/hooks/useVoteTransactionFlow";
+import {
+  VoteTxSuccess,
+  VoteTxSummaryCard,
+  VoteTxValueBadge,
+  VoteTxWalletProgress,
+} from "@/components/vote/VoteTransactionFlow";
 
 const ARBISCAN = "https://sepolia.arbiscan.io";
 const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
@@ -70,6 +77,9 @@ function DelegatorRow({ addr, index }: { addr: `0x${string}`; index: number }) {
 export function DelegationPanel() {
   const { address } = useAccount();
   const [showHowTo, setShowHowTo] = useState(false);
+  const [confirmDelegate, setConfirmDelegate] = useState(false);
+  const [confirmUndelegate, setConfirmUndelegate] = useState(false);
+  const [lastAction, setLastAction] = useState<"delegate" | "undelegate" | null>(null);
 
   const { data: currentDelegatee, refetch: refetchDelegatee } = useDelegateTo(address);
   const { data: voteWeight, refetch: refetchWeight } = useVoteWeight(address);
@@ -88,8 +98,28 @@ export function DelegationPanel() {
 
   const effectiveWeight = voteWeight !== undefined ? Number(voteWeight) : 1;
 
-  async function onDelegate() { await handleDelegate(); refetchDelegatee(); refetchWeight(); }
-  async function onUndelegate() { await handleUndelegate(); refetchDelegatee(); refetchWeight(); }
+  const walletPhase = useWalletPhaseFromFlags({
+    isPending,
+    isConfirming,
+    isSuccess,
+    error,
+    txHash,
+  });
+
+  async function onDelegate() {
+    setLastAction("delegate");
+    setConfirmDelegate(false);
+    await handleDelegate();
+    refetchDelegatee();
+    refetchWeight();
+  }
+  async function onUndelegate() {
+    setLastAction("undelegate");
+    setConfirmUndelegate(false);
+    await handleUndelegate();
+    refetchDelegatee();
+    refetchWeight();
+  }
 
   if (!address) {
     return (
@@ -183,16 +213,54 @@ export function DelegationPanel() {
                 </div>
               </div>
               <button
-                onClick={onUndelegate}
-                disabled={isPending || isConfirming}
+                onClick={() => setConfirmUndelegate(true)}
+                disabled={isPending || isConfirming || confirmUndelegate}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-500/25 bg-red-500/[0.07] text-[12px] text-red-400 hover:bg-red-500/15 transition-colors disabled:opacity-50 shrink-0"
               >
                 {isPending || isConfirming
                   ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   : <XCircle className="h-3.5 w-3.5" />}
-                {isConfirming ? "Wait…" : isPending ? "Removing…" : "Remove"}
+                Remove delegation
               </button>
             </div>
+            {confirmUndelegate && (
+              <VoteTxSummaryCard
+                title="Remove delegation"
+                subtitle="You will vote directly again with your own weight"
+                badges={["public", "gas_only"]}
+                valueBadge={<VoteTxValueBadge gasNote="network gas only" />}
+                rows={[
+                  { label: "Current delegate", value: shortAddr(currentDelegatee as string), mono: true },
+                  { label: "Your vote weight", value: String(effectiveWeight) },
+                  { label: "After removal", value: "Direct voting mode" },
+                ]}
+              >
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={onUndelegate}
+                    disabled={isPending || isConfirming}
+                    className={`${vh.btnPrimary} disabled:opacity-50`}
+                  >
+                    {isPending || isConfirming ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                    Confirm remove
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmUndelegate(false)}
+                    className="rounded-full border border-border bg-white px-4 py-2 text-sm text-muted-foreground hover:text-foreground"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </VoteTxSummaryCard>
+            )}
+            {(walletPhase !== "idle" && lastAction === "undelegate") && (
+              <VoteTxWalletProgress phase={walletPhase} txHash={txHash} error={error} />
+            )}
+            {isSuccess && txHash && lastAction === "undelegate" && walletPhase === "done" && (
+              <VoteTxSuccess title="Delegation removed" message="You can now cast votes directly from this wallet." txHash={txHash} />
+            )}
             <div className="mt-3 flex items-start gap-2 p-2.5 rounded-lg bg-amber-500/[0.05] border border-amber-500/15">
               <AlertCircle className="w-3.5 h-3.5 text-amber-400/70 mt-0.5 shrink-0" />
               <p className="text-[11px] text-amber-300/50 leading-snug">
@@ -235,21 +303,56 @@ export function DelegationPanel() {
             <input
               type="text"
               value={delegateeInput}
-              onChange={(e) => setDelegateeInput(e.target.value)}
+              onChange={(e) => { setDelegateeInput(e.target.value); setConfirmDelegate(false); }}
               placeholder="0x… delegate address"
               className="flex-1 rounded-lg border border-border bg-background px-3 py-2.5 text-[13px] text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none"
             />
             <button
-              onClick={onDelegate}
-              disabled={isPending || isConfirming || !delegateeInput.trim()}
+              onClick={() => setConfirmDelegate(true)}
+              disabled={isPending || isConfirming || !delegateeInput.trim() || confirmDelegate}
               className={`${vh.btnPrimary} disabled:opacity-50`}
             >
-              {isPending || isConfirming
-                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                : <ArrowRight className="h-3.5 w-3.5" />}
-              {isConfirming ? "Wait…" : isPending ? "Delegating…" : "Delegate"}
+              <ArrowRight className="h-3.5 w-3.5" />
+              Review delegate
             </button>
           </div>
+
+          {confirmDelegate && delegateeInput.trim() && (
+            <VoteTxSummaryCard
+              title={hasDelegated ? "Change delegate" : "Delegate voting power"}
+              subtitle="Your delegate will vote with your weight added to theirs"
+              badges={["public", "gas_only"]}
+              valueBadge={<VoteTxValueBadge gasNote="network gas only" />}
+              rows={[
+                { label: "Delegate address", value: delegateeInput.trim().slice(0, 10) + "…" + delegateeInput.trim().slice(-4), mono: true },
+                { label: "Your vote weight", value: String(effectiveWeight) },
+                { label: "Voting mode", value: "Delegated — you cannot vote directly while active" },
+              ]}
+            >
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={onDelegate}
+                  disabled={isPending || isConfirming}
+                  className={`${vh.btnPrimary} disabled:opacity-50`}
+                >
+                  {isPending || isConfirming ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
+                  Confirm delegate
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelegate(false)}
+                  className="rounded-full border border-border bg-white px-4 py-2 text-sm text-muted-foreground hover:text-foreground"
+                >
+                  Cancel
+                </button>
+              </div>
+            </VoteTxSummaryCard>
+          )}
+
+          {(walletPhase !== "idle" && lastAction === "delegate") && (
+            <VoteTxWalletProgress phase={walletPhase} txHash={txHash} error={error} />
+          )}
 
           {error && (
             <div className="flex items-start gap-2 rounded-lg border border-red-500/20 bg-red-500/[0.07] px-3 py-2 text-[12px] text-red-400">
@@ -258,19 +361,8 @@ export function DelegationPanel() {
             </div>
           )}
 
-          {isSuccess && txHash && !error && (
-            <div className="flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2 text-[12px] text-foreground">
-              <CheckCircle className="h-3.5 w-3.5 shrink-0" />
-              Done!{" "}
-              <a
-                href={`${ARBISCAN}/tx/${txHash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline flex items-center gap-1"
-              >
-                View tx <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
+          {isSuccess && txHash && !error && lastAction === "delegate" && walletPhase === "done" && (
+            <VoteTxSuccess title="Delegation updated" message="Your voting power is now delegated." txHash={txHash} />
           )}
         </div>
       </VoteSection>

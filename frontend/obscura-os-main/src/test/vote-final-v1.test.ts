@@ -28,7 +28,7 @@ describe("Vote V1 safety and shared infrastructure gates", () => {
 
     expect(createProposalForm).toContain("publicClient!.waitForTransactionReceipt({ hash })");
     expect(createProposalForm).toContain('receipt.status !== "success"');
-    expect(createProposalForm).toContain("Proposal confirmed!");
+    expect(createProposalForm).toContain("Proposal published");
 
     expect(tallyReveal).toContain("publicClient!.waitForTransactionReceipt({ hash })");
     expect(tallyReveal).toContain('receipt.status !== "success"');

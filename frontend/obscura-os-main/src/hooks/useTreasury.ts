@@ -1,10 +1,22 @@
-import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useAccount, usePublicClient, useWalletClient } from "wagmi";
-import { parseEther } from "viem";
+import { useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt, useAccount, usePublicClient, useWalletClient } from "wagmi";
+import { formatEther, parseEther } from "viem";
+import { useMemo, useState } from "react";
 import { arbitrumSepolia } from "viem/chains";
-import { useState } from "react";
 import { OBSCURA_TREASURY_ADDRESS, OBSCURA_TREASURY_ABI } from "@/config/contracts";
 import { initFHEClient, encryptAmount } from "@/lib/fhe";
 import { FHEStepStatus } from "@/lib/constants";
+
+type SpendRequestTuple = readonly [`0x${string}`, boolean, boolean, bigint, bigint];
+
+export function formatTreasuryEth(
+  wei: bigint | undefined,
+  opts?: { loading?: boolean; error?: boolean },
+): string {
+  if (opts?.loading) return "—";
+  if (opts?.error) return "Unavailable";
+  if (wei === undefined) return "—";
+  return `${parseFloat(formatEther(wei)).toFixed(4)} ETH`;
+}
 
 // ─── Read Hooks ────────────────────────────────────────────────────────────
 
@@ -15,6 +27,46 @@ export function useTreasuryBalance() {
     functionName: "treasuryBalance",
     query: { refetchInterval: 10_000 },
   });
+}
+
+export function useTreasuryPendingSpendTotal(proposalCount: number) {
+  const contracts = useMemo(
+    () =>
+      Array.from({ length: proposalCount }, (_, i) => ({
+        address: OBSCURA_TREASURY_ADDRESS,
+        abi: OBSCURA_TREASURY_ABI,
+        functionName: "getSpendRequest" as const,
+        args: [BigInt(i)] as const,
+      })),
+    [proposalCount],
+  );
+
+  const query = useReadContracts({
+    contracts,
+    query: { enabled: proposalCount > 0, refetchInterval: 10_000 },
+  });
+
+  const pendingWei = useMemo(() => {
+    if (proposalCount === 0) return 0n;
+    if (!query.data) return undefined;
+
+    let totalGwei = 0n;
+    for (const row of query.data) {
+      if (row.status !== "success" || row.result == null) continue;
+      const [, executed, exists, , amountGwei] = row.result as SpendRequestTuple;
+      if (exists && !executed && amountGwei > 0n) {
+        totalGwei += amountGwei;
+      }
+    }
+    return totalGwei * 1_000_000_000n;
+  }, [proposalCount, query.data]);
+
+  return {
+    pendingWei,
+    isLoading: proposalCount > 0 && query.isLoading,
+    isError: query.isError,
+    refetch: query.refetch,
+  };
 }
 
 export function useSpendRequest(proposalId: bigint | undefined) {
