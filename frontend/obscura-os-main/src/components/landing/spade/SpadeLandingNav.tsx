@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import NavRightSlot from "@/components/elite/NavRightSlot";
@@ -18,8 +18,6 @@ const NAV_LINKS = [
   { label: "Download", href: "/download" },
   { label: "Privacy", href: "/privacy" },
   { label: "Docs", href: "/docs" },
-  { label: "How FHE works", href: "#how-fhe" },
-  { label: "AI agents", href: "#agents" },
 ] as const;
 
 const navLinkClass =
@@ -31,6 +29,7 @@ const launchAppClass =
 export default function SpadeLandingNav() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -38,6 +37,26 @@ export default function SpadeLandingNav() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    if (location.pathname !== "/" || !location.hash) return;
+    const id = location.hash.slice(1);
+    const el = document.getElementById(id);
+    if (el) {
+      requestAnimationFrame(() => el.scrollIntoView({ behavior: "smooth", block: "start" }));
+    }
+  }, [location.pathname, location.hash]);
+
+  const handleNavClick = (href: string) => (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!href.includes("#")) return;
+    const [path, hash] = href.split("#");
+    if (path !== "/" && path !== "") return;
+    if (location.pathname !== "/") return;
+    event.preventDefault();
+    document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.history.replaceState(null, "", `/#${hash}`);
+    setMenuOpen(false);
+  };
 
   return (
     <header
@@ -51,9 +70,14 @@ export default function SpadeLandingNav() {
           <ObscuraLogo size="nav" tone="light" />
         </Link>
 
-        <nav className="hidden items-center gap-6 sm:flex sm:gap-8" aria-label="Main navigation">
-          {NAV_LINKS.slice(0, 4).map((link) => (
-            <Link key={link.href} to={link.href} className={navLinkClass}>
+        <nav className="hidden items-center gap-6 lg:flex lg:gap-8" aria-label="Main navigation">
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              to={link.href}
+              className={navLinkClass}
+              onClick={handleNavClick(link.href)}
+            >
               {link.label}
             </Link>
           ))}
@@ -70,7 +94,7 @@ export default function SpadeLandingNav() {
               <Button
                 variant="outline"
                 size="icon"
-                className="size-9 shrink-0 border-forest/15 sm:hidden"
+                className="size-9 shrink-0 border-forest/15 lg:hidden"
                 aria-label="Open menu"
               >
                 <Menu />
@@ -86,7 +110,10 @@ export default function SpadeLandingNav() {
                     <a
                       key={link.href}
                       href={link.href}
-                      onClick={() => setMenuOpen(false)}
+                      onClick={(event) => {
+                        handleNavClick(link.href)(event);
+                        setMenuOpen(false);
+                      }}
                       className="rounded-lg px-3 py-3 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-forest transition-colors hover:bg-sage-1"
                     >
                       {link.label}

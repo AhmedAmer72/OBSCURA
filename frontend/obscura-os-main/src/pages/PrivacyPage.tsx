@@ -12,6 +12,9 @@ import {
   Banknote,
   Vote,
   Landmark,
+  Smartphone,
+  Monitor,
+  Database,
 } from "lucide-react";
 import { useAccount } from "wagmi";
 import SpadeLandingNav from "@/components/landing/spade/SpadeLandingNav";
@@ -32,80 +35,133 @@ const PILLARS = [
   {
     icon: Lock,
     title: "Encrypted by default",
-    desc: "Balances, transfers, ballots, and payroll amounts are stored as FHE ciphertexts on Arbitrum Sepolia. Arbiscan never shows plaintext values.",
+    desc: "Balances, transfer amounts, loan positions, and ballot choices are stored as FHE ciphertext handles on Arbitrum Sepolia — not plaintext on explorers.",
+  },
+  {
+    icon: EyeOff,
+    title: "Reveal on demand",
+    desc: "Web and mobile apps show masked values until you tap Reveal or submit an action. Nothing sensitive auto-decrypts when a page loads.",
   },
   {
     icon: Shield,
-    title: "Computed in the Open",
-    desc: "Contracts run homomorphic ops — add, compare, select — on sealed data. The chain proves settlement without exposing numbers.",
+    title: "Computed in the open",
+    desc: "Smart contracts run homomorphic add, compare, and select on sealed data. Settlement is verifiable without publishing individual amounts.",
   },
   {
     icon: Key,
-    title: "Revealed by permit",
-    desc: "You sign EIP-712 view permits to decrypt only what you own. Auditors and delegates receive scoped access — never full ledger dumps.",
+    title: "Unlocked by you",
+    desc: "You authorize decryption with wallet-signed permits. Obscura cannot read your sealed values without your explicit signature.",
+  },
+];
+
+const APPS = [
+  {
+    icon: Monitor,
+    title: "Obscura web",
+    body: "Harmony workspace in the browser — Pay, Credit, Govern, Settings, and the developer docs portal. Optional browser push via service worker.",
+    cta: { label: "Open app", href: "/pay" },
+  },
+  {
+    icon: Smartphone,
+    title: "Obscura mobile (Android)",
+    body: "Capacitor shell with Pay, Govern, and Credit. Same FHE encryption path and reveal-on-demand UX as web. WalletConnect on device; stealth keys stay on your phone.",
+    cta: { label: "Download APK", href: "/download" },
   },
 ];
 
 const LIFECYCLE = [
   {
     step: "01",
-    title: "Client encrypts",
-    body: "The Obscura app encrypts inputs in your browser via CoFHE SDK before any transaction. Plaintext never hits the RPC.",
+    title: "You encrypt locally",
+    body: "Web or mobile runs the CoFHE client before signing. Amounts and vote choices are sealed on your device — plaintext is not sent to RPC nodes.",
   },
   {
     step: "02",
     title: "Chain stores handles",
-    body: "Solidity receives InEuint64 / InEaddress handles. The EVM stores references — not decrypted values.",
+    body: "Contracts receive encrypted inputs and persist ciphertext references on Arbitrum Sepolia. Explorers see handles, not decoded values.",
   },
   {
     step: "03",
     title: "Coprocessor computes",
-    body: "FHE.add, FHE.select, and FHE.allowPublic run in the Fhenix threshold network. Results stay ciphertext until permitted.",
+    body: "Fhenix CoFHE evaluates homomorphic operations off-chain. Updated ciphertext is written back with ACL rules that gate who may ever decrypt.",
   },
   {
     step: "04",
-    title: "Permit unlocks view",
-    body: "A signed permit authorizes threshold decryption for one viewer. Revoke anytime from the panel below.",
+    title: "You reveal when ready",
+    body: "Balances, positions, and tallies stay hidden in the UI until you choose Reveal or finalize a vote. Revoke view permits below at any time.",
   },
 ];
 
 const VISIBILITY = [
-  { item: "Transaction calldata", public: "Visible", private: "Encrypted inputs only" },
-  { item: "Token balances", public: "Hidden", private: "euint64 per wallet" },
-  { item: "Transfer amounts", public: "Hidden", private: "Confidential P2P / streams" },
-  { item: "Vote choice", public: "Hidden", private: "Aggregate tally after close" },
-  { item: "Escrow amounts", public: "Hidden", private: "Silent failure on bad auth" },
-  { item: "Stealth recipient", public: "Hidden", private: "Meta-address + view tags" },
+  { item: "Wallet addresses in events", public: "Visible", private: "Participation graph is public" },
+  { item: "Transaction existence & timing", public: "Visible", private: "Block time + tx hash" },
+  { item: "ocUSDC balances", public: "Hidden", private: "Masked until Reveal" },
+  { item: "Transfer & stream amounts", public: "Hidden", private: "Confidential Pay flows" },
+  { item: "Credit collateral & debt", public: "Hidden", private: "Position masked until Reveal" },
+  { item: "Vote choice", public: "Hidden", private: "Aggregate totals only after finalize" },
+  { item: "Delegation target", public: "Visible", private: "Public delegate mapping" },
+  { item: "Proposal title & deadline", public: "Visible", private: "Governance metadata" },
+  { item: "Shield / unshield USDC", public: "Visible", private: "Bridge in/out amounts" },
+  { item: "Market TVL & utilization", public: "Aggregate", private: "No per-user leak" },
 ];
 
 const MODULES = [
   {
     icon: Banknote,
-    name: "ObscuraPay",
+    name: "Pay",
     points: [
-      "ocUSDC balances and transfer amounts stay sealed",
-      "Payroll streams use per-cycle salts and optional jitter",
-      "Stealth routing hides recipient wallets in calldata",
+      "Private mode: ocUSDC balances and send amounts stay sealed on-chain",
+      "Public mode: visible USDC via passkey smart account — separate from FHE flows",
+      "Stealth inbox, streams, escrows, and invoices hide amounts by default",
+      "Payment receipts and contact labels can stay in browser local storage only",
     ],
   },
   {
     icon: Vote,
-    name: "ObscuraVote",
+    name: "Govern",
     points: [
-      "Ballots encrypted — only aggregate tallies decrypt after finalization",
-      "Revote window resists coercion without revealing prior choice",
-      "Treasury spend amounts attached as FHE ciphertext to proposals",
+      "Multi-option ballots encrypted — only you can verify your choice on device",
+      "Final results reveal aggregate totals, never individual ballots",
+      "Delegation, participation counts, and rewards accrual are public metadata",
+      "Advanced Governor track uses plaintext execution votes by design (OZ timelock)",
     ],
   },
   {
     icon: Landmark,
-    name: "ObscuraCredit",
+    name: "Credit",
     points: [
-      "Positions and health factors computed on encrypted collateral",
-      "Bids and limits hidden until permit-gated reveal",
-      "No MEV-visible loan sizes on public mempools",
+      "Borrow, supply, and health computed on encrypted position shares",
+      "Liquidation auction bids sealed until settlement",
+      "Shared reputation tier is capped aggregate signals — not raw transaction history",
     ],
   },
+];
+
+const DATA_HANDLING = [
+  {
+    icon: Database,
+    title: "Indexed activity",
+    body: "Our worker sanitizes chain events before Supabase storage. Vote choices and sensitive amounts are stripped; feeds show timing and participants, not decrypted values.",
+  },
+  {
+    icon: Key,
+    title: "Device storage",
+    body: "Stealth keys, contact labels, and optional payment receipts stay on your device (browser or phone). They are not uploaded as plaintext to Obscura servers.",
+  },
+  {
+    icon: Smartphone,
+    title: "Mobile specifics",
+    body: "The Android app uses the same contracts and CoFHE path as web inside a secure WebView. Native push is not required for v1; activity is in-app and pull-based on mobile.",
+  },
+];
+
+const STILL_PUBLIC = [
+  "Wallet addresses appearing in events and activity feeds",
+  "When you transacted (block timestamps) and transaction hashes",
+  "Governance proposal titles, categories, deadlines, and participation counts",
+  "Who you delegated voting power to",
+  "USDC amounts when shielding into or unshielding out of ocUSDC",
+  "Reputation tier buckets and capped weights from the API — not individual amounts",
 ];
 
 const ACL_ROWS = [
@@ -225,15 +281,25 @@ const PrivacyPage = () => {
           </p>
           <ObscuraSlogan size="page" className="mt-4" />
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-forest/60">
-            Obscura keeps sensitive values encrypted onchain while still settling on public
-            chains. You control what decrypts — through cryptographic permits, not trust.
+            Obscura keeps sensitive financial and governance values encrypted on-chain while settling
+            on public Ethereum L2s. Web and mobile share the same privacy model: sealed by default,
+            revealed only when you choose.
           </p>
-          <Link
-            to="/pay"
-            className="mt-6 inline-flex items-center gap-2 rounded-full bg-forest px-5 py-2.5 text-sm font-medium text-sage-1 transition-opacity hover:opacity-90"
-          >
-            Launch app
-          </Link>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link
+              to="/pay"
+              className="inline-flex items-center gap-2 rounded-full bg-forest px-5 py-2.5 text-sm font-medium text-sage-1 transition-opacity hover:opacity-90"
+            >
+              Launch web app
+            </Link>
+            <Link
+              to="/download"
+              className="inline-flex items-center gap-2 rounded-full border border-forest/20 bg-white px-5 py-2.5 text-sm font-medium text-forest transition-colors hover:border-forest/35"
+            >
+              <Smartphone className="size-4" />
+              Mobile app
+            </Link>
+          </div>
         </motion.header>
 
         <div className="space-y-8">
@@ -241,7 +307,7 @@ const PrivacyPage = () => {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="grid gap-4 md:grid-cols-3"
+            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
           >
             {PILLARS.map((p) => (
               <DocsPanel key={p.title} className="p-5">
@@ -251,6 +317,35 @@ const PrivacyPage = () => {
               </DocsPanel>
             ))}
           </motion.div>
+
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.08 }}
+          >
+            <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.22em] text-forest/45">
+              ▸ Obscura apps
+            </p>
+            <div className="grid gap-4 md:grid-cols-2">
+              {APPS.map((app) => (
+                <DocsPanel key={app.title} className="flex flex-col p-5">
+                  <app.icon className="mb-3 size-5 text-forest" />
+                  <h3 className="font-display text-base text-forest">{app.title}</h3>
+                  <p className="mt-2 flex-1 text-sm leading-relaxed text-forest/55">{app.body}</p>
+                  <Link
+                    to={app.cta.href}
+                    className="mt-4 inline-flex w-fit items-center gap-1.5 text-sm font-medium text-forest underline-offset-2 hover:underline"
+                  >
+                    {app.cta.label}
+                  </Link>
+                </DocsPanel>
+              ))}
+            </div>
+            <p className="mt-4 text-xs leading-relaxed text-forest/45">
+              Network: Arbitrum Sepolia testnet (chain ID 421614). Fhenix CoFHE coprocessing is
+              testnet-only today — mainnet availability follows FHE infrastructure, not app features.
+            </p>
+          </motion.section>
 
           <motion.section
             initial={{ opacity: 0, y: 12 }}
@@ -284,8 +379,13 @@ const PrivacyPage = () => {
               <div className="border-b border-forest/10 px-5 py-4">
                 <SectionTitle icon={EyeOff}>Onchain visibility</SectionTitle>
                 <p className="text-sm text-forest/55">
-                  What explorers show versus what Obscura seals by default.
+                  What explorers and indexers can infer versus what Obscura seals by default.
                 </p>
+              </div>
+              <div className="hidden grid-cols-[1fr_0.9fr_1.1fr] gap-3 border-b border-forest/8 bg-sage-2/80 px-5 py-2.5 text-[10px] font-mono uppercase tracking-wider text-forest/45 sm:grid">
+                <span>Surface</span>
+                <span>Public chain default</span>
+                <span>Obscura</span>
               </div>
               <div className="divide-y divide-forest/8">
                 {VISIBILITY.map((row) => (
@@ -334,13 +434,54 @@ const PrivacyPage = () => {
           <motion.section
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
+            transition={{ delay: 0.22 }}
+          >
+            <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.22em] text-forest/45">
+              ▸ Data & off-chain services
+            </p>
+            <div className="grid gap-4 md:grid-cols-3">
+              {DATA_HANDLING.map((row) => (
+                <DocsPanel key={row.title} className="p-5">
+                  <row.icon className="mb-3 size-5 text-forest" />
+                  <h3 className="font-display text-base text-forest">{row.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-forest/55">{row.body}</p>
+                </DocsPanel>
+              ))}
+            </div>
+          </motion.section>
+
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.24 }}
+          >
+            <DocsPanel className="p-6">
+              <SectionTitle icon={Eye}>Still public by design</SectionTitle>
+              <p className="mb-4 text-sm text-forest/55">
+                Even with FHE, some metadata remains visible on testnet. Plan accordingly for
+                operational security and compliance reviews.
+              </p>
+              <ul className="space-y-2">
+                {STILL_PUBLIC.map((line) => (
+                  <li key={line} className="flex gap-2 text-sm leading-snug text-forest/60">
+                    <span className="text-forest/35">•</span>
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            </DocsPanel>
+          </motion.section>
+
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.26 }}
           >
             <DocsPanel className="p-6">
               <SectionTitle icon={Key}>Your active permits</SectionTitle>
               <p className="mb-4 text-sm text-forest/55">
-                EIP-712 permits bind decryption to your wallet. The sealing private key never
-                leaves the browser.
+                View permits let you decrypt sealed values you own. They bind to your wallet on web
+                or mobile. The sealing private key never leaves your device.
               </p>
 
               {!isConnected ? (
@@ -356,7 +497,8 @@ const PrivacyPage = () => {
                 </div>
               ) : permits.length === 0 ? (
                 <p className="rounded-lg bg-sage-2 px-4 py-6 text-center font-mono text-xs text-forest/45">
-                  No active permits. Signing a decrypt action in Pay or Vote creates one.
+                  No active permits. Tapping Reveal in Pay, Credit, or Govern — or verifying your
+                  vote — creates one.
                 </p>
               ) : (
                 <div className="space-y-2">
@@ -461,10 +603,9 @@ const PrivacyPage = () => {
 
               <div className="mt-4 rounded-lg border border-lime-accent/25 bg-lime-accent/8 px-4 py-3">
                 <p className="font-mono text-[11px] leading-relaxed text-forest/70">
-                  <span className="font-medium text-forest">Permit flow:</span> public sealing
-                  key goes to CoFHE for re-encryption; private key stays local. Only the permit
-                  holder can unseal — even Obscura cannot read your ciphertext without your
-                  signature.
+                  <span className="font-medium text-forest">Permit flow:</span> your device encrypts
+                  with CoFHE; only your signed permit authorizes decryption for your wallet.
+                  Obscura operators cannot read sealed balances or ballots without that signature.
                 </p>
               </div>
             </DocsPanel>

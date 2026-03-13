@@ -4,7 +4,7 @@ const FHENIX_URL = "https://www.fhenix.io/";
 const FHENIX_LOGO_SRC = "/images/fhenix-logo.svg";
 
 const LOGO_HEIGHT: Record<"hero" | "nav" | "footer" | "app" | "inline", string> = {
-  hero: "h-5 sm:h-6",
+  hero: "h-3.5 sm:h-4",
   nav: "h-3.5 sm:h-4",
   footer: "h-4 brightness-0 invert opacity-90",
   app: "h-3.5",
@@ -54,7 +54,7 @@ export function PoweredByFhenix({
       className={cn(
         "powered-by-fhenix inline-flex items-center gap-2 no-underline transition-opacity hover:opacity-85",
         variant === "hero" &&
-          "rounded-full border border-forest/14 bg-white/90 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.2em] shadow-[0_2px_12px_rgba(24,40,14,0.06)] backdrop-blur-sm hover:border-forest/25",
+          "gap-1.5 rounded-full border border-forest/14 bg-white/90 px-2.5 py-1 font-mono text-[8px] uppercase tracking-[0.14em] shadow-[0_1px_8px_rgba(24,40,14,0.05)] backdrop-blur-sm hover:border-forest/25 sm:px-3 sm:text-[9px] sm:tracking-[0.16em]",
         variant === "nav" &&
           "rounded-full border border-forest/10 bg-sage-1 px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.18em] hover:border-forest/20",
         variant === "footer" &&
