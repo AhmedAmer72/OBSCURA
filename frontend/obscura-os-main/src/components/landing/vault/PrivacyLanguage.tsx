@@ -21,9 +21,9 @@ export function PrivacyLanguage() {
             <span className="text-brand">Revealed by permit.</span>
           </h2>
           <p className="mt-6 max-w-lg text-muted-foreground text-lg leading-relaxed">
-            Every value across Obscura ships in two states. The default is
-            encrypted — a cipher that travels with the asset. A signed permit
-            turns it back into a number, for one viewer at a time.
+            Harmony surfaces mask balances, borrowing power, and ballot weights by default — the same
+            cipher-decrypt animation you see in Pay and Home. Nothing auto-decrypts on load; a signed
+            EIP-712 permit unlocks a value for you alone.
           </p>
 
           <button

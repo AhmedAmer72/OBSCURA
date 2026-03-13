@@ -1,6 +1,6 @@
 import { useRef, useState, type RefObject } from "react";
 import type { LucideIcon } from "lucide-react";
-import { Inbox, LockKeyhole, Send, Shield, Wallet } from "lucide-react";
+import { Fingerprint, Inbox, LockKeyhole, Send, Shield, Wallet } from "lucide-react";
 import {
   AnimatePresence,
   motion,
@@ -30,15 +30,23 @@ const STEPS: PayStep[] = [
   {
     id: "wallet",
     title: "Connect wallet",
-    brief: "Sign in with the wallet you already use on Arbitrum.",
+    brief: "Sign in with the wallet you already use on Arbitrum Sepolia.",
     icon: Wallet,
     tone: "forest",
     hint: "MetaMask · WalletConnect",
   },
   {
+    id: "mode",
+    title: "Pick your rail",
+    brief: "Private Mode seals ocUSDC with your EOA. Public Mode uses a passkey smart account for visible USDC.",
+    icon: Fingerprint,
+    tone: "lime",
+    hint: "Private · Public",
+  },
+  {
     id: "shield",
     title: "Shield USDC",
-    brief: "Move public USDC in — your balance becomes private ocUSDC.",
+    brief: "In Private Mode, move public USDC in — your balance becomes encrypted ocUSDC on-chain.",
     icon: Shield,
     tone: "moss",
     hint: "USDC → ocUSDC",

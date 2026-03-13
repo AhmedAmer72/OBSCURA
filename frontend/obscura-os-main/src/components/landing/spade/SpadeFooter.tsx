@@ -3,41 +3,47 @@ import { Link } from "react-router-dom";
 import { motion, useScroll, useSpring, useTransform, type MotionValue } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PoweredByFhenix } from "@/components/brand/PoweredByFhenix";
 
 const USE_CASES = [
-  { label: "Private payments", href: "/pay" },
+  { label: "Command center", href: "/home" },
+  { label: "Private & public Pay", href: "/pay" },
   { label: "Encrypted credit", href: "/credit" },
-  { label: "Sealed governance", href: "/vote" },
-  { label: "View permits", href: "/docs" },
+  { label: "FHE governance", href: "/vote" },
 ];
 
 const MODULES = [
-  { label: "ObscuraPay", href: "/pay" },
-  { label: "ObscuraCredit", href: "/credit" },
-  { label: "ObscuraVote", href: "/vote" },
-  { label: "Ecosystem", href: "/ecosystem" },
+  { label: "Harmony Home", href: "/home" },
+  { label: "Obscura Pay", href: "/pay" },
+  { label: "Obscura Credit", href: "/credit" },
+  { label: "Obscura Vote", href: "/vote" },
+  { label: "Settings", href: "/settings" },
 ];
 
 const COMPANY = [
   { label: "How it works", href: "#how" },
+  { label: "Download app", href: "/download" },
   { label: "Docs", href: "/docs" },
   { label: "Privacy", href: "/privacy" },
   { label: "Security", href: "#how" },
 ];
 
 const TICKER_ITEMS = [
-  "FHE",
+  "POWERED BY FHENIX",
+  "COFHE",
   "EIP-712",
-  "PERMIT",
-  "ENCRYPTED BALANCES",
+  "REVEAL ON DEMAND",
+  "OCUSDC",
   "HOMOMORPHIC",
   "ARBITRUM SEPOLIA",
+  "HARMONY",
+  "PRIVATE MODE",
+  "PUBLIC MODE",
+  "PASSKEY",
   "PAY",
   "CREDIT",
   "VOTE",
   "OBSCURA",
-  "ZERO-KNOWLEDGE READY",
-  "SEALED BALLOTS",
 ];
 
 function FloatingFooterCoin({
@@ -231,9 +237,12 @@ export default function SpadeFooter() {
       <FooterScrollTicker />
 
       <div className="border-t border-white/10 px-5 py-6 sm:px-8 lg:px-10">
-        <p className="mx-auto max-w-[1400px] font-mono text-[10px] uppercase tracking-[0.18em] text-white/35">
-          © {new Date().getFullYear()} OBSCURA · FHE on Arbitrum Sepolia
-        </p>
+        <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-4 sm:flex-row sm:items-center">
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/35">
+            © {new Date().getFullYear()} OBSCURA · Arbitrum Sepolia
+          </p>
+          <PoweredByFhenix variant="footer" />
+        </div>
       </div>
     </footer>
   );

@@ -47,7 +47,7 @@ export default function WalletConnect({ tone = "dark" }: WalletConnectProps) {
         <button
           onClick={() => setOpen((o) => !o)}
           className={cn(
-            "rounded-sm px-5 py-2 font-mono text-xs uppercase tracking-[0.15em] transition-colors duration-300 border",
+            "rounded-full px-5 py-2 font-medium text-sm transition-all duration-200 border shadow-sm",
             connectBtn,
           )}
         >
@@ -118,7 +118,7 @@ export default function WalletConnect({ tone = "dark" }: WalletConnectProps) {
       <div
         aria-label={`Connected wallet ${displayName}`}
         className={cn(
-          "group flex shrink-0 items-center gap-2 rounded-sm border px-3.5 py-2 font-mono text-xs transition-colors duration-300",
+          "group flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-all duration-200 shadow-sm",
           walletBtn,
         )}
       >

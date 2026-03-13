@@ -3,14 +3,17 @@ import { Link } from "react-router-dom";
 import { motion, useInView } from "framer-motion";
 
 const INTEGRATIONS = [
+  { label: "Harmony · /home", href: "/home" },
   { label: "Fhenix CoFHE", href: "/docs" },
   { label: "Arbitrum Sepolia", href: "/docs" },
-  { label: "ocUSDC · ocETH", href: "/pay" },
-  { label: "EIP-712 Permits", href: "/docs" },
-  { label: "Pay Module", href: "/pay" },
-  { label: "Credit Module", href: "/credit" },
-  { label: "Vote Module", href: "/vote" },
-  { label: "WalletConnect", href: "/docs" },
+  { label: "ocUSDC_Pay", href: "/pay" },
+  { label: "Private Mode", href: "/pay" },
+  { label: "Public · Passkey", href: "/pay" },
+  { label: "@obscura-fhe/sdk", href: "/docs" },
+  { label: "Pay", href: "/pay" },
+  { label: "Credit", href: "/credit" },
+  { label: "Vote", href: "/vote" },
+  { label: "Unified Settings", href: "/settings" },
 ];
 
 /**
@@ -33,7 +36,7 @@ export default function IntegrationsScrollSection() {
             [ Integrations ]
           </p>
           <h3 className="mt-3 font-display text-2xl font-medium tracking-tight text-forest md:text-3xl">
-            Drop into the modules you already ship
+            Every module on one chain — one encrypted asset
           </h3>
         </motion.div>
 

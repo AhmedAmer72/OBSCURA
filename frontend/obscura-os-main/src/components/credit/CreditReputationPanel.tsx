@@ -59,7 +59,7 @@ export function CreditReputationPanel({ compact = false }: { compact?: boolean }
 
       <div className="p-5">
         <div className="grid gap-4 md:grid-cols-[0.9fr_1.1fr]">
-          <div className="rounded-2xl bg-foreground p-5 text-background">
+          <div className="rounded-2xl bg-[hsl(var(--dash-forest))] p-5 text-[hsl(96_18%_97%)]">
             <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] opacity-70">
               <Award className="h-3.5 w-3.5" /> Current tier
             </div>

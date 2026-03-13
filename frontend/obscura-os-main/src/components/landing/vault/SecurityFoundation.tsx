@@ -8,23 +8,23 @@ import {
 const PILLARS = [
   {
     title: "FHE at the protocol layer",
-    body: "Values are encrypted before they ever leave your device. Contracts compute on ciphertext using the CoFHE coprocessor — no node, sequencer, or relayer ever sees the plaintext.",
+    body: "21 FHE-enabled contracts on Arbitrum Sepolia store euint64 handles — not plaintext amounts. The Fhenix CoFHE coprocessor runs homomorphic math; your wallet stays the signer for private writes.",
   },
   {
-    title: "Permits, not custody",
-    body: "Every reveal is an explicit, time-boxed EIP-712 signature you control. Grant a viewer for 5 minutes; revoke instantly. Obscura never holds your decryption keys.",
+    title: "Reveal on demand",
+    body: "Product philosophy is explicit: no decrypt in useEffect. Balances, credit shares, and vote choices stay masked until you click Reveal and approve a CoFHE permit.",
   },
   {
-    title: "Audited by the best",
-    body: "Trail of Bits, OpenZeppelin, and Spearbit have reviewed every primitive. Formal verification on the settlement layer. Bug bounty live with Immunefi.",
+    title: "Live testnet, real wiring",
+    body: "38 registered contracts, 51 indexed event types, and shared API/worker infrastructure — production-grade architecture on Sepolia while CoFHE mainnet unlocks.",
   },
 ];
 
 const PROOFS = [
-  { icon: FileCheck2, label: "Trail of Bits · 2026 Q1" },
-  { icon: FileCheck2, label: "OpenZeppelin · 2026 Q2" },
-  { icon: ScrollText, label: "Whitepaper · v2.1" },
-  { icon: FileBadge, label: "Immunefi · $2M bounty" },
+  { icon: FileCheck2, label: "Arbitrum Sepolia · 421614" },
+  { icon: FileCheck2, label: "Fhenix CoFHE · testnet" },
+  { icon: ScrollText, label: "Architecture ref · v1.2" },
+  { icon: FileBadge, label: "@obscura-fhe/sdk" },
 ];
 
 export function SecurityFoundation() {

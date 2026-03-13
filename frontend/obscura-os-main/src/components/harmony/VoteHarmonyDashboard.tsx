@@ -10,8 +10,10 @@ import {
   Vote as VoteIcon,
 } from "lucide-react";
 import { useAccount } from "wagmi";
+import { formatEther } from "viem";
 import { useProposalCount } from "@/hooks/useProposals";
 import { useReputationSummary } from "@/hooks/useReputationSummary";
+import { usePendingReward } from "@/hooks/useRewards";
 import { VoteKpi, VoteNotice, vh } from "@/components/harmony/voteHarmonyUi";
 
 const TIER_LABEL: Record<string, string> = {
@@ -32,10 +34,15 @@ export function VoteHarmonyDashboard({
   onOpenProposals: () => void;
   onCreate?: () => void;
 }) {
-  const { isConnected } = useAccount();
+  const { isConnected, address } = useAccount();
   const { summary, isLoading: repLoading } = useReputationSummary();
   const { data: count, isLoading: countLoading } = useProposalCount();
+  const { data: pendingRewardWei } = usePendingReward(address);
   const totalProposals = Number(count ?? 0);
+  const pendingEth =
+    pendingRewardWei != null && pendingRewardWei > 0n
+      ? Number(formatEther(pendingRewardWei)).toFixed(3)
+      : null;
 
   const tierLabel =
     !isConnected || repLoading ? "—" : TIER_LABEL[summary?.tier ?? "new"];
@@ -45,41 +52,8 @@ export function VoteHarmonyDashboard({
 
   return (
     <div className="vote-harmony-panel space-y-6">
-      <section className="rounded-2xl border border-border bg-white p-5 shadow-[0_1px_3px_hsl(145_18%_12%/0.06)] sm:p-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-              Private governance
-            </p>
-            <h1 className="mt-2 font-display text-3xl leading-tight text-foreground sm:text-4xl md:text-5xl">
-              Obscura Vote
-            </h1>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground md:text-base">
-              Cast private votes on Arbitrum Sepolia. Change your mind before the deadline.
-              Only aggregate totals are revealed — never individual choices.
-            </p>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-            <button
-              type="button"
-              onClick={onVote}
-              className="inline-flex h-11 min-h-[44px] items-center justify-center gap-2 rounded-full bg-foreground px-5 text-sm font-medium text-background"
-            >
-              <VoteIcon className="h-4 w-4" />
-              Vote privately
-            </button>
-            <button
-              type="button"
-              onClick={onOpenProposals}
-              className="inline-flex h-11 min-h-[44px] items-center justify-center gap-2 rounded-full hairline px-5 text-sm font-medium hover:bg-muted/60"
-            >
-              <FileText className="h-4 w-4" />
-              Browse proposals
-            </button>
-          </div>
-        </div>
-
-        <div className={`${vh.kpiGrid} mt-6`}>
+      <section className="dash-card p-5 sm:p-8">
+        <div className={`${vh.kpiGrid}`}>
           <VoteKpi
             icon={FileText}
             label="Proposals"
@@ -92,6 +66,26 @@ export function VoteHarmonyDashboard({
         </div>
       </section>
 
+      {pendingEth ? (
+        <motion.section
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:p-6"
+        >
+          <p className="dash-eyebrow text-amber-800">Rewards pending</p>
+          <p className="mt-2 font-display text-2xl font-semibold text-amber-950">
+            {pendingEth} ETH in rewards pending
+          </p>
+          <p className="mt-2 text-sm text-amber-900/80">
+            Claim after each finalized vote — go to Rewards.
+          </p>
+          <button type="button" onClick={onParticipation} className="dash-btn-primary mt-4 h-9 px-4 text-xs">
+            Claim rewards
+            <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        </motion.section>
+      ) : null}
+
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -103,17 +97,17 @@ export function VoteHarmonyDashboard({
           { i: RotateCcw, l: "Revote", v: "Change before deadline", c: "text-amber-700" },
           { i: BarChart3, l: "Reveal", v: "Totals only, never ballots", c: "text-sky-800" },
         ].map((k) => (
-          <div key={k.l} className="rounded-2xl border border-border bg-white p-4 shadow-[0_1px_2px_hsl(145_18%_12%/0.04)]">
+          <div key={k.l} className="dash-card p-4">
             <div className="flex items-center gap-2 text-muted-foreground">
               <k.i className={`h-4 w-4 ${k.c}`} />
-              <span className="font-mono text-[10px] uppercase tracking-[0.16em]">{k.l}</span>
+              <span className="dash-eyebrow text-[9px]">{k.l}</span>
             </div>
             <p className="mt-2 text-sm font-medium text-foreground">{k.v}</p>
           </div>
         ))}
       </motion.div>
 
-      <div className="rounded-2xl border border-border bg-white p-4 shadow-[0_1px_2px_hsl(145_18%_12%/0.04)] sm:p-5">
+      <div className="dash-card p-4 sm:p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold text-foreground">Recommended next step</p>
@@ -124,29 +118,17 @@ export function VoteHarmonyDashboard({
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
-            <button
-              type="button"
-              onClick={onVote}
-              className="inline-flex h-10 min-h-[44px] items-center justify-center gap-2 rounded-full bg-foreground px-4 text-sm font-medium text-background"
-            >
+            <button type="button" onClick={onVote} className="dash-btn-primary h-9 px-3 text-xs">
               Vote now
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-3.5 w-3.5" />
             </button>
             {onCreate && (
-              <button
-                type="button"
-                onClick={onCreate}
-                className="inline-flex h-10 min-h-[44px] items-center justify-center rounded-full hairline px-4 text-sm font-medium hover:bg-muted/60"
-              >
+              <button type="button" onClick={onCreate} className="dash-btn-outline h-9 px-3 text-xs">
                 Create proposal
               </button>
             )}
-            <button
-              type="button"
-              onClick={onParticipation}
-              className="inline-flex h-10 min-h-[44px] items-center justify-center rounded-full hairline px-4 text-sm text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-            >
-              Participation
+            <button type="button" onClick={onParticipation} className="dash-btn-outline h-9 px-3 text-xs">
+              Claim rewards
             </button>
           </div>
         </div>

@@ -3,7 +3,7 @@
 // Hero is a two-column mission console: balance/posture on the left,
 // always-visible Treasury Checklist on the right (onboarding + health).
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import {
   ArrowDownLeft,
@@ -28,6 +28,17 @@ import {
 import { useAccount, useChainId, useReadContract, useSwitchChain } from "wagmi";
 import { cn } from "@/lib/utils";
 import { HarmonyStatusBanner } from "@/components/harmony/harmony-ui";
+import { CipherMask } from "@/components/harmony/CipherMask";
+import {
+  PayHomeChecklistPanel,
+  PayHomeMetricAction,
+  PayHomeMetricCard,
+  PayHomeRecommended,
+  PayHomeSealedBanner,
+  PayHomeSealedValue,
+  PayHomeWelcome,
+  type PayHomeRecommendedItem,
+} from "@/components/harmony/pay-home/PayHomePremiumSections";
 import { useOcUSDCBalance } from "@/hooks/useOcUSDCBalance";
 import { useUSDCBalance } from "@/hooks/useUSDCBalance";
 import { useStealthInbox } from "@/hooks/useStealthInbox";
@@ -136,9 +147,9 @@ function VaultBalance({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.12 }}
-              className="select-none font-display text-[2.75rem] leading-none cipher-shimmer"
+              className="inline-flex items-baseline"
             >
-              ••••••
+              <CipherMask blocks={6} size="xl" />
             </motion.span>
           )}
         </AnimatePresence>
@@ -190,7 +201,7 @@ function ActionPill({
     <button
       type="button"
       onClick={onClick}
-      className="group relative flex items-center gap-3 overflow-hidden rounded-xl hairline bg-card p-3 text-left transition-all duration-150 hover:bg-muted/50 hover:shadow-[0_2px_16px_0_hsl(var(--foreground)/0.05)] active:scale-[0.98]"
+      className="group relative flex items-center gap-3 overflow-hidden rounded-xl hairline bg-card p-3 text-left transition-all duration-150 hover:bg-muted/50 hover:shadow-[var(--dash-shadow-hover)] active:scale-[0.98]"
     >
       <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-muted text-foreground/65 transition-all duration-150 group-hover:bg-foreground/[0.09] group-hover:scale-105">
         <Icon className="h-[15px] w-[15px]" />
@@ -423,7 +434,7 @@ export function PayHarmonyHome({
 }: {
   onNavigate: (tab: PayTab) => void;
 }) {
-  const { isConnected } = useAccount();
+  const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
   const { decrypted, reveal, busy: revealBusy } = useOcUSDCBalance();
@@ -727,9 +738,71 @@ export function PayHarmonyHome({
         : { label: "Send public USDC", icon: Send, onClick: () => onNavigate("pay") };
   const PublicPrimaryIcon = publicPrimaryAction.icon;
 
+  const shortAddress = address ? `${address.slice(0, 6)}…${address.slice(-4)}` : "";
+
+  const privateRecommended = useMemo((): PayHomeRecommendedItem[] => {
+    const items: PayHomeRecommendedItem[] = [];
+    const activeSteps = steps.filter((step) => step.active && !step.done);
+
+    for (const step of activeSteps) {
+      if (items.length >= 3) break;
+      items.push({
+        id: `step-${step.num}`,
+        icon: step.num <= 2 ? Zap : step.num === 3 ? Shield : step.num === 4 ? ShieldCheck : Send,
+        iconTone: step.num === 5 ? "amber" : "green",
+        title: step.title,
+        description: step.hint,
+        actionLabel: step.actionLabel ?? step.externalLabel ?? "Continue",
+        onAction: step.onAction ?? (step.externalHref ? () => window.open(step.externalHref, "_blank") : primaryAction.onClick),
+        urgent: step.num === 5 && !onboarding.hasActivity,
+      });
+    }
+
+    if (items.length === 0 && isConnected) {
+      items.push({
+        id: "primary",
+        icon: PrimaryIcon,
+        iconTone: unread > 0 ? "amber" : "green",
+        title: primaryAction.label,
+        description: isFullyActive
+          ? "Your sealed treasury is ready for encrypted transfers."
+          : "Continue setup to unlock the full private payment stack.",
+        actionLabel: "Continue",
+        onAction: primaryAction.onClick,
+      });
+    }
+
+    return items.slice(0, 3);
+  }, [
+    PrimaryIcon,
+    isConnected,
+    isFullyActive,
+    onboarding.hasActivity,
+    primaryAction,
+    steps,
+    unread,
+  ]);
+
+  const publicRecommended = useMemo((): PayHomeRecommendedItem[] => {
+    return publicSteps
+      .filter((step) => step.active && !step.done)
+      .slice(0, 3)
+      .map((step) => ({
+        id: `public-${step.num}`,
+        icon: step.num === 1 ? Plug : step.num === 2 ? Fingerprint : step.num === 3 ? Wallet : Zap,
+        iconTone: "green" as const,
+        title: step.title,
+        description: step.hint,
+        actionLabel: step.actionLabel ?? step.externalLabel ?? "Continue",
+        onAction:
+          step.onAction ??
+          (step.externalHref ? () => window.open(step.externalHref, "_blank") : publicPrimaryAction.onClick),
+      }));
+  }, [publicPrimaryAction, publicSteps]);
+
   if (privacyMode === "public") {
     return (
-      <div className="space-y-2.5">
+      <div className="pay-home-stack">
         {isWrongChain && (
           <HarmonyStatusBanner
             variant="warning"
@@ -742,137 +815,161 @@ export function PayHarmonyHome({
           />
         )}
 
-        <motion.section
+        <PayHomeSealedBanner
+          connected={isConnected}
+          onConnect={() => onNavigate("settings")}
+        />
+
+        <PayHomeWelcome
+          title={
+            isConnected && shortAddress
+              ? `Welcome back, ${shortAddress}`
+              : "Public USDC workspace"
+          }
+          subtitle={
+            isConnected
+              ? "Passkey smart account, sponsored gas, and visible USDC — optimized for speed."
+              : "Connect to set up passkey-secured public payments on Arbitrum Sepolia."
+          }
+          badges={[
+            {
+              label: isSmartAvailable ? "Smart account ready" : "Passkey pending",
+              tone: isSmartAvailable ? "success" : "warn",
+            },
+            {
+              label: sponsorshipReady ? "Gas sponsored" : "Sponsorship pending",
+              tone: sponsorshipReady ? "success" : "neutral",
+            },
+            {
+              label: smartUsdcNum > 0 ? "USDC funded" : "Needs funding",
+              tone: smartUsdcNum > 0 ? "success" : "warn",
+            },
+          ]}
+        />
+
+        <motion.div
           custom={0}
           variants={fadeUp}
           initial="hidden"
           animate="visible"
-          className="overflow-hidden rounded-2xl hairline bg-card"
+          className="pay-home-metric-grid"
         >
-          <div className={cn("flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-border/60 px-6 py-2.5", !isConnected && "opacity-30")}>
-            <PostureItem label="Normal USDC" active={isConnected} />
-            <span className="select-none text-[10px] text-border/50">·</span>
-            <PostureItem label="Smart account" active={isSmartAvailable} />
-            <span className="select-none text-[10px] text-border/50">·</span>
-            <PostureItem label="Sponsored gas" active={sponsorshipReady} />
-            <span className="select-none text-[10px] text-border/50">·</span>
-            <PostureItem label="Visible on-chain" active={isConnected} />
-          </div>
-
-          <div className="grid lg:grid-cols-[1.15fr_1fr]">
-            <div className="border-b border-border/50 px-6 py-5 lg:border-b-0 lg:border-r lg:px-7 lg:py-6">
-              <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground/45">
-                {isConnected ? `${greeting} · Public Mode` : "Obscura Pay · Public Mode"}
-              </p>
-              <h1 className="mt-1.5 whitespace-pre-line font-display text-[1.7rem] leading-[1.15] tracking-tight text-foreground sm:text-[1.95rem]">
-                {"Public USDC workspace.\nPasskey-ready payments."}
-              </h1>
-
-              {isConnected ? (
-                <>
-                  <div className="mt-5 space-y-2.5">
-                    <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground/35">
-                      Smart account balance
-                    </p>
-                    <div className="flex items-baseline gap-3">
-                      <span className="font-display text-[2.75rem] tabular-nums leading-none text-foreground">
-                        {smartUsdcBalance ?? "--"}
-                      </span>
-                      <span className="self-end pb-1.5 font-mono text-[11px] text-muted-foreground/40">USDC</span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 font-mono text-[11px] text-muted-foreground/45">
-                      <span>Wallet USDC {usdcBalance ?? "--"}</span>
-                      <span className="select-none text-border/50">·</span>
-                      <span>{smartAccountAddress ? `${smartAccountAddress.slice(0, 8)}...${smartAccountAddress.slice(-6)}` : "Smart account not deployed"}</span>
-                    </div>
-                  </div>
-                  <div className="mt-5 flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={publicPrimaryAction.onClick}
-                      className="inline-flex h-9 items-center justify-center gap-2 rounded-full bg-foreground px-5 text-[13px] font-medium text-background transition-opacity hover:opacity-90 active:scale-[0.97]"
-                    >
-                      <PublicPrimaryIcon className="h-[14px] w-[14px]" />
-                      {publicPrimaryAction.label}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPrivacyMode("private")}
-                      className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-border/70 px-4 text-[13px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    >
-                      Switch to Private Mode
-                      <ChevronRight className="h-[14px] w-[14px]" />
-                    </button>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    <span className="inline-flex items-center gap-1 rounded-full border border-border/40 bg-muted/40 px-2.5 py-[3px] font-mono text-[9px] text-muted-foreground/50">
-                      <Fingerprint className="h-[8px] w-[8px]" />
-                      Passkey approval
-                    </span>
-                    <span className="inline-flex items-center gap-1 rounded-full border border-border/40 bg-muted/40 px-2.5 py-[3px] font-mono text-[9px] text-muted-foreground/50">
-                      <Zap className="h-[8px] w-[8px]" />
-                      Sponsored transactions
-                    </span>
-                    <span className="inline-flex items-center gap-1 rounded-full border border-border/40 bg-muted/40 px-2.5 py-[3px] font-mono text-[9px] text-muted-foreground/50">
-                      <Wallet className="h-[8px] w-[8px]" />
-                      Normal USDC only
-                    </span>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <p className="mt-3 max-w-sm text-[13px] leading-relaxed text-muted-foreground/65">
-                    Public Mode is the visible USDC lane: smart account, passkey approval, and sponsored gas when configured.
-                  </p>
-                  <div className="mt-5">
-                    <button
-                      type="button"
-                      onClick={publicPrimaryAction.onClick}
-                      className="inline-flex h-9 items-center justify-center gap-2 rounded-full bg-foreground px-5 text-[13px] font-medium text-background transition-opacity hover:opacity-90 active:scale-[0.97]"
-                    >
-                      <PublicPrimaryIcon className="h-[14px] w-[14px]" />
-                      {publicPrimaryAction.label}
-                    </button>
-                  </div>
-                </>
-              )}
+          <PayHomeMetricCard
+            label="Smart account"
+            badge={isSmartAvailable ? "READY" : "SETUP"}
+            badgeTone={isSmartAvailable ? "success" : "warn"}
+            footer={
+              <>
+                <PayHomeMetricAction label="Send" icon={Send} primary onClick={() => onNavigate("pay")} />
+                <PayHomeMetricAction label="Receive" icon={ArrowDownLeft} onClick={() => onNavigate("getpaid")} />
+              </>
+            }
+          >
+            <div className="flex items-baseline gap-2">
+              <span className="dash-metric-value tabular-nums">{smartUsdcBalance ?? "—"}</span>
+              <span className="pb-1 text-xs text-muted-foreground">USDC</span>
             </div>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Wallet USDC {usdcBalance ?? "—"}
+            </p>
+          </PayHomeMetricCard>
 
-            <div className="flex flex-col bg-muted/15">
-              <div className="flex items-center justify-between border-b border-border/50 px-5 py-3">
-                <div>
-                  <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground/55">
-                    Public readiness
-                  </p>
-                  <p className="mt-0.5 text-[12px] font-medium text-foreground">
-                    {publicDoneCount === publicSteps.length ? "Ready to send" : `${publicDoneCount} of ${publicSteps.length} ready`}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-[10px] text-muted-foreground/45">{Math.round(publicProgress)}%</span>
-                  <div className="h-[3px] w-20 overflow-hidden rounded-full bg-border/50">
-                    <motion.div
-                      className="h-full rounded-full bg-foreground"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${publicProgress}%` }}
-                      transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="flex-1 divide-y divide-border/40">
-                {publicSteps.map((step) => <ChecklistRow key={step.num} step={step} />)}
-              </div>
-            </div>
-          </div>
-        </motion.section>
+          <PayHomeMetricCard
+            label="Passkey"
+            badge={isSmartEnrolled ? "ENROLLED" : "MISSING"}
+            badgeTone={isSmartEnrolled ? "success" : "warn"}
+            footer={
+              <PayHomeMetricAction
+                label={isSmartAvailable ? "Manage" : "Set up"}
+                icon={Fingerprint}
+                primary={!isSmartAvailable}
+                onClick={() => onNavigate("settings")}
+              />
+            }
+          >
+            <p className="dash-metric-value text-2xl">
+              {isSmartDeployed ? (isSmartEnrolled ? "Active" : "Deploy") : "Off"}
+            </p>
+            <p className="mt-2 text-[11px] text-muted-foreground">Gasless public sends when enrolled</p>
+          </PayHomeMetricCard>
+
+          <PayHomeMetricCard
+            label="Gas sponsorship"
+            badge={sponsorshipReady ? "LIVE" : "CHECK"}
+            badgeTone={sponsorshipReady ? "success" : "warn"}
+            footer={
+              <PayHomeMetricAction label="Review" onClick={() => onNavigate("settings")} />
+            }
+          >
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {sponsorshipReady
+                ? "USDC paymaster target is configured for sponsored transactions."
+                : "Paymaster or whitelist may need configuration in this environment."}
+            </p>
+          </PayHomeMetricCard>
+
+          <PayHomeMetricCard
+            label="Public readiness"
+            badge={`${publicDoneCount}/${publicSteps.length}`}
+            badgeTone={publicDoneCount === publicSteps.length ? "success" : "warn"}
+            progress={publicProgress}
+            progressLabel={
+              publicDoneCount === publicSteps.length ? "Ready to send" : "Complete setup checklist"
+            }
+            footer={
+              <PayHomeMetricAction
+                label={publicPrimaryAction.label}
+                icon={PublicPrimaryIcon}
+                primary
+                onClick={publicPrimaryAction.onClick}
+              />
+            }
+          >
+            <p className="dash-metric-value text-3xl">
+              {publicDoneCount}
+              <span className="ml-1 text-lg text-muted-foreground">/ {publicSteps.length}</span>
+            </p>
+          </PayHomeMetricCard>
+        </motion.div>
+
+        <motion.div custom={1} variants={fadeUp} initial="hidden" animate="visible">
+          <PayHomeRecommended items={publicRecommended} />
+        </motion.div>
+
+        <motion.div custom={1.2} variants={fadeUp} initial="hidden" animate="visible">
+          <PayHomeChecklistPanel
+            title="Public readiness"
+            subtitle={
+              publicDoneCount === publicSteps.length
+                ? "Ready to send public USDC"
+                : `${publicDoneCount} of ${publicSteps.length} steps complete`
+            }
+            progress={publicProgress}
+            doneCount={publicDoneCount}
+            total={publicSteps.length}
+            footer={
+              <button
+                type="button"
+                onClick={() => setPrivacyMode("private")}
+                className="dash-btn-outline h-9 px-4 text-xs"
+              >
+                Switch to Private Mode
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            }
+          >
+            {publicSteps.map((step) => (
+              <ChecklistRow key={step.num} step={step} />
+            ))}
+          </PayHomeChecklistPanel>
+        </motion.div>
 
         <motion.div
-          custom={1}
+          custom={1.5}
           variants={fadeUp}
           initial="hidden"
           animate="visible"
-          className="grid grid-cols-2 gap-2 sm:grid-cols-4"
+          className="pay-home-quick-grid"
         >
           <ActionPill icon={Send} label="Send" sublabel="Public USDC" onClick={() => onNavigate("pay")} />
           <ActionPill icon={ArrowDownLeft} label="Receive" sublabel="Wallet or smart account" onClick={() => onNavigate("getpaid")} />
@@ -885,7 +982,7 @@ export function PayHarmonyHome({
           variants={fadeUp}
           initial="hidden"
           animate="visible"
-          className="overflow-hidden rounded-2xl hairline bg-card"
+          className="dash-card overflow-hidden"
         >
           <header className="flex items-center justify-between border-b border-border/60 px-5 py-2.5">
             <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground/55">
@@ -941,7 +1038,7 @@ export function PayHarmonyHome({
   }
 
   return (
-    <div className="space-y-2.5">
+    <div className="pay-home-stack">
       {isWrongChain && (
         <HarmonyStatusBanner
           variant="warning"
@@ -954,204 +1051,212 @@ export function PayHarmonyHome({
         />
       )}
 
-      {/* ── HERO · Mission Console ──────────────────────────────────────────── */}
-      <motion.section
+      <PayHomeSealedBanner
+        connected={isConnected}
+        onConnect={() => onNavigate("settings")}
+      />
+
+      <PayHomeWelcome
+        title={
+          isConnected && shortAddress
+            ? `Welcome back, ${shortAddress}`
+            : headline.title.replace("\n", " ")
+        }
+        subtitle={
+          isConnected
+            ? isFullyActive
+              ? `Your privacy engine is active.${unread > 0 ? ` ${unread} stealth payment${unread > 1 ? "s" : ""} waiting in your inbox.` : " Treasury sealed and ready for encrypted activity."}`
+              : `Complete your private treasury setup — ${doneCount} of ${steps.length} steps sealed so far.`
+            : "Encrypted balances. Invisible amounts. Stealth-address receiving. Built on Fhenix CoFHE."
+        }
+        badges={[
+          {
+            label: hasPrivateUsdc ? "Private vault sealed" : "Vault not sealed",
+            tone: hasPrivateUsdc ? "success" : "warn",
+          },
+          {
+            label: onboarding.isStealthRegistered ? "Receiving enabled" : "Receiving not set up",
+            tone: onboarding.isStealthRegistered ? "success" : "neutral",
+          },
+          {
+            label: isFullyActive ? "Treasury active" : "Setup in progress",
+            tone: isFullyActive ? "success" : "neutral",
+          },
+        ]}
+      />
+
+      <motion.div
         custom={0}
         variants={fadeUp}
         initial="hidden"
         animate="visible"
-        className="overflow-hidden rounded-2xl hairline bg-card"
+        className="pay-home-metric-grid"
       >
-        {/* Privacy posture bar */}
-        <div
-          className={cn(
-            "flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-border/60 px-6 py-2.5",
-            !isConnected && "opacity-30",
-          )}
+        <PayHomeMetricCard
+          label="Private balance"
+          badge={hasPrivateUsdc ? "SEALED" : "EMPTY"}
+          badgeTone={hasPrivateUsdc ? "success" : "warn"}
+          footer={
+            <>
+              <PayHomeMetricAction
+                label="Send"
+                icon={Send}
+                primary
+                onClick={() => onNavigate("pay")}
+              />
+              <PayHomeMetricAction
+                label="Receive"
+                icon={ArrowDownLeft}
+                onClick={() => onNavigate("getpaid")}
+              />
+            </>
+          }
         >
-          <PostureItem
-            label="Balance hidden"
-            active={isConnected && hasPrivateUsdc}
-          />
-          <span className="select-none text-[10px] text-border/50">·</span>
-          <PostureItem
-            label="Explorer blocked"
-            active={isConnected && hasPrivateUsdc}
-          />
-          <span className="select-none text-[10px] text-border/50">·</span>
-          <PostureItem
-            label="Receiving private"
-            active={isConnected && onboarding.isStealthRegistered}
-          />
-          <span className="select-none text-[10px] text-border/50">·</span>
-          <PostureItem
-            label={privacyMode === "public" ? "Public passkey" : "Private wallet"}
-            active={isConnected && (privacyMode === "private" || isSmartAvailable)}
-          />
-        </div>
-
-        {/* Hero grid: balance left · checklist right */}
-        <div className="grid lg:grid-cols-[1.15fr_1fr]">
-          {/* LEFT — balance + headline + primary CTA */}
-          <div className="border-b border-border/50 px-6 py-5 lg:border-b-0 lg:border-r lg:px-7 lg:py-6">
-            <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground/45">
-              {headline.eyebrow}
-            </p>
-            <h1 className="mt-1.5 whitespace-pre-line font-display text-[1.7rem] leading-[1.15] tracking-tight text-foreground sm:text-[1.95rem]">
-              {headline.title}
-            </h1>
-
-            {isConnected ? (
-              <>
-                <div className="mt-5">
-                  <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground/35">
-                    Private balance
-                  </p>
-                  <VaultBalance
-                    revealed={balanceRevealed}
-                    display={ocDisplay}
-                    onToggle={async () => {
-                      if (!balanceRevealed && decrypted == null && !revealBusy) {
-                        try { await reveal(); } catch { /* error shown elsewhere */ }
-                      }
-                      setBalanceRevealed((v) => !v);
-                    }}
-                  />
-                </div>
-                <div className="mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                  <span className="font-mono text-[11px] text-muted-foreground/45">
-                    {usdcNum > 0
-                      ? `$${usdcNum.toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                        })} public`
-                      : "No public USDC"}
-                  </span>
-                  <span className="select-none text-[11px] text-border/50">·</span>
-                  <span
-                    className={cn(
-                      "font-mono text-[11px] transition-colors",
-                      unread > 0
-                        ? "font-medium text-foreground/75"
-                        : "text-muted-foreground/45",
-                    )}
-                  >
-                    {unread > 0
-                      ? `${unread} payment${unread > 1 ? "s" : ""} waiting`
-                      : "Inbox clear"}
-                  </span>
-                </div>
-                <div className="mt-5 flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={primaryAction.onClick}
-                    className="inline-flex h-9 items-center justify-center gap-2 rounded-full bg-foreground px-5 text-[13px] font-medium text-background transition-opacity hover:opacity-90 active:scale-[0.97]"
-                  >
-                    <PrimaryIcon className="h-[14px] w-[14px]" />
-                    {primaryAction.label}
-                  </button>
-                  {isFullyActive && (
-                    <button
-                      type="button"
-                      onClick={() => onNavigate("activity")}
-                      className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-border/70 px-4 text-[13px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    >
-                      View activity
-                      <ChevronRight className="h-[14px] w-[14px]" />
-                    </button>
-                  )}
-                </div>
-                {hasPrivateUsdc && (
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    <span className="inline-flex items-center gap-1 rounded-full border border-border/40 bg-muted/40 px-2.5 py-[3px] font-mono text-[9px] text-muted-foreground/50">
-                      <Lock className="h-[8px] w-[8px]" />
-                      Invisible on explorers
-                    </span>
-                    <span className="inline-flex items-center gap-1 rounded-full border border-border/40 bg-muted/40 px-2.5 py-[3px] font-mono text-[9px] text-muted-foreground/50">
-                      <Shield className="h-[8px] w-[8px]" />
-                      Amounts unreadable
-                    </span>
-                    {onboarding.isStealthRegistered && (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-border/40 bg-muted/40 px-2.5 py-[3px] font-mono text-[9px] text-muted-foreground/50">
-                        <ShieldCheck className="h-[8px] w-[8px]" />
-                        Payment graph broken
-                      </span>
-                    )}
-                  </div>
+          {isConnected ? (
+            <>
+              <PayHomeSealedValue
+                revealed={balanceRevealed}
+                value={ocDisplay}
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!balanceRevealed && decrypted == null && !revealBusy) {
+                    try {
+                      await reveal();
+                    } catch {
+                      /* error shown elsewhere */
+                    }
+                  }
+                  setBalanceRevealed((v) => !v);
+                }}
+                className="mt-3 inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {balanceRevealed && ocDisplay ? (
+                  <>
+                    <EyeOff className="h-3.5 w-3.5" /> Hide balance
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-3.5 w-3.5" /> Reveal balance
+                  </>
                 )}
-              </>
-            ) : (
-              <>
-                <p className="mt-3 max-w-sm text-[13px] leading-relaxed text-muted-foreground/65">
-                  Encrypted balances. Invisible amounts. Stealth-address
-                  receiving. Built on Fhenix CoFHE.
-                </p>
-                <div className="mt-5">
-                  <button
-                    type="button"
-                    onClick={primaryAction.onClick}
-                    className="inline-flex h-9 items-center justify-center gap-2 rounded-full bg-foreground px-5 text-[13px] font-medium text-background transition-opacity hover:opacity-90 active:scale-[0.97]"
-                  >
-                    <PrimaryIcon className="h-[14px] w-[14px]" />
-                    {primaryAction.label}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+              </button>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">Connect wallet to view sealed balance.</p>
+          )}
+        </PayHomeMetricCard>
 
-          {/* RIGHT — Treasury checklist (always visible) */}
-          <div className="flex flex-col bg-muted/15">
-            <div className="flex items-center justify-between border-b border-border/50 px-5 py-3">
-              <div>
-                <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground/55">
-                  Treasury checklist
-                </p>
-                <p className="mt-0.5 text-[12px] font-medium text-foreground">
-                  {doneCount === steps.length
-                    ? "Fully sealed"
-                    : doneCount === 0
-                      ? "Begin initialisation"
-                      : `${doneCount} of ${steps.length} sealed`}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-[10px] text-muted-foreground/45">
-                  {Math.round(progress)}%
-                </span>
-                <div className="h-[3px] w-20 overflow-hidden rounded-full bg-border/50">
-                  <motion.div
-                    className={cn(
-                      "h-full rounded-full transition-colors duration-700",
-                      doneCount === steps.length
-                        ? "bg-[hsl(var(--success))]"
-                        : "bg-foreground",
-                    )}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progress}%` }}
-                    transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="flex-1 divide-y divide-border/40">
-              {steps.map((s) => (
-                <ChecklistRow key={s.num} step={s} />
-              ))}
-            </div>
-            <div className="border-t border-border/50 bg-card/40">
-              <PrivacyFlowViz active={doneCount >= 3} />
-            </div>
+        <PayHomeMetricCard
+          label="Public USDC"
+          badge={usdcNum > 0 ? "READY" : "EMPTY"}
+          badgeTone={usdcNum > 0 ? "success" : "neutral"}
+          footer={
+            <PayHomeMetricAction
+              label={hasPrivateUsdc ? "Send" : "Shield USDC"}
+              icon={Shield}
+              primary={!hasPrivateUsdc && usdcNum > 0}
+              onClick={() => onNavigate("pay")}
+            />
+          }
+        >
+          <div className="flex items-baseline gap-2">
+            <span className="dash-metric-value tabular-nums">
+              {usdcNum > 0
+                ? usdcNum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                : "—"}
+            </span>
+            <span className="pb-1 text-xs text-muted-foreground">USDC</span>
           </div>
-        </div>
-      </motion.section>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            {hasPrivateUsdc ? "Public lane available alongside ocUSDC." : "Shield to encrypt before sending privately."}
+          </p>
+        </PayHomeMetricCard>
 
-      {/* ── Quick actions ───────────────────────────────────────────────────── */}
+        <PayHomeMetricCard
+          label="Stealth inbox"
+          badge={unread > 0 ? `${unread} NEW` : onboarding.isStealthRegistered ? "ACTIVE" : "SETUP"}
+          badgeTone={unread > 0 ? "warn" : onboarding.isStealthRegistered ? "success" : "neutral"}
+          footer={
+            <>
+              <PayHomeMetricAction
+                label={unread > 0 ? "Claim" : "Request"}
+                icon={Inbox}
+                primary={unread > 0}
+                onClick={() => onNavigate("getpaid")}
+              />
+              {!onboarding.isStealthRegistered ? (
+                <PayHomeMetricAction label="Set up" onClick={() => onNavigate("getpaid")} />
+              ) : null}
+            </>
+          }
+        >
+          <p className="dash-metric-value text-3xl">{unread > 0 ? unread : "—"}</p>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            {unread > 0
+              ? "Encrypted inbound payments waiting to claim."
+              : onboarding.isStealthRegistered
+                ? "Inbox clear — stealth receiving is live."
+                : "Enable private receiving to open stealth inbox."}
+          </p>
+        </PayHomeMetricCard>
+
+        <PayHomeMetricCard
+          label="Treasury setup"
+          badge={`${doneCount}/${steps.length} SEALED`}
+          badgeTone={doneCount === steps.length ? "success" : "warn"}
+          progress={progress}
+          progressLabel={
+            doneCount === steps.length ? "Fully sealed treasury" : "Complete checklist to unlock full stack"
+          }
+          footer={
+            <PayHomeMetricAction
+              label={primaryAction.label}
+              icon={PrimaryIcon}
+              primary
+              onClick={primaryAction.onClick}
+            />
+          }
+        >
+          <p className="dash-metric-value text-3xl">
+            {doneCount}
+            <span className="ml-1 text-lg text-muted-foreground">/ {steps.length}</span>
+          </p>
+        </PayHomeMetricCard>
+      </motion.div>
+
+      <motion.div custom={1} variants={fadeUp} initial="hidden" animate="visible">
+        <PayHomeRecommended items={privateRecommended} />
+      </motion.div>
+
+      <motion.div custom={1.2} variants={fadeUp} initial="hidden" animate="visible">
+        <PayHomeChecklistPanel
+          title="Treasury checklist"
+          subtitle={
+            doneCount === steps.length
+              ? "Fully sealed"
+              : doneCount === 0
+                ? "Begin initialisation"
+                : `${doneCount} of ${steps.length} sealed`
+          }
+          progress={progress}
+          doneCount={doneCount}
+          total={steps.length}
+          footer={<PrivacyFlowViz active={doneCount >= 3} />}
+        >
+          {steps.map((s) => (
+            <ChecklistRow key={s.num} step={s} />
+          ))}
+        </PayHomeChecklistPanel>
+      </motion.div>
+
       <motion.div
-        custom={1}
+        custom={1.4}
         variants={fadeUp}
         initial="hidden"
         animate="visible"
-        className="grid grid-cols-2 gap-2 sm:grid-cols-4"
+        className="pay-home-quick-grid"
       >
         <ActionPill
           icon={Send}
@@ -1180,14 +1285,13 @@ export function PayHarmonyHome({
         />
       </motion.div>
 
-      {/* ── Payment mode discovery ─────────────────────────────────────────── */}
       {isConnected && (
         <motion.section
           custom={1.5}
           variants={fadeUp}
           initial="hidden"
           animate="visible"
-          className="overflow-hidden rounded-2xl hairline bg-card"
+          className="dash-card overflow-hidden"
         >
           <div className="flex items-center gap-3 border-b border-border/50 px-5 py-3">
             <div
@@ -1268,7 +1372,7 @@ export function PayHarmonyHome({
         variants={fadeUp}
         initial="hidden"
         animate="visible"
-        className="overflow-hidden rounded-2xl hairline bg-card"
+        className="dash-card overflow-hidden"
       >
         <header className="flex items-center justify-between border-b border-border/60 px-5 py-2.5">
           <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground/55">

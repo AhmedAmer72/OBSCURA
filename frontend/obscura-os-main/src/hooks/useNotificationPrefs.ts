@@ -119,7 +119,7 @@ export function useNotificationPrefs(): UseNotificationPrefsResult {
         requireInteraction: true,
         silent: false,
         timestamp: Date.now(),
-        data: { url: `${window.location.origin}/pay?tab=settings&sub=notifications`, eventName: "debug.local-display", debug: true },
+        data: { url: `${window.location.origin}/settings?section=notifications`, eventName: "debug.local-display", debug: true },
       });
       return true;
     } catch (e) {

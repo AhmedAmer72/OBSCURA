@@ -4,21 +4,19 @@ import { motion, useInView, useScroll, useTransform, type MotionValue } from "fr
 import { Copy, Check, Sparkles } from "lucide-react";
 import OrganicLayerCanvas from "./OrganicLayerCanvas";
 
-const CODE_SAMPLE = `curl -X POST https://api.obscura.dev/v1/seal \\
-  -H "Authorization: Bearer \${OBSCURA_KEY}" \\
-  -d '{
-    "module": "pay",
-    "chainId": 421614,
-    "asset": "ocUSDC",
-    "amount": "████",
-    "permit": {
-      "type": "EIP-712",
-      "viewer": "0xAa…7b",
-      "ttl": "5m"
-    },
-    "ciphertext": "0xenc…8f2a91",
-    "revealed": false
-  }'`;
+const CODE_SAMPLE = `import { ObscuraSDK } from "@obscura-fhe/sdk";
+
+const sdk = new ObscuraSDK({
+  chainId: 421614,
+  rpcUrl: process.env.ARB_SEPOLIA_RPC,
+});
+
+// Encrypt + send — same CoFHE path as the Harmony app
+const handle = await sdk.pay.encryptAmount("1000000");
+await sdk.pay.transfer({
+  to: "0xRecipient…",
+  encryptedAmount: handle,
+});`;
 
 function CodePanel() {
   const [copied, setCopied] = useState(false);
@@ -43,7 +41,7 @@ function CodePanel() {
         </div>
         <div className="flex items-center gap-2">
           <span className="rounded-md bg-lime-accent/15 px-2 py-0.5 font-mono text-[10px] text-lime-accent">
-            cURL
+            TypeScript
           </span>
           <button
             type="button"
@@ -97,8 +95,8 @@ function ProtocolGlyphCard({ progress }: { progress: MotionValue<number> }) {
             Encrypted value, public proofs
           </p>
           <p className="mt-2 max-w-sm text-sm leading-relaxed text-white/55">
-            The protocol glyph marks where balances stay sealed onchain — visible settlement,
-            invisible amounts.
+            38 active addresses on Sepolia, 28 reputation signal types, and six SDK modules — the same
+            stack the Harmony app runs in production.
           </p>
         </div>
       </div>
@@ -134,17 +132,18 @@ export default function DevelopersSection() {
             className="max-w-md lg:max-w-none"
           >
             <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-forest/45">
-              [ Builders ]
+              [ TypeScript SDK ]
             </p>
             <h2 className="mt-4 font-display text-2xl font-medium leading-[1.15] tracking-tight text-forest md:text-3xl lg:text-[2rem]">
-              Integrate Obscura&apos;s privacy SDK in minutes. No custom FHE setup — just
-              encrypted balances, permits, and modules that scale with your stack.
+              Build on <span className="text-forest/80">@obscura-fhe/sdk</span> — the same client
+              libraries Obscura uses for Pay, Credit, Vote, permits, and encrypted balances on
+              Arbitrum Sepolia.
             </h2>
             <Link
               to="/docs"
               className="mt-8 inline-flex items-center gap-2 font-body text-sm font-medium text-forest transition-colors hover:text-forest/70"
             >
-              <span aria-hidden>▸</span> Explore our docs
+              <span aria-hidden>▸</span> SDK docs & examples
             </Link>
           </motion.div>
 

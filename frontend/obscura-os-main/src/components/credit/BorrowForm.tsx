@@ -15,6 +15,12 @@ import PercentChips from "@/components/shared/PercentChips";
 import { useGasPreflight, GasPreflightError } from "@/hooks/useGasPreflight";
 import { usePreWarmFHE } from "@/hooks/usePreWarmFHE";
 import { BETA_POOL_LABEL, formatBetaOcusdc, parseOcusdcInput, useBetaBorrowLimit } from "@/hooks/useBetaBorrowLimit";
+import {
+  CreditFormInput,
+  CreditFormLabel,
+  CreditFormSelect,
+  CreditFormSubmit,
+} from "@/components/harmony/credit/CreditFormChrome";
 
 interface Props {
   market: CreditMarketMeta;
@@ -151,48 +157,47 @@ const BorrowForm = ({ market, markets, onSelect, onRefresh, onGoToCollateral }: 
         </span>
       </div>
 
-      <label className="text-[11px] uppercase tracking-wider text-muted-foreground">Market</label>
-      <select
-        value={market.address ?? ""}
-        onChange={(e) => {
-          const next = markets.find((m) => m.address === (e.target.value as `0x${string}`));
-          if (next) onSelect(next);
-        }}
-        className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:border-accent/50"
-      >
-        {markets.map((m) => (
-          <option key={m.address} value={m.address} className="bg-background text-foreground">
-            {m.label}
-          </option>
-        ))}
-      </select>
+      <div className="space-y-2">
+        <CreditFormLabel>Market</CreditFormLabel>
+        <CreditFormSelect
+          value={market.address ?? ""}
+          onChange={(value) => {
+            const next = markets.find((m) => m.address === (value as `0x${string}`));
+            if (next) onSelect(next);
+          }}
+        >
+          {markets.map((m) => (
+            <option key={m.address} value={m.address}>{m.label}</option>
+          ))}
+        </CreditFormSelect>
+      </div>
 
-      <label className="text-[11px] uppercase tracking-wider text-muted-foreground">Amount ({market.loanSymbol})</label>
-      <input
-        inputMode="decimal"
-        value={amount}
-        onFocus={preWarm.onFocus}
-        onChange={(e) => setAmount(e.target.value)}
-        placeholder="0.0"
-        className="rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-accent/50"
-      />
-      <PercentChips
-        max={betaMaxBorrowable}
-        decimals={6}
-        onPick={(v) => setAmount(v === 0n ? "" : (Number(v) / 1e6).toString())}
-        accent="violet"
-      />
+      <div className="space-y-2">
+        <CreditFormLabel>Amount ({market.loanSymbol})</CreditFormLabel>
+        <CreditFormInput
+          inputMode="decimal"
+          value={amount}
+          onFocus={preWarm.onFocus}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="0.0"
+        />
+        <PercentChips
+          max={betaMaxBorrowable}
+          decimals={6}
+          onPick={(v) => setAmount(v === 0n ? "" : (Number(v) / 1e6).toString())}
+        />
+      </div>
 
-      <details className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2">
-        <summary className="flex cursor-pointer select-none items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground hover:text-foreground">
-          <Lock className="w-3 h-3" /> Advanced destination
+      <details className="ref-mini-card px-3 py-2">
+        <summary className="flex cursor-pointer select-none items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground">
+          <Lock className="h-3 w-3" /> Advanced destination
         </summary>
         <div className="mt-3 space-y-2">
-          <input
+          <CreditFormInput
             value={dest}
             onChange={(e) => setDest(e.target.value)}
             placeholder={address ?? "0x…"}
-            className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-xs focus:outline-none focus:border-accent/50"
+            className="font-mono text-xs"
           />
           <p className="text-[11px] text-muted-foreground">
             Leave blank to receive encrypted {market.loanSymbol} in your connected wallet.
@@ -247,14 +252,14 @@ const BorrowForm = ({ market, markets, onSelect, onRefresh, onGoToCollateral }: 
         </p>
       )}
 
-      <button
+      <CreditFormSubmit
         disabled={!amount || !destResolved || busy || noCollateral || wouldBreakLLTV || noLiquidity || exceedsBetaLimit}
         onClick={submit}
-        className="mt-2 inline-flex items-center justify-center gap-2 rounded-md border border-foreground/15 bg-foreground px-4 py-2.5 text-sm text-background hover:opacity-90 disabled:opacity-50"
+        className="inline-flex w-full items-center justify-center gap-2 sm:w-full"
       >
-        <ArrowDownToLine className="w-4 h-4" />
+        <ArrowDownToLine className="h-4 w-4" />
         Borrow privately
-      </button>
+      </CreditFormSubmit>
       <FHEStepper status={fheStatus.status} error={fheStatus.error} />
       {msg && <p className="text-xs text-muted-foreground">{msg}</p>}
     </div>

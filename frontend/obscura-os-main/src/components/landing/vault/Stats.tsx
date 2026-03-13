@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
 
 const STATS = [
-  { value: "$2.4B", label: "Encrypted value secured" },
-  { value: "142k", label: "Confidential transactions" },
-  { value: "25", label: "Audited contracts live" },
-  { value: "0", label: "Plaintext values exposed" },
+  { value: "38", label: "Active contract addresses" },
+  { value: "21", label: "FHE-enabled on-chain types" },
+  { value: "51", label: "Indexed event definitions" },
+  { value: "3", label: "Harmony product routes" },
 ];
 
 export function Stats() {

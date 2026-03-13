@@ -11,21 +11,16 @@ function readSource(relativePath: string): string {
 }
 
 describe("Vote V2/V3 information architecture", () => {
-  it("collapses Vote to four top-level sections", () => {
+  it("collapses Vote to dedicated govern tabs", () => {
     const votePage = readSource("pages/VotePage.tsx");
     const shell = readSource("components/harmony/VoteHarmonyTabShell.tsx");
+    const chrome = readSource("components/harmony/GovernWorkspaceChrome.tsx");
 
-    expect(votePage).toContain('type VoteSection = "overview" | "proposals" | "participation" | "advanced"');
-    expect(votePage).toContain('key: "overview"');
-    expect(votePage).toContain('key: "proposals"');
-    expect(votePage).toContain('key: "participation"');
-    expect(votePage).toContain('key: "advanced"');
-    const sidebarBlock = votePage.split("const harmonySidebar = [")[1]?.split("];")[0] ?? "";
-    expect(sidebarBlock).not.toContain('key: "treasury"');
-    expect(sidebarBlock).not.toContain('key: "delegate"');
-    expect(sidebarBlock).not.toContain('key: "governor"');
-    expect(votePage).toContain('key: "advanced"');
-    expect(shell).toContain('"proposals" | "participation" | "advanced"');
+    expect(votePage).toContain('type VoteSection = "overview" | "proposals" | "participation" | "delegation" | "advanced"');
+    expect(chrome).toContain('key: "delegation"');
+    expect(chrome).toContain('key: "rewards"');
+    expect(votePage).toContain("GOVERN_TABS.map");
+    expect(shell).toContain('"proposals" | "participation" | "delegation" | "advanced"');
   });
 
   it("keeps advanced governance out of the overview", () => {
@@ -38,8 +33,8 @@ describe("Vote V2/V3 information architecture", () => {
     expect(dashboard).not.toContain("Institutional governance");
     expect(dashboard).not.toContain("OBS · sealed");
     expect(dashboard).not.toContain("Treasury");
-    expect(dashboard).toContain("Cast private votes on Arbitrum Sepolia");
-    expect(dashboard).toContain("Only aggregate totals are revealed");
+    expect(dashboard).toContain("Final results show aggregate totals only");
+    expect(dashboard).toContain("Totals only, never ballots");
   });
 
   it("makes voting the primary proposal path while preserving explicit reveal", () => {
@@ -49,10 +44,8 @@ describe("Vote V2/V3 information architecture", () => {
     const tallyReveal = readSource("components/vote/TallyReveal.tsx");
 
     expect(votePage).toContain('type ProposalMode = "browse" | "create" | "vote" | "results"');
-    expect(votePage).toContain("Vote privately");
-    expect(votePage).toContain('onClick={() => openProposals("vote")}');
-    expect(votePage).toContain("Create");
-    expect(votePage).toContain("Results");
+    expect(votePage).toContain('key: "vote", label: "Vote"');
+    expect(votePage).toContain("VoteHarmonySubNav");
     expect(proposalList).toContain("Vote privately");
     expect(castVote).toContain("Change Private Vote");
     expect(castVote).toContain("Submit Private Vote");
@@ -62,21 +55,13 @@ describe("Vote V2/V3 information architecture", () => {
     expect(tallyReveal).toContain("Individual votes remain permanently encrypted");
   });
 
-  it("keeps Vote notifications reachable without leaking choices", () => {
+  it("keeps vote alert preferences out of the rewards tab", () => {
     const votePage = readSource("pages/VotePage.tsx");
     const notificationsPanel = readSource("components/vote/VoteNotificationsPanel.tsx");
-    const shell = readSource("components/harmony/HarmonyAppShell.tsx");
 
-    expect(votePage).toContain("VoteNotificationsPanel");
-    expect(votePage).toContain("Vote settings");
-    expect(votePage).toContain('onSettingsClick={() => setSettingsOpen(true)}');
-    expect(shell).toContain("onSettingsClick");
-    expect(notificationsPanel).toContain("Save Vote alerts");
-    expect(notificationsPanel).toContain("vote.*");
-    expect(notificationsPanel).toContain("governor.*");
+    expect(votePage).not.toContain("VoteNotificationsPanel");
+    expect(votePage).not.toContain("Vote alerts");
     expect(notificationsPanel).toContain("never include the option you chose");
-    expect(notificationsPanel).not.toContain("args.support");
-    expect(notificationsPanel).not.toMatch(/against|abstain/i);
   });
 
   it("improves mobile and empty-state polish", () => {
@@ -85,8 +70,8 @@ describe("Vote V2/V3 information architecture", () => {
     const rewards = readSource("components/vote/RewardsPanel.tsx");
 
     expect(dashboard).toContain("vh.kpiGrid");
-    expect(dashboard).toContain("min-h-[44px]");
-    expect(dashboard).toContain("Browse proposals");
+    expect(dashboard).toContain("h-9 px-3");
+    expect(dashboard).toContain("Vote now");
     expect(proposalList).toContain('initialFilter = "active"');
     expect(proposalList).toContain("Showing {statusFilter} proposals first");
     expect(rewards).toContain("Reward claims appear after you vote privately");

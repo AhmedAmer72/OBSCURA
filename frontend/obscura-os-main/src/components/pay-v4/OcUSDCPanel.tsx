@@ -3,7 +3,8 @@ import UsdcIcon from "@/components/shared/UsdcIcon";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useOcUSDCBalance } from "@/hooks/useOcUSDCBalance";
 import { toast } from "sonner";
-import { HarmonyMaskedBalance, HarmonyPrivacyBadge } from "@/components/harmony/harmony-ui";
+import { HarmonyPrivacyBadge } from "@/components/harmony/harmony-ui";
+import { SealedCipherBars } from "@/components/harmony/pay-home/PayHomePremiumSections";
 
 const RATE_LIMIT_COOLDOWN_S = 35;
 
@@ -32,15 +33,16 @@ export default function OcUSDCPanel() {
 
   useEffect(() => () => { if (cooldownRef.current) clearInterval(cooldownRef.current); }, []);
 
-  const displayBalance = decrypted !== null
+  const isRevealed = decrypted !== null;
+  const displayBalance = isRevealed
     ? `${(Number(decrypted) / 1_000_000).toFixed(6)}`
-    : trackedCusdc ?? null;
+    : null;
 
-  const balanceSource = decrypted !== null
+  const balanceCaption = isRevealed
     ? "On-chain decrypted"
     : trackedCusdc
       ? "Tracked estimate — reveal for exact"
-      : null;
+      : "Sealed on-chain — reveal for exact";
 
   return (
     <div className="space-y-5">
@@ -69,17 +71,18 @@ export default function OcUSDCPanel() {
             {usdcBalance !== null ? usdcBalance : "—"}
           </div>
         </div>
-        {/* Private USDC */}
-        <div className="rounded-xl border border-border bg-muted/40 p-3">
-          <HarmonyMaskedBalance
-            label="Private USDC"
-            value={displayBalance ?? undefined}
-            revealed={decrypted !== null || !!trackedCusdc}
-            size="sm"
+        {/* Private USDC — cipher mask until wallet decrypt */}
+        <div className="rounded-xl border border-border bg-muted/40 p-3 min-w-0">
+          <p className="mb-2 text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground/70">
+            Private USDC
+          </p>
+          <SealedCipherBars
+            size="lg"
+            bars={5}
+            revealed={isRevealed}
+            value={displayBalance}
+            caption={balanceCaption}
           />
-          {balanceSource && (
-            <div className="mt-1 text-[10px] text-muted-foreground/60">{balanceSource}</div>
-          )}
         </div>
       </div>
 

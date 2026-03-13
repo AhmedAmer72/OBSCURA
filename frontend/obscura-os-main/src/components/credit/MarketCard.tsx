@@ -31,42 +31,42 @@ const MarketCard = ({ market, onAction, active, compact }: Props) => {
     <button
       type="button"
       onClick={onAction}
-      className={`text-left w-full p-4 rounded-xl border transition group ${
+      className={`text-left w-full p-4 rounded-xl border transition group dash-card ${
         active
-          ? "border-violet-400/40 bg-violet-500/[0.04]"
+          ? "border-[hsl(var(--dash-forest))]/30 bg-[hsl(var(--dash-mint))]"
           : "hairline bg-card hover:bg-muted/50"
       }`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-violet-400/80" />
-            <span className="text-[13px] font-medium text-white/90 truncate">{market.label}</span>
+            <Layers className="w-4 h-4 text-[hsl(var(--dash-forest))]" />
+            <span className="text-[13px] font-medium text-foreground truncate">{market.label}</span>
           </div>
-          <p className="text-[11px] text-white/45 mt-1.5">
+          <p className="text-[11px] text-muted-foreground mt-1.5">
             LLTV {(market.lltvBps / 100).toFixed(0)}% · Liq bonus {(market.liqBonusBps / 100).toFixed(1)}%
           </p>
         </div>
-        <span className="text-[10px] tracking-[0.18em] uppercase text-violet-300/70 font-mono">
+        <span className="dash-badge text-[10px] tracking-[0.18em] uppercase font-mono">
           {market.isCanonical ? "CORE" : market.status === "legacy" ? "LEGACY" : "TEST"}
         </span>
       </div>
       <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <div className="rounded-md bg-black/20 px-2.5 py-2">
-          <div className="text-[10px] uppercase tracking-wider text-white/40">Supplied</div>
+        <div className="rounded-md bg-muted/40 border border-border/60 px-2.5 py-2">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Supplied</div>
           <div className="text-[12px] font-mono text-foreground">{supplied}</div>
         </div>
-        <div className="rounded-md bg-black/20 px-2.5 py-2">
-          <div className="text-[10px] uppercase tracking-wider text-white/40">Util</div>
-          <div className="text-[12px] font-mono text-amber-200">{util}</div>
+        <div className="rounded-md bg-muted/40 border border-border/60 px-2.5 py-2">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Util</div>
+          <div className="text-[12px] font-mono text-amber-600">{util}</div>
         </div>
-        <div className="rounded-md bg-black/20 px-2.5 py-2">
-          <div className="text-[10px] uppercase tracking-wider text-white/40">APR</div>
-          <div className="text-[12px] font-mono text-violet-200">{apr}</div>
+        <div className="rounded-md bg-muted/40 border border-border/60 px-2.5 py-2">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">APR</div>
+          <div className="text-[12px] font-mono text-[hsl(var(--dash-forest))]">{apr}</div>
         </div>
       </div>
       {!compact && (
-        <div className="mt-3 flex items-center gap-1.5 text-[11px] text-violet-300/80 group-hover:text-violet-300">
+        <div className="mt-3 flex items-center gap-1.5 text-[11px] text-[hsl(var(--dash-forest))] group-hover:opacity-80">
           <Activity className="w-3 h-3" /> Borrow <ArrowRight className="w-3 h-3" />
         </div>
       )}

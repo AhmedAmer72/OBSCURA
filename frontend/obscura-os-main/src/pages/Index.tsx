@@ -8,6 +8,7 @@ import SpadeFooter from "@/components/landing/spade/SpadeFooter";
 import { LogoStrip } from "@/components/landing/vault/LogoStrip";
 import { ScrollStory } from "@/components/landing/vault/ScrollStory";
 import { EncryptionStory } from "@/components/landing/vault/EncryptionStory";
+import { HarmonyWorkspaceSection } from "@/components/landing/vault/HarmonyWorkspaceSection";
 import { ProductEcosystem } from "@/components/landing/vault/ProductEcosystem";
 import { PrivacyLanguage } from "@/components/landing/vault/PrivacyLanguage";
 import { SecurityFoundation } from "@/components/landing/vault/SecurityFoundation";
@@ -22,18 +23,20 @@ const Index = () => {
 
       <div className="landing-vault">
         <LogoStrip />
-        <DevelopersSection />
-        <MobileAppSection />
-        <FigureShowcaseSection />
-        <IntegrationsScrollSection />
         <ScrollStory />
         <EncryptionStory />
+        <MobileAppSection />
+        <PrivacyLanguage />
+        <DevelopersSection />
+        <HarmonyWorkspaceSection />
         <ProductEcosystem />
         <PayProductSection />
-        <PrivacyLanguage />
         <SecurityFoundation />
         <Stats />
       </div>
+
+      <FigureShowcaseSection />
+      <IntegrationsScrollSection />
 
       <SpadeFooter />
     </div>

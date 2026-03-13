@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import ObscuraSlogan from "@/components/brand/ObscuraSlogan";
+import { PoweredByFhenix } from "@/components/brand/PoweredByFhenix";
 import SideRulers from "./SideRulers";
 import MoneyGlyph from "./MoneyGlyph";
 import FloatingDataCards from "./FloatingDataCards";
@@ -17,8 +18,9 @@ export default function SpadeHeroSection() {
         <div className={`relative z-10 ${SAGE_INSET}`}>
           <div className="overflow-hidden rounded-[1.5rem] bg-sage-1 shadow-[0_1px_0_rgba(24,40,14,0.05)] ring-1 ring-forest/[0.05] md:rounded-[1.75rem] lg:rounded-[2rem]">
             <div className="flex min-h-[min(90vh,920px)] flex-col px-3 pt-8 pb-8 sm:px-4 sm:pt-9 sm:pb-9 md:px-5 md:pt-10 md:pb-10 lg:pt-11 lg:pb-11">
-              <div className="overflow-visible px-2 sm:px-3">
+              <div className="flex flex-col items-center gap-4 overflow-visible px-2 sm:px-3">
                 <ObscuraSlogan centered size="hero" className="shrink-0" />
+                <PoweredByFhenix variant="hero" />
               </div>
 
               <div className="relative mt-5 flex flex-1 flex-col justify-center md:mt-6">
@@ -41,8 +43,9 @@ export default function SpadeHeroSection() {
             transition={{ delay: 0.45, duration: 0.75 }}
             className="mx-auto mt-8 max-w-xl text-center font-body text-base leading-relaxed text-forest/65 md:mt-10 md:text-lg"
           >
-            Homomorphic finance for public chains — Pay, Credit, and Vote on one encrypted engine.
-            Balances, ballots, and transfers stay sealed until you grant a permit.
+            The Harmony workspace on Arbitrum Sepolia — Pay, Credit, and Vote powered by Fhenix CoFHE.
+            Shield USDC, borrow against encrypted collateral, and cast private ballots. Reveal only
+            when you sign a permit.
           </motion.p>
 
           <motion.div
@@ -52,10 +55,10 @@ export default function SpadeHeroSection() {
             className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4"
           >
             <Link
-              to="/pay"
+              to="/home"
               className="inline-flex min-w-[200px] items-center justify-center rounded-full bg-forest px-8 py-3.5 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-lime-accent transition-opacity hover:opacity-90"
             >
-              Open Obscura →
+              Open command center →
             </Link>
             <a
               href="#how"

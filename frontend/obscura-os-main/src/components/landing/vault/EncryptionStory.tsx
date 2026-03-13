@@ -7,20 +7,24 @@ import {
 
 const STEPS = [
   {
-    title: "Inputs encrypted client-side",
-    body: "Your values are sealed with FHE in the browser before they ever touch a public network. No node sees the plaintext.",
+    title: "Encrypt in the browser",
+    body: "CoFHE seals amounts client-side before they reach Arbitrum Sepolia. Pay streams, credit shares, and vote choices enter as ciphertext handles — never plaintext on-chain.",
   },
   {
-    title: "Computation on ciphertext",
-    body: "Smart contracts add, subtract, and compare encrypted numbers directly. The CoFHE coprocessor never decrypts your data.",
+    title: "Compute without decrypting",
+    body: "Contracts run FHE.add, FHE.sub, and FHE.gt on sealed balances. Lending health, payroll ticks, and ballot tallies update homomorphically via the Fhenix coprocessor.",
   },
   {
-    title: "Selective reveal",
-    body: "Decryption needs an explicit EIP-712 permit signed by you. Auditors, partners, regulators — invited one viewer at a time.",
+    title: "Reveal on your terms",
+    body: "The Harmony UI masks values until you click Reveal. No auto-decrypt on mount — each view needs an explicit permit you control.",
   },
   {
-    title: "Public proofs, private values",
-    body: "Settlement is on Arbitrum. The math is verifiable, the numbers are yours. Privacy by mathematics, not by trust.",
+    title: "Public where it helps",
+    body: "TVL, utilization, and finalized vote aggregates can be public by design. Individual payments, positions, and ballots stay encrypted until you choose otherwise.",
+  },
+  {
+    title: "Two rails for Pay",
+    body: "Private Mode: ocUSDC with your wallet. Public Mode: visible USDC through a passkey smart account and ERC-4337 relay — same app, different privacy tradeoff.",
   },
 ];
 
@@ -39,8 +43,9 @@ export function EncryptionStory() {
             not just <span className="italic">hides</span>.
           </h2>
           <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-            Fully Homomorphic Encryption lets contracts run on data they can't
-            read. Four moments, one continuous proof.
+            Fully Homomorphic Encryption lets Obscura run a composable privacy stack — Pay funds Credit,
+            Vote participation feeds reputation, all without broadcasting individual amounts. Five beats
+            from seal to settlement.
           </p>
         </div>
 

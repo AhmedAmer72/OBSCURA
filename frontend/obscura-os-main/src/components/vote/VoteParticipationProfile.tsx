@@ -68,7 +68,7 @@ export function VoteParticipationProfile() {
 
   return (
     <div className="vote-harmony-panel space-y-5">
-      <section className="overflow-hidden rounded-2xl border border-border bg-white shadow-[0_1px_3px_hsl(145_18%_12%/0.06)]">
+      <section className="overflow-hidden rounded-2xl border border-border bg-white shadow-[var(--dash-surface-shadow)]">
         <div className="border-b border-border p-5 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>

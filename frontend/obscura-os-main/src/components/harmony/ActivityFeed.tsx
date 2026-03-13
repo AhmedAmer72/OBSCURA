@@ -261,8 +261,8 @@ export function ActivityFeed({
             className={[
               "rounded-full px-3 py-1 text-xs font-medium transition-colors hairline",
               filter === t.key
-                ? "bg-[#2D6A4F] text-white border-transparent"
-                : "text-muted-foreground hover:bg-[#F0EDE8]",
+                ? "bg-[hsl(var(--dash-forest))] text-white border-transparent"
+                : "text-muted-foreground hover:bg-muted",
             ].join(" ")}
           >
             {t.label}
@@ -271,7 +271,7 @@ export function ActivityFeed({
 
         <button
           onClick={refresh}
-          className="ml-0 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-[#F0EDE8] sm:ml-auto"
+          className="ml-0 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted sm:ml-auto"
           aria-label="Refresh"
         >
           <RefreshCw className="h-3.5 w-3.5" />

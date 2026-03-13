@@ -1,8 +1,9 @@
 import type { ComponentType, ReactNode } from "react";
 import { Lock, Network, ShieldCheck, Wallet } from "lucide-react";
 import { HarmonyFormCard, HarmonyPageIntro } from "@/components/harmony/harmony-ui";
+import { AppWorkspaceTabs, type WorkspaceTabItem } from "@/components/harmony/AppWorkspaceTabs";
 
-export type VoteHarmonyTabKey = "proposals" | "participation" | "advanced";
+export type VoteHarmonyTabKey = "proposals" | "participation" | "delegation" | "advanced";
 export type VoteVotingSubKey = "browse" | "create" | "vote" | "results";
 
 const TAB_META: Record<
@@ -15,9 +16,14 @@ const TAB_META: Record<
     description: "Browse proposals, cast a private vote, change it before the deadline, and reveal only final totals.",
   },
   participation: {
-    eyebrow: "Participation",
-    title: "Participation",
-    description: "Your governance identity — reputation tier, ballot history, delegation, rewards, and indexed activity without exposing vote choices.",
+    eyebrow: "Rewards",
+    title: "Voter rewards",
+    description: "Your governance standing and ETH rewards from finalized private votes.",
+  },
+  delegation: {
+    eyebrow: "Delegation",
+    title: "Delegate voting power",
+    description: "Route public voting weight to a trusted delegate. Remove delegation before casting private ballots yourself.",
   },
   advanced: {
     eyebrow: "Advanced governance",
@@ -38,13 +44,28 @@ export function VoteHarmonyTabShell({
   sub,
   actions,
   children,
+  hideIntro = false,
 }: {
   tab: VoteHarmonyTabKey;
   sub?: VoteVotingSubKey;
   actions?: ReactNode;
   children: ReactNode;
+  hideIntro?: boolean;
 }) {
   const meta = TAB_META[tab];
+
+  if (hideIntro) {
+    return (
+      <div className="vote-tab-stack space-y-6">
+        {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+        {sub ? (
+          <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">{SUB_META[sub]}</p>
+        ) : null}
+        {children}
+      </div>
+    );
+  }
+
   return (
     <>
       <HarmonyPageIntro eyebrow={meta.eyebrow} title={meta.title} actions={actions} />
@@ -107,27 +128,20 @@ export function VoteHarmonySubNav<T extends string>({
   onChange: (k: T) => void;
   items: { key: T; label: string; icon: ComponentType<{ className?: string }> }[];
 }) {
+  const tabs: WorkspaceTabItem<T>[] = items.map((item) => ({
+    key: item.key,
+    label: item.label,
+    icon: item.icon as WorkspaceTabItem<T>["icon"],
+  }));
+
   return (
-    <div className="flex gap-1 rounded-full hairline bg-muted/60 p-1">
-      {items.map((t) => {
-        const Icon = t.icon;
-        const isActive = active === t.key;
-        return (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => onChange(t.key)}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-2 py-2 text-xs font-medium transition-colors sm:px-3 ${
-              isActive
-                ? "bg-card text-foreground shadow-sm hairline"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Icon className="h-3.5 w-3.5 shrink-0" />
-            <span className="hidden sm:inline">{t.label}</span>
-          </button>
-        );
-      })}
-    </div>
+    <AppWorkspaceTabs
+      value={active}
+      onChange={onChange}
+      items={tabs}
+      className="mb-6 w-full"
+      ariaLabel="Governance sections"
+      variant="sub"
+    />
   );
 }

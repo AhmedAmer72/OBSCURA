@@ -17,6 +17,9 @@ dist
 dist-ssr
 *.local
 
+# Mobile APK binaries (manifest stays in git)
+public/downloads/*.apk
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

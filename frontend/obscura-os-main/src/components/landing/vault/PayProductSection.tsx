@@ -23,9 +23,10 @@ export function PayProductSection() {
               <span className="text-brand">built for public chains.</span>
             </h2>
             <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
-              Obscura Pay is a privacy-first payment layer on Arbitrum. Amounts and balances can stay
-              encrypted with FHE while you still settle in stable value — with a second path for
-              everyday USDC when you want speed and familiarity.
+              Obscura Pay is the payment layer of the Harmony workspace: shield and send ocUSDC with
+              stealth receiving, confidential escrows, streams, and invoices — or flip to Public Mode
+              for visible USDC through a passkey smart account. Unified settings, activity indexing,
+              and push notifications ship in the same shell.
             </p>
             <Link
               to="/pay"

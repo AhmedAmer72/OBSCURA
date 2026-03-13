@@ -1,0 +1,2300 @@
+/**
+ * Obscura dashboard — premium workspace layer
+ * Inspired by command-center layout quality; uses Obscura sage/forest tokens only.
+ */
+
+.obscura-app.dash-premium {
+  --dash-sidebar-w: 16rem;
+  --dash-sidebar-w-collapsed: 4.5rem;
+  --dash-sidebar-current-w: var(--dash-sidebar-w);
+  --dash-nav-accent: var(--dash-forest);
+  --dash-nav-accent-soft: 145 38% 93%;
+  --dash-nav-accent-border: 145 28% 85%;
+  --dash-topbar-h: 4rem;
+  --dash-forest: 155 42% 28%;
+  --dash-forest-hover: 155 42% 24%;
+  --dash-mint: 145 38% 93%;
+  --dash-mint-border: 145 28% 85%;
+  --dash-radius-lg: 1rem;
+  --dash-radius-md: 0.5rem;
+  --dash-radius-sm: 0.5rem;
+  --dash-radius-btn: 0.5rem;
+  --dash-surface-bg: linear-gradient(
+    168deg,
+    hsl(0 0% 100%) 0%,
+    hsl(145 28% 98.5%) 52%,
+    hsl(145 22% 97%) 100%
+  );
+  --dash-surface-border: hsl(var(--border) / 0.72);
+  /* Forest-green elevation system (all cards / forms / panels) */
+  --dash-surface-shadow:
+    0 0 0 1px hsl(0 0% 100% / 0.65) inset,
+    0 1px 2px hsl(var(--dash-forest) / 0.1),
+    0 4px 12px hsl(var(--dash-forest) / 0.14),
+    0 12px 32px hsl(var(--dash-forest) / 0.18);
+  --dash-surface-shadow-sm:
+    0 0 0 1px hsl(0 0% 100% / 0.55) inset,
+    0 1px 2px hsl(var(--dash-forest) / 0.08),
+    0 4px 10px hsl(var(--dash-forest) / 0.12);
+  --dash-shadow-card: var(--dash-surface-shadow);
+  --dash-shadow-hover:
+    0 0 0 1px hsl(0 0% 100% / 0.65) inset,
+    0 2px 4px hsl(var(--dash-forest) / 0.12),
+    0 8px 20px hsl(var(--dash-forest) / 0.18),
+    0 16px 40px hsl(var(--dash-forest) / 0.22);
+  --dash-shadow-input: 0 1px 2px hsl(var(--dash-forest) / 0.1);
+  --dash-shadow-input-focus: 0 0 0 3px hsl(var(--dash-forest) / 0.2);
+  --dash-shadow-btn: 0 1px 2px hsl(var(--dash-forest) / 0.16);
+  --dash-shadow-btn-hover: 0 4px 14px hsl(var(--dash-forest) / 0.24);
+  --dash-shadow-modal: 0 20px 60px hsl(var(--dash-forest) / 0.26);
+  --dash-shadow-drawer: -12px 0 48px hsl(var(--dash-forest) / 0.22);
+  --dash-shadow-nav: 4px 0 24px hsl(var(--dash-forest) / 0.1);
+  --dash-glass: rgba(255, 255, 255, 0.72);
+  --dash-glass-border: hsl(var(--dash-forest) / 0.12);
+}
+
+.obscura-app.dash-premium .dash-shell-bg {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, hsl(145 40% 88% / 0.35), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 100% 0%, hsl(96 22% 94% / 0.8), transparent 50%),
+    hsl(var(--background));
+}
+
+/* ─── Sidebar (persistent + collapsible) ─────────────────────────────────── */
+.obscura-app.dash-premium .dash-sidebar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  width: var(--dash-sidebar-current-w, var(--dash-sidebar-w));
+  height: 100vh;
+  max-height: 100dvh;
+  border-right: 1px solid hsl(var(--border) / 0.75);
+  background:
+    linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(145 22% 98%) 48%, hsl(145 18% 97%) 100%);
+  box-shadow:
+    1px 0 0 hsl(0 0% 100% / 0.7) inset,
+    4px 0 24px hsl(var(--dash-forest) / 0.1);
+  transition: width 0.22s ease;
+}
+
+.obscura-app.dash-premium .dash-sidebar.is-collapsed {
+  width: var(--dash-sidebar-w-collapsed);
+}
+
+.obscura-app.dash-premium .dash-sidebar-brand {
+  padding: 1.125rem 1rem 1rem;
+  border-bottom: 1px solid hsl(var(--border) / 0.65);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.obscura-app.dash-premium .dash-sidebar-brand-link {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.obscura-app.dash-premium .dash-sidebar.is-collapsed .dash-sidebar-brand {
+  display: flex;
+  justify-content: center;
+  padding-inline: 0.75rem;
+}
+
+.obscura-app.dash-premium .dash-sidebar.is-collapsed .dash-sidebar-brand-link {
+  align-items: center;
+}
+
+.obscura-app.dash-premium .dash-sidebar-tagline {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.5625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground) / 0.72);
+}
+
+.obscura-app.dash-premium .dash-sidebar-section-label {
+  padding: 0.625rem 1rem 0.35rem;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.5625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground) / 0.62);
+}
+
+.obscura-app.dash-premium .dash-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0 0.5rem 0.75rem;
+}
+
+.obscura-app.dash-premium .dash-sidebar-nav--utility {
+  padding-top: 0.25rem;
+}
+
+.obscura-app.dash-premium .dash-sidebar-toggle {
+  border-radius: var(--dash-radius-sm);
+  border: 1px solid hsl(var(--border));
+  background: hsl(0 0% 100%);
+  color: hsl(var(--muted-foreground));
+  box-shadow: 0 1px 2px hsl(var(--dash-forest) / 0.1);
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.obscura-app.dash-premium .dash-sidebar-toggle:hover {
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border-strong));
+  background: hsl(var(--muted) / 0.35);
+}
+
+.obscura-app.dash-premium .dash-sidebar-toggle[aria-pressed='true'] {
+  color: hsl(var(--dash-forest));
+  border-color: hsl(var(--dash-forest) / 0.28);
+  background: hsl(var(--dash-mint) / 0.65);
+}
+
+.obscura-app.dash-premium .dash-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 2.625rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: 0.625rem;
+  border: 1px solid transparent;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+  color: hsl(var(--muted-foreground));
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.obscura-app.dash-premium .dash-nav-item--collapsed {
+  justify-content: center;
+  padding-inline: 0.5rem;
+}
+
+.obscura-app.dash-premium .dash-nav-item:hover {
+  background: hsl(var(--muted) / 0.45);
+  color: hsl(var(--foreground));
+}
+
+.obscura-app.dash-premium .dash-nav-icon-wrap {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--border) / 0.55);
+  background: hsl(0 0% 100% / 0.72);
+  color: hsl(var(--muted-foreground));
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.obscura-app.dash-premium .dash-nav-item:hover .dash-nav-icon-wrap {
+  border-color: hsl(var(--border-strong) / 0.75);
+  color: hsl(var(--foreground));
+}
+
+.obscura-app.dash-premium .dash-nav-item[data-active='true'] {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--dash-mint) / 0.95) 0%,
+    hsl(var(--dash-mint) / 0.45) 55%,
+    transparent 100%
+  );
+  border-color: hsl(var(--dash-mint-border) / 0.85);
+  color: hsl(var(--foreground));
+  box-shadow:
+    inset 3px 0 0 hsl(var(--dash-forest)),
+    0 0 16px hsl(var(--dash-forest) / 0.06);
+}
+
+.obscura-app.dash-premium .dash-nav-item[data-active='true'] .dash-nav-icon-wrap {
+  border-color: hsl(var(--dash-forest) / 0.22);
+  background: linear-gradient(
+    135deg,
+    hsl(var(--dash-forest)) 0%,
+    hsl(155 38% 32%) 100%
+  );
+  color: hsl(96 18% 97%);
+  box-shadow:
+    0 0 0 1px hsl(var(--dash-forest) / 0.18),
+    0 0 12px hsl(var(--dash-forest) / 0.22);
+}
+
+.obscura-app.dash-premium .dash-nav-label {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.obscura-app.dash-premium .dash-nav-active-pip {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 9999px;
+  background: hsl(var(--dash-forest));
+  box-shadow: 0 0 8px hsl(var(--dash-forest) / 0.35);
+  flex-shrink: 0;
+}
+
+.obscura-app.dash-premium .dash-sidebar-footer {
+  margin-top: auto;
+  border-top: 1px solid hsl(var(--border) / 0.65);
+  padding: 0.75rem 0 1rem;
+}
+
+.obscura-app.dash-premium .dash-sidebar-context .dash-nav-item {
+  font-size: 0.8125rem;
+}
+
+.obscura-app.dash-premium .dash-wallet-card {
+  margin: 0 0.75rem;
+  padding: 0.875rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid hsl(var(--dash-mint-border));
+  background: linear-gradient(145deg, hsl(var(--dash-mint) / 0.65) 0%, hsl(0 0% 100%) 100%);
+  box-shadow: 0 4px 14px hsl(var(--dash-forest) / 0.06);
+}
+
+.obscura-app.dash-premium .dash-wallet-pulse {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: hsl(var(--success));
+  box-shadow: 0 0 0 3px hsl(var(--success) / 0.2);
+}
+
+.obscura-app.dash-premium .dash-status-card {
+  margin: 0 0.75rem 0.75rem;
+  padding: 0.875rem 1rem;
+  border-radius: var(--dash-radius-md);
+  border: 1px solid hsl(145 30% 85%);
+  background: linear-gradient(135deg, hsl(145 40% 96%) 0%, hsl(var(--card)) 100%);
+}
+
+/* ─── Top bar ─────────────────────────────────────────────────────────────── */
+.obscura-app.dash-premium .dash-topbar {
+  height: var(--dash-topbar-h);
+  border-bottom: 1px solid hsl(var(--border));
+  background: hsl(var(--card) / 0.82);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+}
+
+.obscura-app.dash-premium .dash-topbar-actions {
+  margin-left: auto;
+}
+
+.obscura-app.dash-premium .dash-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  max-width: 28rem;
+  flex: 1;
+  padding: 0.5rem 0.875rem;
+  border-radius: var(--dash-radius-sm);
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
+  box-shadow: 0 1px 2px hsl(var(--dash-forest) / 0.08);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+@media (max-width: 419px) {
+  .obscura-app.dash-premium .dash-search {
+    display: none !important;
+  }
+}
+
+.obscura-app.dash-premium .dash-search:focus-within {
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 3px hsl(var(--accent) / 0.25);
+}
+
+.obscura-app.dash-premium .dash-search input {
+  width: 100%;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 0.875rem !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  padding: 0 !important;
+  min-height: auto !important;
+}
+
+.obscura-app.dash-premium .dash-kbd {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.35rem;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+}
+
+/* ─── Cards & surfaces (static elevated system) ───────────────────────────── */
+.obscura-app.dash-premium .dash-card,
+.obscura-app.dash-premium .obscura-tile,
+.obscura-app.dash-premium .pay-home-metric,
+.obscura-app.dash-premium .pay-home-recommended,
+.obscura-app.dash-premium .pay-card,
+.obscura-app.dash-premium .hairline.bg-card,
+.obscura-app.dash-premium .rounded-2xl.hairline.bg-card,
+.obscura-app.dash-premium .rounded-xl.hairline.bg-card,
+.obscura-app.dash-premium .settings-hub-card,
+.obscura-app.dash-premium .harmony-tx-panel,
+.obscura-app.dash-premium .vote-harmony-panel .rounded-2xl.border.border-border.bg-white,
+.obscura-app.dash-premium .vote-harmony-panel .rounded-xl.border.border-border.bg-white,
+.obscura-app.dash-premium .credit-tab-stack .rounded-2xl.hairline.bg-card,
+.obscura-app.dash-premium .vote-tab-stack .rounded-2xl.hairline.bg-card {
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--dash-radius-lg);
+  border: 1px solid var(--dash-surface-border);
+  background: var(--dash-surface-bg);
+  box-shadow: var(--dash-surface-shadow);
+}
+
+.obscura-app.dash-premium .dash-card::before,
+.obscura-app.dash-premium .obscura-tile::before,
+.obscura-app.dash-premium .pay-home-metric::before,
+.obscura-app.dash-premium .pay-home-recommended::before,
+.obscura-app.dash-premium .pay-card::before,
+.obscura-app.dash-premium .hairline.bg-card::before,
+.obscura-app.dash-premium .rounded-2xl.hairline.bg-card::before,
+.obscura-app.dash-premium .rounded-xl.hairline.bg-card::before,
+.obscura-app.dash-premium .settings-hub-card::before {
+  content: '';
+  display: block;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(145deg, hsl(145 35% 97% / 0.55) 0%, transparent 42%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.obscura-app.dash-premium .dash-card > *,
+.obscura-app.dash-premium .obscura-tile > *,
+.obscura-app.dash-premium .pay-home-metric > *,
+.obscura-app.dash-premium .pay-home-recommended > *,
+.obscura-app.dash-premium .pay-card > *,
+.obscura-app.dash-premium .hairline.bg-card > *,
+.obscura-app.dash-premium .rounded-2xl.hairline.bg-card > *,
+.obscura-app.dash-premium .rounded-xl.hairline.bg-card > *,
+.obscura-app.dash-premium .settings-hub-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.obscura-app.dash-premium .dash-card-interactive:hover {
+  border-color: hsl(var(--border-strong));
+}
+
+.obscura-app.dash-premium .dash-metric-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.obscura-app.dash-premium .dash-metric-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(145deg, hsl(145 35% 97% / 0.6) 0%, transparent 45%);
+  pointer-events: none;
+}
+
+.obscura-app.dash-premium .dash-sealed-glass {
+  display: inline-flex;
+  min-width: 5rem;
+  min-height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  border: 1px solid var(--dash-glass-border);
+  background: var(--dash-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ─── Sealed cipher tiles (reference cipher-mask / cipher-block) ───────────── */
+.obscura-app.dash-premium .cipher-mask,
+.obscura-app.dash-premium .dash-cipher-bars {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 3px;
+  max-width: 100%;
+  vertical-align: baseline;
+}
+
+.obscura-app.dash-premium .cipher-mask-stack,
+.obscura-app.dash-premium .dash-cipher-mask {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.625rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.obscura-app.dash-premium .pay-metric-sealed__value-row,
+.obscura-app.dash-premium .home-glance-sealed__mask-row {
+  display: flex;
+  align-items: flex-end;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.obscura-app.dash-premium .pay-metric-sealed__unit {
+  margin: 0;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground) / 0.9);
+}
+
+.obscura-app.dash-premium .home-glance-sealed {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.625rem;
+  min-width: 0;
+}
+
+.obscura-app.dash-premium .home-glance-sealed__tile {
+  container-type: inline-size;
+  container-name: glance-tile;
+  min-width: 0;
+  padding: 0.75rem 0.875rem;
+  border-radius: var(--dash-radius-md);
+  border: 1px solid hsl(var(--border) / 0.75);
+  background: linear-gradient(180deg, hsl(0 0% 100% / 0.92) 0%, hsl(145 22% 97% / 0.55) 100%);
+  box-shadow: var(--dash-surface-shadow-sm);
+}
+
+@media (max-width: 480px) {
+  .obscura-app.dash-premium .home-glance-sealed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container pay-metric (max-width: 300px) {
+  .obscura-app.dash-premium .home-glance-sealed__tile .cipher-block-md {
+    width: 0.875rem;
+    height: 1.375rem;
+  }
+}
+
+.obscura-app.dash-premium .pay-home-metric .cipher-mask-stack .ref-ghost-action,
+.obscura-app.dash-premium .home-glance-sealed__tile .ref-ghost-action {
+  width: 100%;
+  justify-content: center;
+  margin-top: 0.25rem;
+}
+
+/* Cipher decrypt reveal — mask exit + value resolve */
+.obscura-app.dash-premium .cipher-decrypt-root {
+  width: 100%;
+  max-width: 100%;
+}
+
+.obscura-app.dash-premium .cipher-decrypt-stage {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.obscura-app.dash-premium .cipher-decrypt-stage--metric {
+  min-height: 2.75rem;
+}
+
+.obscura-app.dash-premium .cipher-decrypt-stage--glance {
+  min-height: 2rem;
+}
+
+.obscura-app.dash-premium .cipher-decrypt-stage--compact {
+  min-height: 1.625rem;
+}
+
+.obscura-app.dash-premium .cipher-decrypt-revealed {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.obscura-app.dash-premium .cipher-decrypt-revealed__row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.obscura-app.dash-premium .cipher-decrypt-value {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.obscura-app.dash-premium .cipher-decrypt-value--metric {
+  font-size: clamp(1.25rem, 4vw, 1.75rem);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.obscura-app.dash-premium .cipher-decrypt-value--glance {
+  font-family: 'Sora', ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(0.8125rem, 5cqi + 0.35rem, 1.125rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  flex: 1 1 auto;
+}
+
+@container glance-tile (max-width: 148px) {
+  .obscura-app.dash-premium .home-glance-sealed__tile .cipher-decrypt-value--glance {
+    font-size: 0.8125rem;
+    letter-spacing: -0.02em;
+  }
+}
+
+.obscura-app.dash-premium .cipher-decrypt-value--compact {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* Matrix-style character decrypt */
+.obscura-app.dash-premium .cipher-decrypt-revealed--matrix {
+  isolation: isolate;
+}
+
+.obscura-app.dash-premium .cipher-matrix-text {
+  display: inline;
+  font: inherit;
+  letter-spacing: inherit;
+  white-space: nowrap;
+}
+
+.obscura-app.dash-premium .cipher-matrix-char {
+  display: inline-block;
+  min-width: 0.42em;
+  text-align: center;
+  transition: color 0.12s ease, text-shadow 0.12s ease;
+}
+
+.obscura-app.dash-premium .cipher-matrix-char--scramble {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 600;
+  color: hsl(var(--dash-forest) / 0.88);
+  text-shadow:
+    0 0 10px hsl(var(--success) / 0.45),
+    0 0 2px hsl(var(--success) / 0.35);
+  animation: cipher-matrix-flicker 0.09s steps(2) infinite;
+}
+
+.obscura-app.dash-premium .cipher-matrix-char--locked {
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  text-shadow: none;
+  animation: cipher-matrix-lock 0.22s ease-out forwards;
+}
+
+.obscura-app.dash-premium .cipher-decrypt-rain {
+  position: absolute;
+  inset: -4px -6px;
+  pointer-events: none;
+  opacity: 0;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0px,
+    transparent 3px,
+    hsl(var(--success) / 0.04) 3px,
+    hsl(var(--success) / 0.09) 4px,
+    transparent 5px,
+    transparent 11px
+  );
+  mask-image: linear-gradient(180deg, hsl(0 0% 0% / 0.9) 0%, transparent 88%);
+  animation: cipher-matrix-rain 1.15s ease-out forwards;
+}
+
+.obscura-app.dash-premium .cipher-decrypt-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--success) / 0.15) 20%,
+    hsl(var(--success) / 0.55) 50%,
+    hsl(var(--success) / 0.15) 80%,
+    transparent 100%
+  );
+  transform: scaleX(0);
+  transform-origin: left center;
+  animation: cipher-decrypt-scan 0.65s ease-out forwards;
+  pointer-events: none;
+}
+
+.obscura-app.dash-premium .cipher-decrypt-revealed--matrix .cipher-decrypt-scan {
+  animation-duration: 1.25s;
+  animation-delay: 0.12s;
+}
+
+.obscura-app.dash-premium .home-glance-sealed__tile .cipher-mask-stack {
+  width: 100%;
+}
+
+@keyframes cipher-decrypt-scan {
+  0% {
+    transform: scaleX(0);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+@keyframes cipher-matrix-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@keyframes cipher-matrix-lock {
+  0% {
+    filter: brightness(1.35);
+    text-shadow: 0 0 8px hsl(var(--success) / 0.5);
+  }
+  100% {
+    filter: brightness(1);
+    text-shadow: none;
+  }
+}
+
+@keyframes cipher-matrix-rain {
+  0% {
+    opacity: 0;
+    transform: translateY(-6%);
+  }
+  18% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(8%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .obscura-app.dash-premium .cipher-matrix-char--scramble {
+    animation: none;
+  }
+
+  .obscura-app.dash-premium .cipher-matrix-char--locked {
+    animation: none;
+  }
+
+  .obscura-app.dash-premium .cipher-decrypt-rain {
+    animation: none;
+    display: none;
+  }
+
+  .obscura-app.dash-premium .cipher-decrypt-scan {
+    animation: none;
+    transform: scaleX(1);
+    opacity: 0.6;
+  }
+}
+
+.obscura-app.dash-premium .cipher-block,
+.obscura-app.dash-premium .dash-cipher-bar {
+  display: block;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  border-radius: 5px;
+  border: 0;
+  background-color: transparent;
+  background-image: linear-gradient(
+    135deg,
+    hsl(145 12% 84%) 0%,
+    hsl(145 8% 72%) 45%,
+    hsl(145 18% 90%) 55%,
+    hsl(145 10% 76%) 100%
+  );
+  background-size: 220% 220%;
+  background-repeat: repeat;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  animation: cipher-block-shimmer 2.8s ease-in-out infinite;
+  will-change: opacity;
+}
+
+.obscura-app.dash-premium .cipher-block::after,
+.obscura-app.dash-premium .dash-cipher-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.45) 45%,
+    rgba(255, 255, 255, 0.65) 50%,
+    rgba(255, 255, 255, 0.45) 55%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: cipher-block-scan 2.5s linear infinite;
+  pointer-events: none;
+}
+
+.obscura-app.dash-premium .cipher-block-xl,
+.obscura-app.dash-premium .dash-cipher-bars-lg .dash-cipher-bar {
+  width: 2.325rem;
+  height: 3.225rem;
+}
+
+.obscura-app.dash-premium .cipher-block-lg {
+  width: 1.75rem;
+  height: 2.5rem;
+}
+
+.obscura-app.dash-premium .cipher-block-md,
+.obscura-app.dash-premium .dash-cipher-bar {
+  width: 1.125rem;
+  height: 1.625rem;
+}
+
+.obscura-app.dash-premium .cipher-block-sm,
+.obscura-app.dash-premium .dash-cipher-bars-sm .dash-cipher-bar {
+  width: 0.625rem;
+  height: 0.9375rem;
+}
+
+.obscura-app.dash-premium .cipher-caption,
+.obscura-app.dash-premium .dash-cipher-caption {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground) / 0.85);
+}
+
+@keyframes cipher-block-shimmer {
+  0%,
+  100% {
+    opacity: 0.78;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes cipher-block-scan {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+/* Tiles & stat typography */
+.obscura-app.dash-premium .stat-number {
+  font-family: "Playfair Display", "Sora", Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* FHE stepper — premium floating panel on wide screens */
+.obscura-app.dash-premium .harmony-fhe-stepper {
+  border-radius: var(--dash-radius-lg) !important;
+  border-color: hsl(var(--border)) !important;
+  box-shadow: var(--dash-shadow-hover);
+}
+
+@media (min-width: 768px) {
+  .obscura-app.dash-premium .harmony-fhe-stepper--toast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 50;
+    width: 18rem;
+    margin-top: 0 !important;
+    box-shadow: var(--dash-shadow-modal);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .obscura-app.dash-premium .cipher-block,
+  .obscura-app.dash-premium .dash-cipher-bar {
+    animation: none;
+    opacity: 0.88;
+  }
+}
+
+.obscura-app.dash-premium .dash-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--muted) / 0.5);
+  color: hsl(var(--muted-foreground));
+}
+
+.obscura-app.dash-premium .dash-badge-success {
+  border-color: hsl(var(--success) / 0.25);
+  background: hsl(var(--success) / 0.08);
+  color: hsl(var(--success));
+}
+
+.obscura-app.dash-premium .dash-badge-warn {
+  border-color: hsl(38 80% 50% / 0.3);
+  background: hsl(38 90% 94%);
+  color: hsl(25 75% 38%);
+}
+
+.obscura-app.dash-premium .dash-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 1rem;
+  border-radius: var(--dash-radius-md);
+  border: 1px solid hsl(145 35% 82%);
+  background: linear-gradient(90deg, hsl(145 45% 94%) 0%, hsl(var(--card)) 100%);
+  font-size: 0.8125rem;
+  color: hsl(var(--foreground));
+}
+
+/* ─── Sub-nav chips ───────────────────────────────────────────────────────── */
+.obscura-app.dash-premium .dash-subnav-chip {
+  font-family: 'Inter', sans-serif !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  font-size: 0.8125rem !important;
+  font-weight: 500 !important;
+  border-radius: 9999px !important;
+  transition: all 0.18s ease !important;
+  color: hsl(var(--muted-foreground));
+}
+
+.obscura-app.dash-premium .dash-subnav-chip:hover:not(.is-active):not([aria-current='page']):not([aria-selected='true']) {
+  background: hsl(145 32% 94%);
+  color: hsl(var(--dash-forest));
+}
+
+.obscura-app.dash-premium .dash-subnav-chip.is-active,
+.obscura-app.dash-premium .dash-subnav-chip[aria-current='page'],
+.obscura-app.dash-premium .dash-subnav-chip[aria-selected='true'] {
+  background: hsl(var(--dash-mint)) !important;
+  color: hsl(var(--foreground)) !important;
+  box-shadow: inset 0 0 0 1px hsl(var(--dash-mint-border));
+}
+
+.obscura-app.dash-premium .dash-mobile-os-nav {
+  background: hsl(var(--card) / 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ─── Hero & typography ───────────────────────────────────────────────────── */
+.obscura-app.dash-premium .dash-hero-title {
+  font-family: 'Sora', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+}
+
+.obscura-app.dash-premium .dash-metric-value {
+  font-family: 'Sora', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  font-size: 1.75rem;
+  line-height: 1.1;
+}
+
+.obscura-app.dash-premium .dash-eyebrow {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+
+/* ─── Tables / activity ───────────────────────────────────────────────────── */
+.obscura-app.dash-premium .dash-table-row {
+  transition: background-color 0.15s ease;
+}
+
+.obscura-app.dash-premium .dash-table-row:hover {
+  background: hsl(var(--muted) / 0.45);
+}
+
+.obscura-app.dash-premium .dash-progress {
+  height: 0.25rem;
+  border-radius: 9999px;
+  background: hsl(var(--muted));
+  overflow: hidden;
+}
+
+.obscura-app.dash-premium .dash-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, hsl(var(--success)), hsl(145 55% 55%));
+  transition: width 0.4s ease;
+}
+
+/* ─── Buttons (workspace) ─────────────────────────────────────────────────── */
+.obscura-app.dash-premium .dash-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 2.5rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--dash-radius-btn);
+  border: none;
+  background: hsl(var(--dash-forest));
+  color: hsl(96 18% 97%);
+  font-family: 'Inter', sans-serif !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  box-shadow: var(--dash-shadow-btn);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+.obscura-app.dash-premium .dash-btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: hsl(var(--dash-forest-hover));
+  box-shadow: var(--dash-shadow-btn-hover);
+}
+
+.obscura-app.dash-premium .dash-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 2.5rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--dash-radius-btn);
+  border: 1px solid hsl(var(--border-strong));
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  font-family: 'Inter', sans-serif !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.obscura-app.dash-premium .dash-btn-outline:hover:not(:disabled) {
+  background: hsl(var(--muted));
+  border-color: hsl(var(--foreground) / 0.15);
+}
+
+/* ─── Drawer / modal polish ───────────────────────────────────────────────── */
+.obscura-app.dash-premium .dash-drawer-panel {
+  box-shadow: var(--dash-shadow-drawer);
+}
+
+.obscura-app.dash-premium .dash-drawer-backdrop {
+  background: hsl(var(--dash-forest) / 0.22);
+  backdrop-filter: blur(4px);
+}
+
+/* ─── Mobile bottom nav ───────────────────────────────────────────────────── */
+.obscura-app.dash-premium .dash-mobile-nav {
+  min-height: 4.25rem;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  border-top: 1px solid hsl(var(--border));
+  background: hsl(var(--card) / 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 -4px 24px hsl(var(--dash-forest) / 0.12);
+}
+
+.obscura-app.dash-premium .dash-mobile-nav [data-active='true'] {
+  color: hsl(var(--foreground));
+}
+
+.obscura-app.dash-premium .dash-mobile-nav [data-active='true'] .dash-mobile-icon {
+  background: hsl(var(--dash-mint));
+  box-shadow: inset 0 0 0 1px hsl(var(--dash-mint-border));
+}
+
+.obscura-app.dash-premium .dash-mobile-nav [data-active='true'] .dash-mobile-icon svg {
+  color: hsl(var(--dash-forest));
+}
+
+/* Hide duplicate workspace tabs when section bottom nav is present */
+@media (max-width: 767px) {
+  .obscura-app.dash-premium.dash-has-mobile-nav .app-workspace-chrome .app-workspace-tabs,
+  .obscura-app.dash-premium.dash-has-mobile-nav .app-workspace-chrome .pay-workspace-tabs {
+    display: none;
+  }
+
+  .obscura-app.dash-premium.dash-has-mobile-nav .app-workspace-chrome {
+    margin-bottom: 1.25rem;
+  }
+}
+
+/* Payment mode pill — compact labels on narrow screens */
+.obscura-app.dash-premium .pay-mode-pill-label--short {
+  display: inline;
+}
+
+.obscura-app.dash-premium .pay-mode-pill-label--full {
+  display: none;
+}
+
+@media (min-width: 480px) {
+  .obscura-app.dash-premium .pay-mode-pill-label--short {
+    display: none;
+  }
+
+  .obscura-app.dash-premium .pay-mode-pill-label--full {
+    display: inline;
+  }
+}
+
+/* ─── Global card elevation inside workspace ──────────────────────────────── */
+.obscura-app.dash-premium .rounded-2xl.hairline.bg-card {
+  border-radius: var(--dash-radius-lg);
+}
+
+.obscura-app.dash-premium .rounded-xl.hairline.bg-card {
+  border-radius: var(--dash-radius-md);
+}
+
+@media (max-width: 1023px) {
+  .obscura-app.dash-premium .dash-sidebar {
+    display: none;
+  }
+}
+
+.obscura-app.dash-premium [data-radix-popper-content-wrapper] [role="menu"],
+.obscura-app.dash-premium [data-radix-popper-content-wrapper] [role="dialog"] {
+  border-radius: var(--dash-radius-md) !important;
+  box-shadow: var(--dash-shadow-hover) !important;
+}
+
+.obscura-app.dash-premium h2.font-display {
+  letter-spacing: -0.03em;
+}
+
+.obscura-app.dash-premium .font-display.text-3xl,
+.obscura-app.dash-premium .font-display.text-2xl {
+  letter-spacing: -0.03em;
+}
+
+.obscura-app.dash-premium .pay-home-welcome {
+  margin-bottom: 0.5rem;
+}
+
+.obscura-app.dash-premium .pay-home-metric-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+@media (min-width: 640px) {
+  .obscura-app.dash-premium .pay-home-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .obscura-app.dash-premium .pay-home-metric-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ─── Pay home metric cards (elevated command-center tiles) ───────────────── */
+.obscura-app.dash-premium .pay-home-metric {
+  --metric-radius: var(--dash-radius-lg);
+  container-type: inline-size;
+  container-name: pay-metric;
+  min-height: 100%;
+  min-width: 0;
+  overflow: hidden;
+  padding: 1.35rem 1.25rem 1.2rem;
+  border-radius: var(--metric-radius);
+}
+
+@container pay-metric (max-width: 300px) {
+  .obscura-app.dash-premium .pay-home-metric .cipher-block-xl {
+    width: 1.75rem;
+    height: 2.5rem;
+  }
+
+  .obscura-app.dash-premium .pay-home-metric .cipher-block-lg {
+    width: 1.375rem;
+    height: 2rem;
+  }
+
+  .obscura-app.dash-premium .pay-home-metric .cipher-mask {
+    gap: 2px;
+  }
+}
+
+@container pay-metric (max-width: 240px) {
+  .obscura-app.dash-premium .pay-home-metric .cipher-block-xl,
+  .obscura-app.dash-premium .pay-home-metric .cipher-block-lg {
+    width: 1.125rem;
+    height: 1.625rem;
+  }
+}
+
+.obscura-app.dash-premium .pay-home-metric__ambient {
+  position: absolute;
+  top: -20%;
+  right: -10%;
+  width: 55%;
+  height: 55%;
+  border-radius: 9999px;
+  background: radial-gradient(circle, hsl(145 45% 88% / 0.35) 0%, transparent 68%);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.85;
+}
+
+.obscura-app.dash-premium .pay-home-metric__header,
+.obscura-app.dash-premium .pay-home-metric__body,
+.obscura-app.dash-premium .pay-home-metric__progress,
+.obscura-app.dash-premium .pay-home-metric__footer {
+  position: relative;
+  z-index: 1;
+}
+
+.obscura-app.dash-premium .pay-home-metric__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.obscura-app.dash-premium .pay-home-metric__label {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground) / 0.92);
+}
+
+.obscura-app.dash-premium .pay-home-metric__badge {
+  box-shadow: 0 1px 2px hsl(var(--dash-forest) / 0.14);
+}
+
+.obscura-app.dash-premium .pay-home-metric__body {
+  margin-top: 1rem;
+  flex: 1;
+  min-width: 0;
+  min-height: 7.5rem;
+  overflow: hidden;
+}
+
+.obscura-app.dash-premium .pay-home-metric__body > p,
+.obscura-app.dash-premium .pay-home-metric__body .cipher-mask-stack,
+.obscura-app.dash-premium .pay-home-metric__body .pay-metric-sealed {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.obscura-app.dash-premium .pay-home-metric__progress {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.obscura-app.dash-premium .pay-home-metric__progress-label {
+  font-size: 0.6875rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.obscura-app.dash-premium .pay-home-metric__footer {
+  margin-top: auto;
+  padding-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border-top: 1px solid hsl(var(--border) / 0.55);
+  background: linear-gradient(180deg, transparent 0%, hsl(145 20% 98% / 0.65) 100%);
+  border-radius: 0 0 calc(var(--metric-radius) - 2px) calc(var(--metric-radius) - 2px);
+  margin-inline: 0;
+  padding-inline: 0;
+  padding-bottom: 0;
+}
+
+.obscura-app.dash-premium .pay-home-metric__footer .dash-btn-primary,
+.obscura-app.dash-premium .pay-home-metric__footer .dash-btn-outline {
+  flex: 1 1 calc(50% - 0.25rem);
+  min-width: 5.5rem;
+}
+
+.obscura-app.dash-premium .pay-home-metric-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  min-height: 7rem;
+  padding: 1.25rem 1rem;
+  text-align: center;
+  border-radius: 0.75rem;
+  border: 1px dashed hsl(var(--border) / 0.85);
+  border-color: hsl(var(--border) / 0.85);
+  background:
+    linear-gradient(180deg, hsl(0 0% 100% / 0.85) 0%, hsl(145 25% 97% / 0.65) 100%);
+  box-shadow: var(--dash-surface-shadow-sm);
+}
+
+.obscura-app.dash-premium .pay-home-metric-empty__icon {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  border: 1px solid hsl(var(--border) / 0.8);
+  background: hsl(var(--card));
+  color: hsl(var(--muted-foreground));
+  box-shadow:
+    0 1px 2px hsl(var(--dash-forest) / 0.12),
+    0 4px 12px hsl(var(--dash-forest) / 0.14);
+}
+
+.obscura-app.dash-premium .pay-home-metric-empty__message {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: hsl(var(--foreground) / 0.88);
+}
+
+.obscura-app.dash-premium .pay-home-metric-empty__hint {
+  max-width: 14rem;
+  font-size: 0.6875rem;
+  line-height: 1.45;
+  color: hsl(var(--muted-foreground));
+}
+
+.obscura-app.dash-premium .pay-home-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.obscura-app.dash-premium .pay-home-banner {
+  margin-bottom: 0.25rem;
+}
+
+.obscura-app.dash-premium .pay-home-quick-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 640px) {
+  .obscura-app.dash-premium .pay-home-quick-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.obscura-app.dash-premium .btn-pay {
+  font-family: 'Inter', sans-serif !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  border-radius: 9999px !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease !important;
+}
+
+.obscura-app.dash-premium .btn-pay-primary,
+.obscura-app.dash-premium .btn-pay-emerald,
+.obscura-app.dash-premium .btn-pay-cyan,
+.obscura-app.dash-premium .btn-pay-amber,
+.obscura-app.dash-premium .btn-pay-violet {
+  background: hsl(var(--dash-forest)) !important;
+  color: hsl(96 18% 97%) !important;
+  border-radius: var(--dash-radius-btn) !important;
+  box-shadow: var(--dash-shadow-btn) !important;
+  font-family: 'Inter', sans-serif !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+}
+
+.obscura-app.dash-premium .btn-pay-primary:hover:not(:disabled),
+.obscura-app.dash-premium .btn-pay-emerald:hover:not(:disabled),
+.obscura-app.dash-premium .btn-pay-cyan:hover:not(:disabled),
+.obscura-app.dash-premium .btn-pay-amber:hover:not(:disabled),
+.obscura-app.dash-premium .btn-pay-violet:hover:not(:disabled) {
+  transform: translateY(-1px) !important;
+  background: hsl(var(--dash-forest-hover)) !important;
+  box-shadow: var(--dash-shadow-btn-hover) !important;
+}
+
+.obscura-app.dash-premium .pay-card {
+  border-radius: var(--dash-radius-lg) !important;
+}
+
+.obscura-app.dash-premium .pay-input,
+.obscura-app.dash-premium .pay-select,
+.obscura-app.dash-premium textarea.pay-input {
+  border-radius: 0.75rem !important;
+  font-family: 'JetBrains Mono', ui-monospace, monospace !important;
+  box-shadow: var(--dash-shadow-input) !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.obscura-app.dash-premium .pay-input:focus,
+.obscura-app.dash-premium .pay-select:focus,
+.obscura-app.dash-premium textarea.pay-input:focus {
+  border-color: hsl(var(--dash-forest) / 0.45) !important;
+  box-shadow: var(--dash-shadow-input-focus) !important;
+}
+
+.obscura-app.dash-premium .app-wallet-slot button {
+  border-radius: 9999px !important;
+  font-family: 'Inter', sans-serif !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  font-size: 0.8125rem !important;
+  font-weight: 500 !important;
+  padding: 0.5rem 1rem !important;
+  box-shadow: 0 1px 4px hsl(var(--dash-forest) / 0.14) !important;
+}
+
+.obscura-app.dash-premium nav a,
+.obscura-app.dash-premium nav button,
+.obscura-app.dash-premium header a,
+.obscura-app.dash-premium header button {
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .obscura-app.dash-premium .dash-card,
+  .obscura-app.dash-premium .dash-nav-item,
+  .obscura-app.dash-premium .dash-btn-primary,
+  .obscura-app.dash-premium .dash-sidebar {
+    transition: none !important;
+  }
+}
+
+/* ─── Home command center ─────────────────────────────────────────────────── */
+.obscura-app.dash-premium .home-command-stack,
+.obscura-app.dash-premium .pay-home-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.obscura-app.dash-premium .home-flywheel-layer {
+  min-height: 8.5rem;
+}
+
+.obscura-app.dash-premium .home-flywheel-grid {
+  position: relative;
+}
+
+.obscura-app.dash-premium .home-flywheel-arrow {
+  z-index: 2;
+}
+
+.obscura-app.dash-premium .home-getting-started__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.35rem;
+  border-bottom: 1px solid hsl(var(--border) / 0.65);
+  background: linear-gradient(165deg, hsl(145 42% 96% / 0.45) 0%, hsl(0 0% 100%) 55%);
+}
+
+.obscura-app.dash-premium .home-getting-started__icon-badge {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid hsl(var(--dash-mint-border));
+  background: hsl(var(--dash-mint) / 0.65);
+}
+
+.obscura-app.dash-premium .home-getting-started__progress-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  min-width: 8.5rem;
+}
+
+.obscura-app.dash-premium .home-getting-started__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.obscura-app.dash-premium .home-getting-started__step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.35rem;
+  border-bottom: 1px solid hsl(var(--border) / 0.5);
+}
+
+.obscura-app.dash-premium .home-getting-started__step--next {
+  background: hsl(145 38% 96% / 0.35);
+}
+
+.obscura-app.dash-premium .home-getting-started__step-marker {
+  display: grid;
+  place-items: center;
+  width: 1.625rem;
+  height: 1.625rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+}
+
+.obscura-app.dash-premium .home-getting-started__step-marker--done {
+  border-color: hsl(var(--success));
+  background: hsl(var(--success));
+  color: hsl(var(--primary-foreground));
+}
+
+.obscura-app.dash-premium .home-getting-started__step-marker--next {
+  border-color: hsl(var(--success) / 0.45);
+  background: hsl(var(--success) / 0.12);
+  color: hsl(var(--success));
+}
+
+.obscura-app.dash-premium .home-getting-started__step-icon {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  border-radius: 0.625rem;
+  border: 1px solid hsl(var(--border) / 0.8);
+  background: hsl(var(--muted) / 0.35);
+  color: hsl(var(--foreground) / 0.75);
+}
+
+.obscura-app.dash-premium .home-getting-started__done-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--success));
+}
+
+.obscura-app.dash-premium .home-getting-started__faucet {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem 1rem;
+  margin: 0;
+  padding: 1rem 1.35rem 1.2rem;
+  background: linear-gradient(180deg, hsl(145 22% 98% / 0.5) 0%, hsl(var(--card)) 100%);
+  border-top: 1px solid hsl(var(--border) / 0.55);
+}
+
+/* ─── App workspace chrome (Pay, Credit, Govern, Identity) ───────────────── */
+.obscura-app.dash-premium .app-workspace-tabs,
+.obscura-app.dash-premium .pay-workspace-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  margin-bottom: 1.5rem;
+  border-radius: var(--dash-radius-lg);
+  border: 1px solid hsl(var(--border));
+  background: hsl(0 0% 100%);
+  box-shadow: 0 1px 2px hsl(var(--dash-forest) / 0.1);
+  width: 100%;
+  max-width: 100%;
+}
+
+.obscura-app.dash-premium .app-workspace-tabs::-webkit-scrollbar,
+.obscura-app.dash-premium .pay-workspace-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.obscura-app.dash-premium .app-workspace-tab,
+.obscura-app.dash-premium .pay-workspace-tab {
+  display: inline-flex;
+  flex: 1 1 0;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: calc(var(--dash-radius-lg) - 2px);
+  border: 1px solid transparent;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.2;
+  color: hsl(var(--muted-foreground));
+  white-space: nowrap;
+  text-align: center;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+@media (max-width: 639px) {
+  .obscura-app.dash-premium .app-workspace-tab,
+  .obscura-app.dash-premium .pay-workspace-tab {
+    padding: 0.5rem 0.35rem;
+    font-size: 0.6875rem;
+    gap: 0.35rem;
+  }
+
+  .obscura-app.dash-premium .app-workspace-tab svg,
+  .obscura-app.dash-premium .pay-workspace-tab svg {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+}
+
+.obscura-app.dash-premium .app-workspace-tab:hover:not(.app-workspace-tab-active),
+.obscura-app.dash-premium .pay-workspace-tab:hover:not(.pay-workspace-tab-active) {
+  color: hsl(var(--dash-forest));
+  background: hsl(var(--dash-mint) / 0.9);
+  border-color: hsl(var(--dash-mint-border) / 0.75);
+}
+
+.obscura-app.dash-premium .app-workspace-tab-active:hover,
+.obscura-app.dash-premium .pay-workspace-tab-active:hover {
+  background: hsl(var(--dash-mint));
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--dash-mint-border));
+}
+
+.obscura-app.dash-premium .app-workspace-tab-active,
+.obscura-app.dash-premium .pay-workspace-tab-active {
+  background: hsl(var(--dash-mint));
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--dash-mint-border));
+  box-shadow: none;
+}
+
+/* Second-row sub-nav — white bar, forest active pill */
+.obscura-app.dash-premium .app-workspace-tabs--sub {
+  background: hsl(0 0% 100%);
+  border-color: hsl(var(--border));
+}
+
+.obscura-app.dash-premium .app-workspace-tabs--sub .app-workspace-tab:hover:not(.app-workspace-tab-active) {
+  color: hsl(var(--dash-forest));
+  background: hsl(145 32% 94%);
+  border-color: hsl(145 26% 86%);
+}
+
+.obscura-app.dash-premium .app-workspace-tabs--sub .app-workspace-tab-active {
+  background: hsl(var(--dash-forest));
+  color: hsl(96 18% 97%);
+  border-color: hsl(var(--dash-forest));
+}
+
+.obscura-app.dash-premium .app-workspace-tabs--sub .app-workspace-tab-active:hover {
+  background: hsl(var(--dash-forest-hover));
+  border-color: hsl(var(--dash-forest-hover));
+  color: hsl(96 18% 97%);
+}
+
+.obscura-app.dash-premium .app-workspace-tabs--sub .app-workspace-tab-active svg {
+  color: hsl(96 18% 97%);
+}
+
+.obscura-app.dash-premium .app-workspace-chrome .app-workspace-tabs {
+  margin-bottom: 0;
+}
+
+.obscura-app.dash-premium .app-workspace-chrome__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+@media (max-width: 1023px) {
+  .obscura-app.dash-premium .app-workspace-chrome__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .obscura-app.dash-premium .pay-mode-bar-pill {
+    max-width: 100%;
+  }
+}
+
+.obscura-app.dash-premium .pay-tab-stack .harmony-form-card,
+.obscura-app.dash-premium .pay-tab-stack .rounded-2xl.hairline.bg-card,
+.obscura-app.dash-premium .credit-tab-stack .harmony-form-card,
+.obscura-app.dash-premium .credit-tab-stack .rounded-2xl.hairline.bg-card,
+.obscura-app.dash-premium .vote-tab-stack .harmony-form-card,
+.obscura-app.dash-premium .vote-tab-stack .rounded-2xl.hairline.bg-card {
+  border-radius: var(--dash-radius-lg) !important;
+}
+
+.obscura-app.dash-premium .vote-form-stack > .dash-card {
+  margin: 0;
+}
+
+.obscura-app.dash-premium .pay-mode-pill {
+  margin-bottom: 0;
+}
+
+.obscura-app.dash-premium .btn-pay-block,
+.obscura-app.dash-premium .btn-pay.btn-pay-block {
+  width: 100% !important;
+  height: 2.75rem !important;
+  border-radius: var(--dash-radius-btn) !important;
+  font-size: 0.875rem !important;
+}
+
+.obscura-app.dash-premium .pay-input,
+.obscura-app.dash-premium .pay-select,
+.obscura-app.dash-premium textarea.pay-input,
+.obscura-app.dash-premium main input.flex,
+.obscura-app.dash-premium main textarea.flex {
+  min-height: 2.75rem !important;
+  border-radius: var(--dash-radius-btn) !important;
+  padding-left: 0.875rem !important;
+  padding-right: 0.875rem !important;
+}
+
+.obscura-app.dash-premium .dash-nav-item[data-active='true'] {
+  position: relative;
+}
+
+.obscura-app.dash-premium .dash-nav-item .dash-nav-dot {
+  margin-left: auto;
+}
+
+.obscura-app.dash-premium .pay-overview-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .obscura-app.dash-premium .pay-overview-grid {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.obscura-app.dash-premium .pay-quick-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .obscura-app.dash-premium .pay-quick-action-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.obscura-app.dash-premium .pay-quick-action {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 4.5rem;
+  padding: 0.75rem 0.5rem;
+  border-radius: var(--dash-radius-btn);
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  font-family: 'Inter', sans-serif !important;
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.obscura-app.dash-premium .pay-quick-action:hover {
+  background: hsl(var(--muted) / 0.55);
+  border-color: hsl(var(--border-strong));
+  transform: translateY(-1px);
+}
+
+.obscura-app.dash-premium .pay-quick-action-primary {
+  background: hsl(var(--dash-forest));
+  border-color: hsl(var(--dash-forest));
+  color: hsl(96, 18%, 97%);
+  box-shadow: 0 1px 2px hsl(var(--dash-forest) / 0.18);
+}
+
+.obscura-app.dash-premium .pay-quick-action-primary:hover {
+  background: hsl(var(--dash-forest-hover));
+  border-color: hsl(var(--dash-forest-hover));
+  color: hsl(96, 18%, 97%);
+}
+
+.obscura-app.dash-premium .ref-mini-card {
+  position: relative;
+  border-radius: var(--dash-radius-btn);
+  border: 1px solid var(--dash-surface-border);
+  background: var(--dash-surface-bg);
+  box-shadow: var(--dash-surface-shadow-sm);
+  padding: 0.75rem 0.875rem;
+}
+
+.obscura-app.dash-premium .ref-ghost-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 2rem;
+  padding: 0 0.625rem;
+  border-radius: var(--dash-radius-btn);
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  font-family: 'Inter', sans-serif !important;
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  white-space: nowrap;
+  transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.obscura-app.dash-premium .ref-ghost-action:hover {
+  background: hsl(var(--muted));
+  border-color: hsl(var(--border-strong));
+  transform: translateY(-1px);
+}
+
+.obscura-app.dash-premium button,
+.obscura-app.dash-premium .btn-pay,
+.obscura-app.dash-premium .btn-pay-link {
+  letter-spacing: normal !important;
+  text-transform: none !important;
+}
+
+.obscura-app.dash-premium nav a,
+.obscura-app.dash-premium nav button,
+.obscura-app.dash-premium header a,
+.obscura-app.dash-premium header button {
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 0.8125rem !important;
+  font-weight: 500 !important;
+}
+
+/* ─── Credit overview grid ─────────────────────────────────────────────────── */
+.obscura-app.dash-premium .credit-overview-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .obscura-app.dash-premium .credit-overview-grid {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+/* ─── Settings hub grid ────────────────────────────────────────────────────── */
+.obscura-app.dash-premium .settings-hub-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .obscura-app.dash-premium .settings-hub-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.obscura-app.dash-premium .settings-hub-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 8.5rem;
+  padding: 1.25rem 1.375rem;
+}
+
+.obscura-app.dash-premium .settings-hub-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.obscura-app.dash-premium .settings-hub-manage {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+  transition: color 0.18s ease;
+}
+
+.obscura-app.dash-premium .settings-hub-card:hover .settings-hub-manage {
+  color: hsl(var(--foreground));
+}
+
+.obscura-app.dash-premium .govern-proposal-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.875rem 1rem;
+  border-radius: var(--dash-radius-btn);
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--muted) / 0.2);
+  transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.obscura-app.dash-premium .govern-proposal-row:hover {
+  background: hsl(var(--muted) / 0.45);
+  border-color: hsl(var(--border-strong));
+}
+
+/* ─── Workspace-wide primary CTA remap (black → Obscura forest) ─────────── */
+.obscura-app.dash-premium button.bg-foreground,
+.obscura-app.dash-premium a.bg-foreground,
+.obscura-app.dash-premium [role='tab'].bg-foreground {
+  background: hsl(var(--dash-forest)) !important;
+  border-color: hsl(var(--dash-forest)) !important;
+  color: hsl(96, 18%, 97%) !important;
+}
+
+.obscura-app.dash-premium button.bg-foreground:hover:not(:disabled),
+.obscura-app.dash-premium a.bg-foreground:hover,
+.obscura-app.dash-premium [role='tab'].bg-foreground:hover {
+  background: hsl(var(--dash-forest-hover)) !important;
+  border-color: hsl(var(--dash-forest-hover)) !important;
+}
+
+.obscura-app.dash-premium .dash-subnav-chip.bg-foreground,
+.obscura-app.dash-premium .dash-subnav-chip[class*='bg-foreground'] {
+  background: hsl(var(--dash-mint)) !important;
+  color: hsl(var(--foreground)) !important;
+  border: 1px solid hsl(var(--dash-mint-border)) !important;
+  box-shadow: none !important;
+}
+
+/* Dark accent panels (reputation tier, treasury highlights) */
+.obscura-app.dash-premium .dash-dark-panel,
+.obscura-app.dash-premium div.rounded-2xl.bg-foreground.text-background,
+.obscura-app.dash-premium div.rounded-xl.bg-foreground.text-background {
+  background: linear-gradient(145deg, hsl(var(--dash-forest)) 0%, hsl(155 42% 22%) 100%) !important;
+  color: hsl(96, 18%, 97%) !important;
+}
+
+.obscura-app.dash-premium .dash-dark-panel .bg-background\/10,
+.obscura-app.dash-premium div.rounded-2xl.bg-foreground.text-background .bg-background\/10 {
+  background: hsl(96 18% 97% / 0.12) !important;
+}
+
+/* Progress & wizard indicators */
+.obscura-app.dash-premium .h-full.rounded-full.bg-foreground,
+.obscura-app.dash-premium span.block.h-full.bg-foreground,
+.obscura-app.dash-premium .bg-foreground\/70,
+.obscura-app.dash-premium .bg-foreground\/60,
+.obscura-app.dash-premium .bg-foreground\/55,
+.obscura-app.dash-premium .bg-foreground\/40 {
+  background-color: hsl(var(--dash-forest)) !important;
+}
+
+.obscura-app.dash-premium .bg-foreground\/20,
+.obscura-app.dash-premium .bg-foreground\/18,
+.obscura-app.dash-premium .bg-foreground\/15,
+.obscura-app.dash-premium .bg-foreground\/12,
+.obscura-app.dash-premium .bg-foreground\/10 {
+  background-color: hsl(var(--dash-forest) / 0.15) !important;
+}
+
+/* Vote / credit cards inside workspace — use shared elevated surface above */
+
+/* shadcn Button primary inside workspace */
+.obscura-app.dash-premium main button[class*='bg-primary'],
+.obscura-app.dash-premium main .bg-primary {
+  background: hsl(var(--dash-forest)) !important;
+  color: hsl(96, 18%, 97%) !important;
+}
+
+.obscura-app.dash-premium main button[class*='bg-primary']:hover {
+  background: hsl(var(--dash-forest-hover)) !important;
+}
+
+/* Slide-over / modal chrome */
+.obscura-app.dash-premium .fixed.inset-0.z-40.bg-foreground\/20,
+.obscura-app.dash-premium .fixed.inset-0.z-50.bg-foreground\/25 {
+  background: hsl(var(--dash-forest) / 0.12) !important;
+}
+
+.obscura-app.dash-premium .fixed.right-0.border-l.hairline.bg-card,
+.obscura-app.dash-premium .fixed.right-0.border-l.border-border.bg-card {
+  border-radius: var(--dash-radius-lg) 0 0 var(--dash-radius-lg);
+}
+
+/* Contact / list rows */
+.obscura-app.dash-premium .dash-list-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border-radius: var(--dash-radius-btn);
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.obscura-app.dash-premium .dash-list-row:hover {
+  background: hsl(var(--muted) / 0.35);
+}
+
+/* ─── Credit tab stack — remap legacy dark tokens ─────────────────────── */
+.obscura-app.dash-premium .credit-tab-stack .text-white\/90,
+.obscura-app.dash-premium .credit-tab-stack .text-white\/85,
+.obscura-app.dash-premium .credit-tab-stack .text-white\/80,
+.obscura-app.dash-premium .credit-tab-stack .text-white\/70,
+.obscura-app.dash-premium .credit-tab-stack .text-white\/60,
+.obscura-app.dash-premium .credit-tab-stack .text-white\/55,
+.obscura-app.dash-premium .credit-tab-stack .text-white\/45,
+.obscura-app.dash-premium .credit-tab-stack .text-white\/40 {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.obscura-app.dash-premium .credit-tab-stack .text-white\/90,
+.obscura-app.dash-premium .credit-tab-stack .text-white\/85,
+.obscura-app.dash-premium .credit-tab-stack .text-white\/80 {
+  color: hsl(var(--foreground)) !important;
+}
+
+.obscura-app.dash-premium .credit-tab-stack .bg-black\/20,
+.obscura-app.dash-premium .credit-tab-stack .bg-black\/25,
+.obscura-app.dash-premium .credit-tab-stack .bg-black\/30 {
+  background: hsl(var(--muted) / 0.45) !important;
+  border: 1px solid hsl(var(--border) / 0.6);
+}
+
+.obscura-app.dash-premium .credit-tab-stack .border-white\/8,
+.obscura-app.dash-premium .credit-tab-stack .border-white\/10 {
+  border-color: hsl(var(--border)) !important;
+}
+
+/* Pay / vote tab stacks — segment toggles & dark panels */
+.obscura-app.dash-premium .pay-tab-stack .bg-black\/20,
+.obscura-app.dash-premium .vote-tab-stack .bg-black\/20 {
+  background: hsl(var(--muted) / 0.4) !important;
+}
+
+.obscura-app.dash-premium .pay-tab-stack select.bg-\[\#0d0d14\],
+.obscura-app.dash-premium .vote-tab-stack select.bg-\[\#0d0d14\] {
+  background: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+/* Tailwind shadow utilities → forest green */
+.obscura-app.dash-premium .shadow-sm {
+  box-shadow: var(--dash-shadow-input) !important;
+}
+
+.obscura-app.dash-premium .shadow-md {
+  box-shadow: var(--dash-surface-shadow-sm) !important;
+}
+
+.obscura-app.dash-premium .shadow-lg {
+  box-shadow: var(--dash-surface-shadow) !important;
+}
+
+/* ─── Forest shadows: forms & inline card utilities ───────────────────────── */
+.obscura-app.dash-premium main input:not([type='checkbox']):not([type='radio']):not([type='range']),
+.obscura-app.dash-premium main textarea,
+.obscura-app.dash-premium main select,
+.obscura-app.dash-premium .harmony-form-inner input:not([type='checkbox']):not([type='radio']),
+.obscura-app.dash-premium .harmony-form-inner textarea,
+.obscura-app.dash-premium .harmony-form-inner select {
+  box-shadow: var(--dash-shadow-input);
+}
+
+.obscura-app.dash-premium main input:focus-visible,
+.obscura-app.dash-premium main textarea:focus-visible,
+.obscura-app.dash-premium main select:focus-visible,
+.obscura-app.dash-premium .harmony-form-inner input:focus-visible,
+.obscura-app.dash-premium .harmony-form-inner textarea:focus-visible,
+.obscura-app.dash-premium .harmony-form-inner select:focus-visible {
+  box-shadow: var(--dash-shadow-input-focus);
+}
+
+/* ─── Vote proposal list cards ────────────────────────────────────────────── */
+.obscura-app.dash-premium .vote-proposal-card {
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--dash-radius-lg);
+  border: 1px solid var(--dash-surface-border);
+  border-left-width: 5px;
+  background: linear-gradient(165deg, hsl(0 0% 100%) 0%, hsl(145 22% 98% / 0.85) 100%);
+  box-shadow: var(--dash-surface-shadow);
+  padding: 1.25rem 1.35rem 1.15rem;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.obscura-app.dash-premium .vote-proposal-card:hover {
+  border-color: hsl(var(--border-strong));
+  box-shadow: var(--dash-shadow-hover);
+}
+
+.obscura-app.dash-premium .vote-proposal-card--active {
+  border-left-color: hsl(var(--success));
+  background: linear-gradient(165deg, hsl(145 42% 96% / 0.55) 0%, hsl(0 0% 100%) 48%);
+  box-shadow:
+    0 2px 8px hsl(var(--dash-forest) / 0.14),
+    var(--dash-surface-shadow);
+}
+
+.obscura-app.dash-premium .vote-proposal-card--ended {
+  border-left-color: hsl(38 80% 50%);
+}
+
+.obscura-app.dash-premium .vote-proposal-card--finalized {
+  border-left-color: hsl(200 70% 42%);
+}
+
+.obscura-app.dash-premium .vote-proposal-card--cancelled {
+  border-left-color: hsl(var(--destructive));
+}
+
+.obscura-app.dash-premium .vote-proposal-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.625rem;
+}
+
+.obscura-app.dash-premium .vote-proposal-card__id {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 0.375rem;
+  border: 1px solid hsl(var(--border) / 0.9);
+  background: hsl(var(--muted) / 0.55);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: hsl(var(--muted-foreground));
+}
+
+.obscura-app.dash-premium .vote-proposal-card__title {
+  margin: 0;
+  font-family: 'Sora', ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.38;
+  letter-spacing: -0.028em;
+  color: hsl(var(--foreground));
+}
+
+.obscura-app.dash-premium .vote-proposal-card__desc {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: hsl(var(--muted-foreground) / 0.95);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.obscura-app.dash-premium .vote-proposal-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+}
+
+.obscura-app.dash-premium .vote-proposal-card__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  border: 1px solid hsl(var(--border) / 0.85);
+  background: hsl(var(--card));
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+}
+
+.obscura-app.dash-premium .vote-proposal-card__quorum {
+  margin-top: 0.875rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid hsl(var(--border) / 0.55);
+}
+
+.obscura-app.dash-premium .vote-proposal-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-top: 0.875rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid hsl(var(--border) / 0.55);
+}
+
+.obscura-app.dash-premium .vote-proposal-card__deadline {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.obscura-app.dash-premium .vote-proposal-card__countdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: hsl(var(--success));
+}
+
+.obscura-app.dash-premium .vote-proposal-card__cta {
+  margin-top: 1rem;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .obscura-app.dash-premium .vote-proposal-card__cta {
+    width: auto;
+    min-width: 11rem;
+  }
+}
+
+.obscura-app.dash-premium .vote-proposal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.obscura-app.dash-premium .vote-proposal-filter-hint {
+  border-radius: var(--dash-radius-md);
+  border: 1px solid hsl(var(--border) / 0.85);
+  background: hsl(var(--muted) / 0.35);
+  padding: 0.625rem 0.875rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: hsl(var(--muted-foreground));
+}
+
+/* Mobile — FHE toast full width, cipher tiles, bottom nav, banners */
+@media (max-width: 640px) {
+  .obscura-app.dash-premium .harmony-fhe-stepper--toast {
+    position: fixed !important;
+    inset: auto 1rem calc(5.5rem + env(safe-area-inset-bottom, 0px)) 1rem !important;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  .obscura-app.dash-premium .cipher-block-xl {
+    width: 48px !important;
+    height: 28px !important;
+  }
+
+  .obscura-app.dash-premium .dash-metric-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .obscura-app.dash-premium .dash-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+  }
+
+  .obscura-app.dash-premium .dash-banner > div:last-child {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .obscura-app.dash-premium .dash-topbar {
+    gap: 0.5rem;
+    padding-left: 0.875rem;
+    padding-right: 0.875rem;
+  }
+
+  .obscura-app.dash-premium .app-workspace-chrome .dash-hero-title {
+    font-size: 1.625rem;
+  }
+
+  .obscura-app.dash-premium .pay-mode-setup-btn span:not(.sr-only),
+  .obscura-app.dash-premium .pay-mode-setup-btn .pay-mode-setup-btn-label {
+    display: none;
+  }
+
+  .obscura-app.dash-premium .pay-mode-setup-btn {
+    width: 2rem;
+    padding-left: 0;
+    padding-right: 0;
+    justify-content: center;
+  }
+}
+

@@ -5,16 +5,17 @@ import { Copy, Check, Sparkles } from "lucide-react";
 import OrganicFigureCard from "./OrganicFigureCard";
 
 const JSON_SAMPLE = `{
-  "dot": "42161.arb",
-  "amount": "encrypted",
-  "userId": "0xAa…7b",
-  "location": "client",
-  "acquirerId": "cofhe",
-  "occurredAt": "2026-05-25T12:00:00Z",
-  "categoryCode": "FHE_SEAL",
-  "categoryType": "ciphertext",
-  "currencyCode": "ocUSDC",
-  "transactionId": "0x8a91…f2c4"
+  "chainId": 421614,
+  "module": "pay",
+  "event": "StreamCreated",
+  "wallet": "0xAa…7b",
+  "txHash": "0x8a91…f2c4",
+  "occurredAt": "2026-05-30T12:00:00Z",
+  "amount": null,
+  "metadata": {
+    "sanitized": true,
+    "source": "obscura-worker"
+  }
 }`;
 
 function JsonCodePanel() {
@@ -60,7 +61,7 @@ function JsonCodePanel() {
   );
 }
 
-/** Spade-style [DEVELOPERS] band — organic figure on black, separate from SDK section */
+/** Spade-style activity / indexer band — separate from the SDK section above */
 export default function FigureShowcaseSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const inView = useInView(sectionRef, { once: true, margin: "-12%" });
@@ -76,7 +77,7 @@ export default function FigureShowcaseSection() {
   return (
     <section
       ref={sectionRef}
-      id="privacy-layer"
+      id="activity"
       className="border-y border-forest/8 bg-white px-4 py-16 sm:px-5 md:py-24 lg:px-8"
     >
       <div className="mx-auto max-w-[1200px]">
@@ -89,17 +90,17 @@ export default function FigureShowcaseSection() {
             className="max-w-md lg:max-w-none lg:col-start-1 lg:row-start-1"
           >
             <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-forest/45">
-              [ Developers ]
+              [ Activity layer ]
             </p>
             <h2 className="mt-4 font-body text-2xl font-bold leading-[1.2] tracking-tight text-forest md:text-[1.65rem] lg:text-[1.75rem]">
-              Integrate Obscura&apos;s API in minutes. No complex FHE setup, no custom
-              configuration — just high-performance privacy that scales automatically.
+              On-chain events become a privacy-safe activity feed — our worker indexes Pay, Credit,
+              and Vote, strips sensitive fields, and streams rows to Harmony in realtime.
             </h2>
             <Link
-              to="/docs"
+              to="/pay"
               className="mt-8 inline-flex items-center gap-2 font-mono text-sm text-forest transition-colors hover:text-forest/70"
             >
-              <span aria-hidden>▸</span> Explore our docs
+              <span aria-hidden>▸</span> See it in Activity
             </Link>
           </motion.div>
 

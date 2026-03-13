@@ -15,6 +15,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -43,6 +44,8 @@ interface PaymentModeContextValue {
   /** True if the last write silently fell back from smart → EOA */
   lastFallback: boolean;
   clearFallback: () => void;
+  /** Pay route sync when mode changes (registered by PayPage). */
+  registerPrivacyModeNavigation: (handler: ((mode: PayPrivacyMode) => void) | null) => void;
 }
 
 const PaymentModeContext = createContext<PaymentModeContextValue>({
@@ -61,6 +64,7 @@ const PaymentModeContext = createContext<PaymentModeContextValue>({
   smartAccountAddress: null,
   lastFallback: false,
   clearFallback: () => {},
+  registerPrivacyModeNavigation: () => {},
 });
 
 const PRIVACY_STORAGE_KEY = "obscura:payPrivacyMode";
@@ -82,8 +86,16 @@ export function PaymentModeProvider({ children }: { children: ReactNode }) {
   });
 
   const [lastFallback, setLastFallback] = useState(false);
+  const privacyNavigationRef = useRef<((mode: PayPrivacyMode) => void) | null>(null);
 
   const effectiveMode: PaymentMode = resolvePaymentExecutionMode(privacyMode, isSmartAvailable);
+
+  const registerPrivacyModeNavigation = useCallback(
+    (handler: ((mode: PayPrivacyMode) => void) | null) => {
+      privacyNavigationRef.current = handler;
+    },
+    [],
+  );
 
   useEffect(() => {
     try {
@@ -95,7 +107,12 @@ export function PaymentModeProvider({ children }: { children: ReactNode }) {
   }, [privacyMode, effectiveMode]);
 
   const setPrivacyMode = useCallback((m: PayPrivacyMode) => {
-    setPrivacyModeState(m);
+    setPrivacyModeState((current) => {
+      if (current !== m) {
+        queueMicrotask(() => privacyNavigationRef.current?.(m));
+      }
+      return m;
+    });
     setLastFallback(false);
   }, []);
 
@@ -139,6 +156,7 @@ export function PaymentModeProvider({ children }: { children: ReactNode }) {
       smartAccountAddress: accountAddress ?? null,
       lastFallback,
       clearFallback,
+      registerPrivacyModeNavigation,
     }),
     [
       privacyMode,
@@ -151,6 +169,7 @@ export function PaymentModeProvider({ children }: { children: ReactNode }) {
       accountAddress,
       lastFallback,
       clearFallback,
+      registerPrivacyModeNavigation,
     ],
   );
 

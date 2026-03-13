@@ -178,7 +178,7 @@ function TallyResult({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-white p-5 shadow-[0_1px_3px_hsl(145_18%_12%/0.06)] space-y-4">
+    <div className="rounded-2xl border border-border bg-white p-5 shadow-[var(--dash-surface-shadow)] space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
