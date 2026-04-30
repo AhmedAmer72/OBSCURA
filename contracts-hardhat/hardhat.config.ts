@@ -3,6 +3,7 @@ import "@nomicfoundation/hardhat-toolbox";
 import "@cofhe/hardhat-plugin";
 import * as dotenv from "dotenv";
 import "./tasks/deploy";
+import "./tasks/create-proposal";
 
 dotenv.config();
 
@@ -15,6 +16,7 @@ const config: HardhatUserConfig = {
     version: "0.8.25",
     settings: {
       optimizer: { enabled: true, runs: 200 },
+      viaIR: true,
       evmVersion: "cancun",
     },
   },

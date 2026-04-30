@@ -3,6 +3,7 @@ import { Encryptable, FheTypes } from '@cofhe/sdk';
 
 let cofheClient: any = null;
 let isInitializing = false;
+let lastConnectedAccount: string | null = null;
 
 export type StepCallback = (step: string, context?: any) => void;
 
@@ -34,9 +35,12 @@ export async function initFHEClient(
     }
   }
 
-  // Always (re-)connect so the SDK's internal state stays in sync with the
-  // current publicClient / walletClient (handles wallet switches, reconnects).
-  await cofheClient.connect(publicClient, walletClient);
+  // Only reconnect if wallet changed — avoids slow redundant connect() calls
+  const currentAccount = walletClient.account?.address ?? null;
+  if (currentAccount !== lastConnectedAccount) {
+    await cofheClient.connect(publicClient, walletClient);
+    lastConnectedAccount = currentAccount;
+  }
   return cofheClient;
 }
 
@@ -117,12 +121,45 @@ export async function decryptBalance(
 ): Promise<bigint> {
   if (!cofheClient) throw new Error('FHE client not initialized');
 
-  const result = await cofheClient
-    .decryptForView(ctHash, FheTypes.Uint64)
-    .withPermit()
-    .execute();
+  const handle = typeof ctHash === 'string' ? BigInt(ctHash) : ctHash;
 
-  return result;
+  // Attempt 1: use existing permit
+  onStep?.('Decrypting');
+  try {
+    const result = (await cofheClient
+      .decryptForView(handle, FheTypes.Uint64)
+      .execute()) as bigint;
+    return result;
+  } catch (err: any) {
+    console.error('[fhe] sealOutput attempt 1 failed:', err?.message);
+  }
+
+  // Attempt 2: remove stale permit, create fresh one, retry
+  onStep?.('Refreshing permit');
+  try {
+    const chainId = cofheClient.chainId ?? 421614;
+    const acc = lastConnectedAccount;
+    if (acc) {
+      await cofheClient.permits.removeActivePermit(chainId, acc);
+    }
+    await cofheClient.permits.getOrCreateSelfPermit();
+    onStep?.('Decrypting (retry)');
+    const result = (await cofheClient
+      .decryptForView(handle, FheTypes.Uint64)
+      .execute()) as bigint;
+    return result;
+  } catch (retryErr: any) {
+    console.error('[fhe] sealOutput attempt 2 failed:', retryErr?.message);
+    throw retryErr;
+  }
+}
+
+/**
+ * Reset the account tracking so the FHE client reconnects on next initFHEClient call.
+ * Call this after using a temporary stealth walletClient to restore the main wallet.
+ */
+export function resetFHEAccount(): void {
+  lastConnectedAccount = null;
 }
 
 /**

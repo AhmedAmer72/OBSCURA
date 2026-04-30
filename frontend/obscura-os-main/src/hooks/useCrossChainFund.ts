@@ -1,0 +1,517 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useAccount,
+  usePublicClient,
+  useSwitchChain,
+  useWalletClient,
+  useWriteContract,
+} from "wagmi";
+import { sepolia, arbitrumSepolia } from "viem/chains";
+import {
+  pad,
+  parseUnits,
+  decodeAbiParameters,
+  keccak256,
+  createPublicClient,
+  http,
+} from "viem";
+import {
+  CCTP_TOKEN_MESSENGER_SEPOLIA,
+  CCTP_TOKEN_MESSENGER_ABI,
+  USDC_SEPOLIA,
+  ARBITRUM_SEPOLIA_DOMAIN,
+  ERC20_APPROVE_ABI,
+} from "@/config/pay";
+import { deriveStealthPayment, loadStoredMetaPublic, type MetaAddress } from "@/lib/stealth";
+import { getString, setString, removeKey, migrateGlobalKey } from "@/lib/scopedStorage";
+
+const USDC_DECIMALS = 6;
+
+/** Arb Sepolia MessageTransmitter — receiveMessage mints USDC on destination */
+const ARB_SEPOLIA_MESSAGE_TRANSMITTER =
+  "0xaCF1ceeF35caAc005e15888dDb8A3515C41B4872" as const;
+
+const MESSAGE_TRANSMITTER_ABI = [
+  {
+    type: "function",
+    name: "receiveMessage",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "message", type: "bytes" },
+      { name: "attestation", type: "bytes" },
+    ],
+    outputs: [{ name: "success", type: "bool" }],
+  },
+] as const;
+
+const CIRCLE_ATTESTATION_API =
+  "https://iris-api-sandbox.circle.com/attestations";
+
+const MESSAGE_SENT_TOPIC = keccak256(
+  new TextEncoder().encode("MessageSent(bytes)")
+);
+
+export type BridgeStep =
+  | "idle"
+  | "switching-to-sepolia"
+  | "approve-pending"
+  | "approve-confirming"
+  | "burn-pending"
+  | "burn-confirming"
+  | "switching-back"
+  | "waiting-attestation"
+  | "ready-to-claim"
+  | "claiming"
+  | "done";
+
+/* ---- localStorage persistence ---- */
+const BRIDGE_STATE_KEY = "obscura_bridge_state";
+
+interface PersistedBridge {
+  messageBytes: string;   // hex
+  messageHash: string;    // hex
+  burnTxHash: string;
+  amountUSDC: string;
+  startedAt: number;      // epoch ms
+  attestation?: string;   // set when Circle returns it
+  /** Phase 0.5.1: stealth recipient on Arb Sepolia (mintRecipient).
+   *  When present, USDC mints to this fresh address instead of the user's main wallet,
+   *  preventing CCTP from publicly linking the Sepolia source address to the Arb Sepolia destination.
+   *  The user owns the privkey via their meta-keys; sweep it to main with a follow-up tx. */
+  stealthRecipient?: `0x${string}`;
+  stealthEphemeralPubKey?: `0x${string}`;
+  stealthViewTag?: `0x${string}`;
+}
+
+function saveBridgeState(addr: `0x${string}` | undefined, state: PersistedBridge) {
+  setString(BRIDGE_STATE_KEY, addr, JSON.stringify(state));
+}
+function loadBridgeState(addr: `0x${string}` | undefined): PersistedBridge | null {
+  try {
+    const raw = getString(BRIDGE_STATE_KEY, addr);
+    if (!raw) return null;
+    const s = JSON.parse(raw) as PersistedBridge;
+    // Expire after 60 minutes
+    if (Date.now() - s.startedAt > 60 * 60 * 1000) {
+      removeKey(BRIDGE_STATE_KEY, addr);
+      return null;
+    }
+    return s;
+  } catch {
+    return null;
+  }
+}
+function clearBridgeState(addr: `0x${string}` | undefined) {
+  removeKey(BRIDGE_STATE_KEY, addr);
+}
+
+/** Fetch Sepolia tx receipt using a dedicated Sepolia publicClient (viem) */
+const sepoliaClient = createPublicClient({
+  chain: sepolia,
+  transport: http("https://ethereum-sepolia-rpc.publicnode.com"),
+});
+
+/** Arb Sepolia client for gas estimation */
+const arbSepoliaClient = createPublicClient({
+  chain: arbitrumSepolia,
+  transport: http("https://arbitrum-sepolia-rpc.publicnode.com"),
+});
+
+/** Wait + fetch fresh gas params from Arb Sepolia RPC (avoids stale MetaMask data after chain switch) */
+async function getFreshGasParams() {
+  await new Promise((r) => setTimeout(r, 2000)); // let MetaMask catch up
+  const fee = await arbSepoliaClient.estimateFeesPerGas();
+  return {
+    maxFeePerGas: fee.maxFeePerGas! * 2n,  // 2x buffer for L2 volatility
+    maxPriorityFeePerGas: fee.maxPriorityFeePerGas! * 2n,
+  };
+}
+
+/**
+ * Poll Circle attestation. Handles 404 (unknown hash) by giving up after
+ * a few consecutive 404s instead of retrying forever.
+ */
+async function pollAttestation(
+  messageHash: `0x${string}`,
+  onProgress: (tries: number) => void,
+  signal: AbortSignal,
+  maxTries = 120 // ~10 minutes at 5s intervals
+): Promise<string> {
+  let consecutive404 = 0;
+  for (let i = 0; i < maxTries; i++) {
+    if (signal.aborted) throw new Error("Polling cancelled");
+    onProgress(i);
+    try {
+      const resp = await fetch(`${CIRCLE_ATTESTATION_API}/${messageHash}`);
+      if (resp.status === 404) {
+        consecutive404++;
+        if (consecutive404 >= 10) {
+          throw new Error(
+            "Circle does not recognize this message hash (404). The burn may not have gone through CCTP correctly."
+          );
+        }
+      } else {
+        consecutive404 = 0;
+        const data = await resp.json();
+        if (data.status === "complete" && data.attestation) {
+          return data.attestation as string;
+        }
+      }
+    } catch (e) {
+      if ((e as Error).message?.includes("Circle does not recognize")) throw e;
+      // network glitch, retry
+    }
+    await new Promise((r) => {
+      const timer = setTimeout(r, 5000);
+      signal.addEventListener("abort", () => { clearTimeout(timer); r(undefined); }, { once: true });
+    });
+  }
+  throw new Error("Attestation timed out after ~10 minutes. You can return to this tab later — polling will resume.");
+}
+
+export function useCrossChainFund() {
+  const { address } = useAccount();
+  const publicClient = usePublicClient();
+  const { data: walletClient } = useWalletClient();
+  const { writeContractAsync } = useWriteContract();
+  const { switchChainAsync } = useSwitchChain();
+  const [isPending, setIsPending] = useState(false);
+  const [step, setStep] = useState<BridgeStep>("idle");
+  const [burnTxHash, setBurnTxHash] = useState<string | null>(null);
+  const [attestationProgress, setAttestationProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [savedAmount, setSavedAmount] = useState<string>("");
+  const abortRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
+
+  // Track mounted state
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  /**
+   * Resume polling if a bridge was in progress (e.g. user switched tabs).
+   * This effect ONLY polls — it does NOT call writeContractAsync (which would
+   * be stale). When attestation arrives, it saves to state and shows a
+   * "Claim" button the user clicks.
+   */
+  useEffect(() => {
+    if (!address) return;
+    migrateGlobalKey(BRIDGE_STATE_KEY, address);
+    const persisted = loadBridgeState(address);
+    if (!persisted) return;
+
+    // If attestation already found (saved in localStorage), go straight to ready-to-claim
+    if (persisted.attestation) {
+      setBurnTxHash(persisted.burnTxHash);
+      setSavedAmount(persisted.amountUSDC);
+      setStep("ready-to-claim");
+      return;
+    }
+
+    // Restore visible state for polling
+    setBurnTxHash(persisted.burnTxHash);
+    setSavedAmount(persisted.amountUSDC);
+    setStep("waiting-attestation");
+    setIsPending(true);
+    setError(null);
+
+    const elapsed = Math.floor((Date.now() - persisted.startedAt) / 5000);
+    setAttestationProgress(elapsed);
+
+    const ac = new AbortController();
+    abortRef.current = ac;
+
+    (async () => {
+      try {
+        const attestation = await pollAttestation(
+          persisted.messageHash as `0x${string}`,
+          (tries) => {
+            if (mountedRef.current) setAttestationProgress(elapsed + tries);
+          },
+          ac.signal
+        );
+
+        // Save attestation to localStorage so it persists across tabs
+        saveBridgeState(address, { ...persisted, attestation });
+
+        if (mountedRef.current) {
+          setStep("ready-to-claim");
+        }
+      } catch (e) {
+        if (!ac.signal.aborted && mountedRef.current) {
+          setError((e as Error).message);
+          setStep("idle");
+        }
+      } finally {
+        if (mountedRef.current) setIsPending(false);
+      }
+    })();
+
+    return () => { ac.abort(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address]);
+
+  /** Claim USDC on Arb Sepolia — called by user clicking "Claim" button */
+  const claim = useCallback(async () => {
+    const persisted = loadBridgeState(address);
+    if (!persisted?.attestation || !walletClient || !address) {
+      throw new Error("No attestation available or wallet not connected");
+    }
+    setIsPending(true);
+    setError(null);
+    try {
+      // Ensure on Arb Sepolia
+      setStep("switching-back");
+      try { await switchChainAsync({ chainId: arbitrumSepolia.id }); } catch { /* already there */ }
+
+      setStep("claiming");
+      const gasParams = await getFreshGasParams();
+      await writeContractAsync({
+        address: ARB_SEPOLIA_MESSAGE_TRANSMITTER,
+        abi: MESSAGE_TRANSMITTER_ABI,
+        functionName: "receiveMessage",
+        args: [persisted.messageBytes as `0x${string}`, persisted.attestation as `0x${string}`],
+        account: address,
+        chain: arbitrumSepolia,
+        gas: 400_000n,
+        ...gasParams,
+      });
+
+      clearBridgeState(address);
+      setStep("done");
+    } catch (e) {
+      setError((e as Error).message);
+      setStep("ready-to-claim"); // let user retry
+      throw e;
+    } finally {
+      setIsPending(false);
+    }
+  }, [walletClient, address, switchChainAsync, writeContractAsync]);
+
+  const fund = useCallback(
+    async (params: { amountUSDC: string }) => {
+      if (!walletClient || !address) {
+        throw new Error("Wallet not connected");
+      }
+      setIsPending(true);
+      setError(null);
+      setBurnTxHash(null);
+      setAttestationProgress(0);
+      setSavedAmount(params.amountUSDC);
+
+      const ac = new AbortController();
+      abortRef.current = ac;
+
+      try {
+        // 1. Switch to Sepolia
+        setStep("switching-to-sepolia");
+        await switchChainAsync({ chainId: sepolia.id });
+
+        const amount = parseUnits(params.amountUSDC, USDC_DECIMALS);
+
+        // 2. Approve USDC
+        setStep("approve-pending");
+        const approveHash = await writeContractAsync({
+          address: USDC_SEPOLIA,
+          abi: ERC20_APPROVE_ABI,
+          functionName: "approve",
+          args: [CCTP_TOKEN_MESSENGER_SEPOLIA, amount],
+          account: address,
+          chain: sepolia,
+        });
+        setStep("approve-confirming");
+        await sepoliaClient.waitForTransactionReceipt({ hash: approveHash });
+
+        // 3. Burn USDC via CCTP
+        setStep("burn-pending");
+
+        // Phase 0.5.1 — derive a fresh stealth address as the CCTP mintRecipient
+        // so that observers cannot link the Sepolia source EOA to the Arb Sepolia
+        // destination. User owns the privkey via their meta-keys; sweep later.
+        // Falls back to main wallet if user has not generated/registered stealth meta yet.
+        const ownMeta = loadStoredMetaPublic(address);
+        let mintRecipient: `0x${string}`;
+        let stealthRecipient: `0x${string}` | undefined;
+        let stealthEphemeralPubKey: `0x${string}` | undefined;
+        let stealthViewTag: `0x${string}` | undefined;
+        if (ownMeta) {
+          const sp = deriveStealthPayment(ownMeta);
+          mintRecipient = pad(sp.stealthAddress, { size: 32 });
+          stealthRecipient = sp.stealthAddress;
+          stealthEphemeralPubKey = sp.ephemeralPubKey;
+          stealthViewTag = sp.viewTag;
+        } else {
+          // No meta-address registered — leak warning is shown by the UI banner.
+          mintRecipient = pad(address, { size: 32 });
+        }
+
+        const burnHash = await writeContractAsync({
+          address: CCTP_TOKEN_MESSENGER_SEPOLIA,
+          abi: CCTP_TOKEN_MESSENGER_ABI,
+          functionName: "depositForBurn",
+          args: [amount, ARBITRUM_SEPOLIA_DOMAIN, mintRecipient, USDC_SEPOLIA],
+          account: address,
+          chain: sepolia,
+          gas: 300_000n,
+        });
+        setStep("burn-confirming");
+        setBurnTxHash(burnHash);
+        const burnReceipt = await sepoliaClient.waitForTransactionReceipt({
+          hash: burnHash,
+        });
+
+        // 4. Extract messageBytes from logs
+        const msgLog = burnReceipt.logs.find(
+          (l) => l.topics[0] === MESSAGE_SENT_TOPIC
+        );
+        if (!msgLog) throw new Error("MessageSent event not found in burn tx");
+
+        const [messageBytes] = decodeAbiParameters(
+          [{ name: "message", type: "bytes" }],
+          msgLog.data
+        );
+        const messageHash = keccak256(messageBytes);
+
+        // 5. Persist bridge state so it survives tab switches
+        saveBridgeState(address, {
+          messageBytes: messageBytes as string,
+          messageHash,
+          burnTxHash: burnHash,
+          amountUSDC: params.amountUSDC,
+          startedAt: Date.now(),
+          stealthRecipient,
+          stealthEphemeralPubKey,
+          stealthViewTag,
+        });
+
+        // 6. Switch back to Arb Sepolia
+        setStep("switching-back");
+        try {
+          await switchChainAsync({ chainId: arbitrumSepolia.id });
+        } catch {
+          // non-critical
+        }
+
+        // 7. Poll Circle attestation API
+        setStep("waiting-attestation");
+        const attestation = await pollAttestation(
+          messageHash as `0x${string}`,
+          (tries) => setAttestationProgress(tries),
+          ac.signal
+        );
+
+        // 8. Save attestation + auto-claim
+        const updated = loadBridgeState(address);
+        if (updated) saveBridgeState(address, { ...updated, attestation });
+
+        setStep("claiming");
+        const gasParams = await getFreshGasParams();
+        await writeContractAsync({
+          address: ARB_SEPOLIA_MESSAGE_TRANSMITTER,
+          abi: MESSAGE_TRANSMITTER_ABI,
+          functionName: "receiveMessage",
+          args: [messageBytes, attestation as `0x${string}`],
+          account: address,
+          chain: arbitrumSepolia,
+          gas: 400_000n,
+          ...gasParams,
+        });
+
+        clearBridgeState(address);
+        setStep("done");
+        return burnHash;
+      } catch (e) {
+        setError((e as Error).message);
+        throw e;
+      } finally {
+        setIsPending(false);
+      }
+    },
+    [walletClient, address, switchChainAsync, writeContractAsync, publicClient]
+  );
+
+  const reset = useCallback(() => {
+    setStep("idle");
+    setBurnTxHash(null);
+    setError(null);
+    setAttestationProgress(0);
+    setSavedAmount("");
+    clearBridgeState(address);
+    if (abortRef.current) abortRef.current.abort();
+  }, [address]);
+
+  /** Recover a previous bridge from a Sepolia burn tx hash */
+  const recover = useCallback(async (txHash: string) => {
+    setIsPending(true);
+    setError(null);
+    try {
+      setStep("burn-confirming");
+      setBurnTxHash(txHash);
+
+      // Fetch receipt from Sepolia
+      const receipt = await sepoliaClient.getTransactionReceipt({
+        hash: txHash as `0x${string}`,
+      });
+
+      // Extract messageBytes
+      const msgLog = receipt.logs.find(
+        (l) => l.topics[0] === MESSAGE_SENT_TOPIC
+      );
+      if (!msgLog) throw new Error("No MessageSent event found in this tx — is this a CCTP burn tx?");
+
+      const [messageBytes] = decodeAbiParameters(
+        [{ name: "message", type: "bytes" }],
+        msgLog.data
+      );
+      const messageHash = keccak256(messageBytes);
+
+      // Check attestation
+      setStep("waiting-attestation");
+      const resp = await fetch(`${CIRCLE_ATTESTATION_API}/${messageHash}`);
+      const data = await resp.json();
+
+      if (data.status === "complete" && data.attestation) {
+        // Attestation ready — save and show claim button
+        saveBridgeState(address, {
+          messageBytes: messageBytes as string,
+          messageHash,
+          burnTxHash: txHash,
+          amountUSDC: "?",
+          startedAt: Date.now(),
+          attestation: data.attestation,
+        });
+        setSavedAmount("");
+        setStep("ready-to-claim");
+      } else {
+        // Not ready yet — save and start polling
+        saveBridgeState(address, {
+          messageBytes: messageBytes as string,
+          messageHash,
+          burnTxHash: txHash,
+          amountUSDC: "?",
+          startedAt: Date.now(),
+        });
+
+        const ac = new AbortController();
+        abortRef.current = ac;
+        const attestation = await pollAttestation(
+          messageHash as `0x${string}`,
+          (tries) => { if (mountedRef.current) setAttestationProgress(tries); },
+          ac.signal
+        );
+        const updated = loadBridgeState(address);
+        if (updated) saveBridgeState(address, { ...updated, attestation });
+        setStep("ready-to-claim");
+      }
+    } catch (e) {
+      setError((e as Error).message);
+      setStep("idle");
+    } finally {
+      setIsPending(false);
+    }
+  }, []);
+
+  return { fund, claim, recover, isPending, step, burnTxHash, error, reset, attestationProgress, savedAmount };
+}

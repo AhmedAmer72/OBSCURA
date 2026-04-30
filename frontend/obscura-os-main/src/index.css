@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,24 +7,24 @@
 @layer base {
   :root {
     --background: 240 6% 3%;
-    --foreground: 0 0% 90%;
+    --foreground: 0 0% 92%;
 
     --card: 240 5% 6%;
-    --card-foreground: 0 0% 90%;
+    --card-foreground: 0 0% 92%;
 
     --popover: 240 5% 6%;
-    --popover-foreground: 0 0% 90%;
+    --popover-foreground: 0 0% 92%;
 
-    --primary: 142 70% 45%;
+    --primary: 153 55% 50%;
     --primary-foreground: 0 0% 0%;
 
     --secondary: 240 4% 12%;
     --secondary-foreground: 0 0% 75%;
 
     --muted: 240 4% 10%;
-    --muted-foreground: 0 0% 45%;
+    --muted-foreground: 0 0% 55%;
 
-    --accent: 142 70% 45%;
+    --accent: 153 55% 50%;
     --accent-foreground: 0 0% 0%;
 
     --destructive: 0 70% 50%;
@@ -32,25 +32,29 @@
 
     --border: 0 0% 15%;
     --input: 0 0% 15%;
-    --ring: 142 70% 45%;
+    --ring: 153 55% 50%;
 
-    --radius: 0.25rem;
+    --radius: 0.375rem;
 
     --sidebar-background: 240 6% 5%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 142 70% 45%;
+    --sidebar-foreground: 0 0% 92%;
+    --sidebar-primary: 153 55% 50%;
     --sidebar-primary-foreground: 0 0% 0%;
     --sidebar-accent: 240 4% 12%;
-    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-accent-foreground: 0 0% 92%;
     --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 142 70% 45%;
+    --sidebar-ring: 153 55% 50%;
 
     /* Custom tokens */
-    --glow-green: 142 70% 45%;
-    --glow-green-rgb: 34, 197, 94;
+    --glow-green: 153 55% 50%;
+    --glow-green-rgb: 52, 211, 153;
     --terminal-green: 142 60% 50%;
     --grid-line: 0 0% 12%;
     --surface-glass: 240 5% 8%;
+    --accent-cyan: 190 90% 50%;
+    --accent-cyan-rgb: 6, 182, 212;
+    --accent-amber: 38 92% 50%;
+    --accent-amber-rgb: 245, 158, 11;
   }
 }
 
@@ -59,19 +63,27 @@
     @apply border-border;
   }
 
+  /* Force scrollbar always visible — prevents layout width shift when navigating
+     between pages with different content heights */
+  html {
+    overflow-y: scroll;
+  }
+
   body {
-    @apply bg-background text-foreground font-mono;
-    font-family: 'JetBrains Mono', monospace;
+    @apply bg-background text-foreground;
+    font-family: 'DM Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Space Grotesk', sans-serif;
   }
 }
 
 @layer utilities {
   .font-display {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Space Grotesk', sans-serif;
   }
 
   .font-mono {
@@ -79,16 +91,20 @@
   }
 
   .font-body {
-    font-family: 'Inter', sans-serif;
+    font-family: 'DM Sans', sans-serif;
   }
 
   .text-glow {
-    text-shadow: 0 0 20px rgba(var(--glow-green-rgb), 0.5),
-                 0 0 40px rgba(var(--glow-green-rgb), 0.2);
+    /* No heavy neon — just the base color, consistent with all pages */
+    text-shadow: none;
   }
 
   .text-glow-sm {
-    text-shadow: 0 0 10px rgba(var(--glow-green-rgb), 0.4);
+    text-shadow: none;
+  }
+
+  .text-glow-cyan {
+    text-shadow: 0 0 12px rgba(var(--accent-cyan-rgb), 0.4);
   }
 
   .border-glow {
@@ -97,7 +113,46 @@
   }
 
   .glass-panel {
-    @apply bg-card/60 backdrop-blur-md border border-border;
+    @apply bg-card/60 backdrop-blur-lg border border-white/[0.06];
+    box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.03);
+  }
+
+  /* Nav glassmorphism — smooth backdrop-filter transition (not covered by Tailwind transition-*) */
+  .nav-glass {
+    -webkit-backdrop-filter: blur(0px) saturate(1);
+    backdrop-filter: blur(0px) saturate(1);
+    transition:
+      background-color 500ms ease-out,
+      box-shadow 500ms ease-out,
+      -webkit-backdrop-filter 500ms ease-out,
+      backdrop-filter 500ms ease-out;
+  }
+
+  .nav-glass.scrolled {
+    -webkit-backdrop-filter: blur(24px) saturate(1.5);
+    backdrop-filter: blur(24px) saturate(1.5);
+  }
+
+  .glass-panel-hover {
+    @apply glass-panel transition-all duration-300;
+  }
+
+  .glass-panel-hover:hover {
+    @apply bg-card/80 border-white/[0.1];
+    box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.05),
+                0 0 20px rgba(var(--glow-green-rgb), 0.06);
+  }
+
+  .glass-card {
+    @apply glass-panel rounded-lg transition-all duration-300;
+  }
+
+  .glass-card:hover {
+    @apply bg-card/80 border-primary/20;
+    transform: translateY(-2px);
+    box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.05),
+                0 8px 32px rgba(0,0,0,0.3),
+                0 0 20px rgba(var(--glow-green-rgb), 0.08);
   }
 
   .scanline-overlay {
@@ -164,3 +219,212 @@
   0% { left: -100%; }
   100% { left: 100%; }
 }
+
+/* ─── Custom scrollbar ────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #06b6d4 0%, #34d399 100%);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #22d3ee 0%, #6ee7b7 100%);
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.55);
+}
+::-webkit-scrollbar-corner { background: transparent; }
+* { scrollbar-width: thin; scrollbar-color: #34d399 transparent; }
+
+/* ─── Pay card — glass card with gradient top accent ─────────────────────── */
+.pay-card {
+  position: relative;
+  background: linear-gradient(160deg, rgba(255,255,255,0.035) 0%, rgba(0,0,0,0.25) 100%);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 0.875rem;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.pay-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 5%,
+    rgba(52, 211, 153, 0.65) 35%,
+    rgba(6, 182, 212, 0.65) 65%,
+    transparent 95%
+  );
+  pointer-events: none;
+}
+
+/* ─── Pay card — cyan-accented variant ──────────────────────────────────── */
+.pay-card-cyan::before {
+  background: linear-gradient(90deg,
+    transparent 5%,
+    rgba(6, 182, 212, 0.65) 35%,
+    rgba(139, 92, 246, 0.55) 65%,
+    transparent 95%
+  );
+}
+/* ─── Pay card — amber-accented variant ─────────────────────────────────── */
+.pay-card-amber::before {
+  background: linear-gradient(90deg,
+    transparent 5%,
+    rgba(245, 158, 11, 0.55) 35%,
+    rgba(251, 191, 36, 0.45) 65%,
+    transparent 95%
+  );
+}
+/* ─── Pay card — violet-accented variant (bridge) ────────────────────────── */
+.pay-card-violet::before {
+  background: linear-gradient(90deg,
+    transparent 5%,
+    rgba(139, 92, 246, 0.6) 35%,
+    rgba(6, 182, 212, 0.5) 65%,
+    transparent 95%
+  );
+}
+
+/* ─── Form inputs ──────────────────────────────────────────────────────────── */
+.pay-input {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: hsl(var(--foreground));
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+.pay-input::placeholder { color: rgba(255,255,255,0.18); }
+.pay-input:hover:not(:focus) { border-color: rgba(255,255,255,0.14); }
+.pay-input:focus {
+  border-color: rgba(52, 211, 153, 0.5);
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.09), inset 0 1px 0 rgba(255,255,255,0.03);
+}
+/* Make datetime-local calendar/clock picker icons emerald instead of black */
+.pay-input::-webkit-calendar-picker-indicator {
+  filter: invert(71%) sepia(62%) saturate(400%) hue-rotate(109deg) brightness(98%) contrast(95%);
+  cursor: pointer;
+  opacity: 0.8;
+}
+.pay-input::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* ─── Select dropdowns ─────────────────────────────────────────────────────── */
+.pay-select {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  padding: 0.55rem 2rem 0.55rem 0.75rem;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: hsl(var(--foreground));
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+.pay-select:hover,
+.pay-select:focus { border-color: rgba(52, 211, 153, 0.45); }
+.pay-select option {
+  background-color: #0d0d11;
+  color: #e8e8e8;
+}
+
+/* ─── Buttons ──────────────────────────────────────────────────────────────── */
+.btn-pay {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+}
+.btn-pay:disabled { opacity: 0.38; cursor: not-allowed !important; transform: none !important; box-shadow: none !important; }
+
+.btn-pay-emerald {
+  background: linear-gradient(135deg, #059669 0%, #34d399 100%);
+  color: #022c22;
+  box-shadow: 0 2px 10px rgba(52,211,153,0.18);
+}
+.btn-pay-emerald:hover:not(:disabled) {
+  box-shadow: 0 0 24px rgba(52,211,153,0.42), 0 4px 16px rgba(0,0,0,0.45);
+  transform: translateY(-1px);
+}
+.btn-pay-emerald:active:not(:disabled) { transform: translateY(0); }
+
+.btn-pay-cyan {
+  background: linear-gradient(135deg, #0284c7 0%, #22d3ee 100%);
+  color: #082f49;
+  box-shadow: 0 2px 10px rgba(6,182,212,0.18);
+}
+.btn-pay-cyan:hover:not(:disabled) {
+  box-shadow: 0 0 24px rgba(6,182,212,0.42), 0 4px 16px rgba(0,0,0,0.45);
+  transform: translateY(-1px);
+}
+.btn-pay-cyan:active:not(:disabled) { transform: translateY(0); }
+
+.btn-pay-amber {
+  background: linear-gradient(135deg, #b45309 0%, #fbbf24 100%);
+  color: #1c0a00;
+  box-shadow: 0 2px 10px rgba(251,191,36,0.18);
+}
+.btn-pay-amber:hover:not(:disabled) {
+  box-shadow: 0 0 24px rgba(251,191,36,0.38), 0 4px 16px rgba(0,0,0,0.45);
+  transform: translateY(-1px);
+}
+.btn-pay-amber:active:not(:disabled) { transform: translateY(0); }
+
+.btn-pay-violet {
+  background: linear-gradient(135deg, #6d28d9 0%, #a78bfa 100%);
+  color: #1e0042;
+  box-shadow: 0 2px 10px rgba(167,139,250,0.18);
+}
+.btn-pay-violet:hover:not(:disabled) {
+  box-shadow: 0 0 24px rgba(167,139,250,0.42), 0 4px 16px rgba(0,0,0,0.45);
+  transform: translateY(-1px);
+}
+.btn-pay-violet:active:not(:disabled) { transform: translateY(0); }
+
+.btn-pay-ghost {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  color: hsl(var(--muted-foreground));
+}
+.btn-pay-ghost:hover:not(:disabled) {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(52,211,153,0.3);
+  color: hsl(var(--foreground));
+}
+
+/* ─── Status badge ─────────────────────────────────────────────────────────── */
+.pay-badge {
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 0.375rem;
+}
+.pay-badge-emerald { color: #6ee7b7; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.25); }
+.pay-badge-cyan    { color: #67e8f9; background: rgba(6,182,212,0.1);  border: 1px solid rgba(6,182,212,0.25); }
+.pay-badge-amber   { color: #fde68a; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25); }
+.pay-badge-violet  { color: #c4b5fd; background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.25); }
+.pay-badge-red     { color: #fca5a5; background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.25); }
