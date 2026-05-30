@@ -6,7 +6,7 @@ Production-grade [Model Context Protocol](https://modelcontextprotocol.io) serve
 
 | Binary | Audience | Live user data | Secrets |
 |--------|----------|----------------|---------|
-| `obscura-mcp-user` | End-user wallet agents | Wallet-scoped reads | Supabase anon (server env only) |
+| `obscura-mcp-user` | End-user wallet agents | Wallet-scoped reads (Bearer token) | `OBSCURA_AGENT_TOKEN` only |
 | `obscura-mcp-dev` | Contributors / auditors | None | None (denylist enforced) |
 | `obscura-mcp-docs` | Integrators learning Obscura | None | None (static portal) |
 
@@ -29,7 +29,8 @@ Add to `.cursor/mcp.json` (or project MCP settings):
       "command": "node",
       "args": ["./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js"],
       "env": {
-        "OBSCURA_API_URL": "https://obscura-api-n62v.onrender.com"
+        "OBSCURA_API_URL": "https://obscura-api-n62v.onrender.com",
+        "OBSCURA_AGENT_TOKEN": "obsc_at_YOUR_TOKEN_FROM_DOCS_AGENTS"
       }
     },
     "obscura-dev": {
@@ -65,12 +66,13 @@ After `npm install @obscura-fhe/mcp`, use `node` + `dist/*.js` (recommended on W
 ## User MCP tools (privacy-first)
 
 - `user_health_api`, `user_get_chain_config`
-- `pay_get_encrypted_balance_handle` — opaque ctHash only, never decrypted
+- `user_get_agent_identity` — resolve token → wallet
+- `pay_get_encrypted_balance_handle` — authenticated wallet, opaque ctHash only
 - `pay_build_shield`, `pay_build_unshield`, `pay_build_transfer` — pre-encrypted `InEuint64` required
 - `credit_get_market_utilization` — public aggregates only
 - `credit_build_supply_collateral`, `credit_build_borrow`, `credit_build_repay`
 - `vote_get_proposal_count`, `vote_get_proposal`, `vote_build_cast_vote`, `vote_build_delegate`
-- `reputation_get_summary`, `activity_list_for_wallet` (max 25 rows)
+- `reputation_get_summary`, `activity_list_for_wallet` — require `OBSCURA_AGENT_TOKEN` (max 25 rows)
 - `user_encode_call` — unsigned calldata for external wallet signing
 
 **Never exposed:** decrypt, relay, keeper, worker health, notification writes, bulk activity scans.

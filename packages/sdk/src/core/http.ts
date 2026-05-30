@@ -14,7 +14,7 @@ export class HttpClient {
     return Boolean(this.agentToken);
   }
 
-  private authHeaders(extra?: HeadersInit): HeadersInit {
+  private authHeaders(extra?: Record<string, string>): Record<string, string> {
     return {
       Accept: "application/json",
       ...(this.agentToken ? { Authorization: `Bearer ${this.agentToken}` } : {}),
@@ -22,7 +22,7 @@ export class HttpClient {
     };
   }
 
-  async get<T>(path: string, init?: RequestInit): Promise<T> {
+  async get<T>(path: string, init?: { headers?: Record<string, string> }): Promise<T> {
     const response = await fetch(`${this.url}${path}`, {
       ...init,
       method: "GET",
@@ -35,7 +35,7 @@ export class HttpClient {
     return response.json() as Promise<T>;
   }
 
-  async post<T>(path: string, body: unknown, init?: RequestInit): Promise<T> {
+  async post<T>(path: string, body: unknown, init?: { headers?: Record<string, string> }): Promise<T> {
     const response = await fetch(`${this.url}${path}`, {
       ...init,
       method: "POST",
@@ -54,7 +54,7 @@ export class HttpClient {
     return response.json() as Promise<T>;
   }
 
-  async delete<T>(path: string, body?: unknown, init?: RequestInit): Promise<T> {
+  async delete<T>(path: string, body?: unknown, init?: { headers?: Record<string, string> }): Promise<T> {
     const response = await fetch(`${this.url}${path}`, {
       ...init,
       method: "DELETE",

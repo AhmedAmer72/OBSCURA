@@ -23,6 +23,9 @@ export class ReputationModule {
     if (this.http.hasAgentToken()) {
       return this.getAuthenticatedSummary();
     }
+    if (!wallet) {
+      throw new Error("Invalid wallet address");
+    }
     const normalized = normalizeWallet(wallet);
     if (!normalized) {
       throw new Error("Invalid wallet address");

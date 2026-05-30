@@ -2548,8 +2548,8 @@ The Obscura TypeScript SDK (`@obscura-fhe/sdk`) is the **official, framework-agn
 | Resource | URL / path |
 |---|---|
 | **npm package** | `@obscura-fhe/sdk` — https://www.npmjs.com/package/@obscura-fhe/sdk |
-| **Latest version** | `1.0.3` (2026-05-30) |
-| **MCP package** | `@obscura-fhe/mcp` — https://www.npmjs.com/package/@obscura-fhe/mcp (`1.0.3`) |
+| **Latest version** | `1.0.4` (2026-05-30) |
+| **MCP package** | `@obscura-fhe/mcp` — https://www.npmjs.com/package/@obscura-fhe/mcp (`1.0.4`) |
 | **Docs — MCP setup** | `/docs/mcp` |
 | **Install** | `npm install @obscura-fhe/sdk viem` |
 | **GitHub source** | [packages/sdk/](packages/sdk/) |
@@ -3101,6 +3101,19 @@ Same JSON works for Claude Desktop, VS Code (`.vscode/mcp.json`), Windsurf, and 
 4. User signs with EOA wallet — smart accounts cannot forward `InEuint64` (`InvalidSigner`)
 5. User reveals balances only in Obscura UI — never via MCP
 
+#### Production validation (v1.0.4 — 2026-05-30)
+
+| Check | Result |
+|---|---|
+| npm `@obscura-fhe/sdk@1.0.4` | Published |
+| npm `@obscura-fhe/mcp@1.0.4` | Published |
+| `GET /agent/me` (invalid token) | `401` — route live |
+| Fresh npm install smoke test | Public tools OK |
+| Authenticated smoke test | `user_get_agent_identity` → wallet bound · `reputation_get_summary` → tier · `activity_list_for_wallet` → paginated items |
+| `/docs/agents` UI | EIP-191 token creation · one-time copy · MCP JSON copy · rotate/revoke |
+
+**User setup path:** `/docs/agents` → copy token → set `OBSCURA_AGENT_TOKEN` in `.cursor/mcp.json` → restart IDE.
+
 **Developer docs:** `/docs/mcp` · **Packages:** [npm @obscura-fhe/mcp](https://www.npmjs.com/package/@obscura-fhe/mcp) · [npm @obscura-fhe/sdk](https://www.npmjs.com/package/@obscura-fhe/sdk)
 
 ### 39.14 SDK vs in-app CoFHE stack
@@ -3122,6 +3135,7 @@ Same JSON works for Claude Desktop, VS Code (`.vscode/mcp.json`), Windsurf, and 
 | v1.0 | 2026-05-29 | Initial canonical merge of Pay (`docs/pay_wave5.md`), Credit (`credit_wave5_protocol_bible_v1.md`), Vote (`vote_wave5_protocol_bible_v1.md` v1.3) into unified ecosystem architecture reference. 36 sections, institutional terminology, mermaid diagrams, complete registries. |
 | v1.1 | 2026-05-29 | Added §37 Ecosystem Scale (verified codebase counts) and §38 Why Obscura Is Technically Difficult; updated TOC and cross-references. |
 | v1.2 | 2026-05-30 | Added §39 Official TypeScript SDK (`@obscura-fhe/sdk` v1.0.1) — links, module API, requirements matrix, examples, full test/release validation; updated §37.1 scale counts and executive vision. |
+| v1.6 | 2026-05-30 | npm publish `@obscura-fhe/sdk@1.0.4` + `@obscura-fhe/mcp@1.0.4`; production agent-auth validation; `/docs/agents` UI copy-button and light-theme button fixes; MCP smoke-test script. |
 | v1.5 | 2026-05-30 | Agent Token authentication (v1.0.4): EIP-191 wallet proof · Bearer tokens · `/agent/*` routes · `/docs/agents` UI · MCP wallet-scoped tools without arbitrary address params. |
 | v1.4 | 2026-05-30 | MCP architecture hardening (v1.0.3): User MCP decoupled from Supabase — `GET /activity/:wallet` API route; SDK activity via API; trust boundary docs; env vars reduced to `OBSCURA_API_URL` only. |
 

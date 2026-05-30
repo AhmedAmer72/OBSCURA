@@ -2,6 +2,20 @@
 
 All notable changes to `@obscura-fhe/sdk` are documented in this file.
 
+## [1.0.4] - 2026-05-30
+
+### Added
+
+- **AgentModule** — create, list, revoke, and regenerate agent tokens via Obscura API
+- **`agentToken` config** — `Authorization: Bearer` on wallet-scoped API reads
+- **`getAuthenticatedSummary()`** / **`listAuthenticated()`** — `/agent/reputation` and `/agent/activity`
+- **`buildAgentTokenMessage()`** — EIP-191 message helper for token issuance
+
+### Changed
+
+- **HttpClient** sends Bearer header when `agentToken` is set
+- **ReputationModule** / **ActivityModule** route authenticated reads to `/agent/*` when token configured
+
 ## [1.0.3] - 2026-05-30
 
 ### Changed

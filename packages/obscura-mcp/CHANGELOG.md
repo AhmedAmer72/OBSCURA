@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.0.4] - 2026-05-30
+
+### Added
+
+- **Agent authentication** — `OBSCURA_AGENT_TOKEN` env var; `user_get_agent_identity` tool
+- **`agent-context.ts`** — resolves wallet from `GET /agent/me`
+
+### Changed
+
+- **Breaking (User MCP):** `reputation_get_summary`, `activity_list_for_wallet`, and `pay_get_encrypted_balance_handle` no longer accept wallet parameters — require `OBSCURA_AGENT_TOKEN`
+- Docs portal bundle: 15 pages (includes `/docs/agents`)
+- Depends on `@obscura-fhe/sdk@^1.0.4`
+
 ## [1.0.3] - 2026-05-30
 
 ### Changed
