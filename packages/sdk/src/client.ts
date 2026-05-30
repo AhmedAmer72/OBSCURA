@@ -14,6 +14,7 @@ import {
 } from "./core/chain.js";
 import type { FheProvider } from "./fhe/types.js";
 import { ActivityModule } from "./modules/activity.js";
+import { AgentModule } from "./modules/agent.js";
 import { CreditModule } from "./modules/credit.js";
 import { NotificationsModule } from "./modules/notifications.js";
 import { PayModule } from "./modules/pay.js";
@@ -32,6 +33,7 @@ export class ObscuraSDK {
   readonly vote: VoteModule;
   readonly reputation: ReputationModule;
   readonly activity: ActivityModule;
+  readonly agent: AgentModule;
   readonly notifications: NotificationsModule;
 
   private readonly walletClient?: WalletClient;
@@ -46,7 +48,7 @@ export class ObscuraSDK {
     this.publicClient = config.publicClient ?? createDefaultPublicClient(rpcUrl, this.chainId);
 
     const apiUrl = config.apiUrl ?? DEFAULT_API_URL;
-    const http = new HttpClient(apiUrl);
+    const http = new HttpClient(apiUrl, config.agentToken);
 
     const moduleDeps = {
       chainId: this.chainId,
@@ -64,6 +66,7 @@ export class ObscuraSDK {
     });
     this.vote = new VoteModule(moduleDeps);
     this.reputation = new ReputationModule(http);
+    this.agent = new AgentModule(http);
     this.notifications = new NotificationsModule(http);
     this.activity = new ActivityModule(http);
   }

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation, Navigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { WagmiProvider } from "wagmi";
@@ -91,6 +91,7 @@ const AnimatedRoutes = () => {
                 <Route path="/pay" element={<PayPage />} />
                 <Route path="/pay/contacts" element={<ContactsPage />} />
                 <Route path="/pay/settings" element={<SettingsPage />} />
+                <Route path="/pay/settings/agent-access" element={<Navigate to="/docs/agents" replace />} />
                 <Route path="/vote" element={<VotePage />} />
                 <Route path="/credit" element={<CreditPage />} />
                 <Route path="/ecosystem" element={<EcosystemPage />} />

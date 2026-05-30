@@ -119,19 +119,31 @@ export const sdk = ObscuraSDK.create({
     {
       type: "heading",
       level: 2,
+      text: "Agent token (wallet-scoped reads)",
+      id: "agent-token",
+    },
+    {
+      type: "paragraph",
+      text: "Activity and reputation reads require an agent token bound to your wallet. Create one at /docs/agents (EIP-191 signature, no gas). Set OBSCURA_AGENT_TOKEN in your environment or MCP config.",
+    },
+    {
+      type: "heading",
+      level: 2,
       text: "Read reputation & activity",
       id: "read",
     },
     {
       type: "code",
       language: "typescript",
-      title: "Off-chain reads (no wallet required)",
-      code: `const wallet = "0xYourWallet" as const;
+      title: "Authenticated off-chain reads",
+      code: `const sdk = ObscuraSDK.create({
+  agentToken: process.env.OBSCURA_AGENT_TOKEN,
+});
 
-const rep = await sdk.reputation.getSummary(wallet);
+const rep = await sdk.reputation.getAuthenticatedSummary();
 console.log(rep.tier, rep.totalCappedWeight);
 
-const { items } = await sdk.activity.listForWallet(wallet, { filter: "credit" });`,
+const { items } = await sdk.activity.listAuthenticated({ filter: "credit" });`,
     },
     {
       type: "heading",

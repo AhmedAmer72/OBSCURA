@@ -10,6 +10,8 @@ import {
   BookOpen,
   Code2,
   Sparkles,
+  KeyRound,
+  Shield,
 } from "lucide-react";
 import { MCP_VERSION, SDK_VERSION } from "@docs/constants";
 
@@ -34,7 +36,7 @@ const profiles = [
     id: "docs",
     name: "Documentation",
     binary: "obscura-mcp-docs",
-    desc: "14-page portal · zero secrets",
+    desc: "15-page portal · zero secrets",
     color: "#a855f7",
   },
 ] as const;
@@ -152,6 +154,49 @@ export function DocsMcpQuickAction() {
   );
 }
 
+export function DocsMcpAgentQuickActions() {
+  return (
+    <div className="docs-mcp-agent-actions">
+      <Link to="/docs/agents" className="docs-btn docs-btn--primary">
+        <KeyRound className="h-4 w-4" /> Create Agent Token
+      </Link>
+      <Link to="/docs/agents#security" className="docs-btn docs-btn--secondary">
+        <Shield className="h-4 w-4" /> Learn About Agent Security
+      </Link>
+    </div>
+  );
+}
+
+export function DocsAgentQuickAction() {
+  return (
+    <motion.section
+      className="docs-agent-quick"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className="docs-agent-quick-inner">
+        <KeyRound className="h-5 w-5 text-[#2d8a5e]" />
+        <div>
+          <h2 className="docs-agent-quick-title">Agent authentication</h2>
+          <p className="docs-agent-quick-lead">
+            Wallet-scoped MCP reads require an agent token — prove ownership with EIP-191, never expose arbitrary wallet lookups.
+          </p>
+        </div>
+        <div className="docs-agent-quick-actions">
+          <Link to="/docs/agents" className="docs-btn docs-btn--primary">
+            Create Agent Token <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link to="/docs/agents#security" className="docs-btn docs-btn--secondary">
+            <Shield className="h-4 w-4" /> Learn About Agent Security
+          </Link>
+        </div>
+      </div>
+    </motion.section>
+  );
+}
+
 export function DocsMcpPageHero() {
   return (
     <motion.div
@@ -176,8 +221,9 @@ export function DocsMcpPageHero() {
         </span>
         <p className="docs-mcp-page-hero-sub">
           Privacy-first agent tooling for Pay, Credit, and Vote — wraps SDK v{SDK_VERSION}.
-          Never decrypts FHE. Never holds private keys.
+          Never decrypts FHE. Never holds private keys. Agent token required for wallet-scoped reads.
         </p>
+        <DocsMcpAgentQuickActions />
       </div>
     </motion.div>
   );

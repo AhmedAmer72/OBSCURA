@@ -1,6 +1,6 @@
 {
   "name": "@obscura-fhe/sdk",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Official TypeScript SDK for Obscura Pay, Credit, and Vote on Arbitrum Sepolia",
   "type": "module",
   "main": "./dist/index.cjs",

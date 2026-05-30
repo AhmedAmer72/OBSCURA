@@ -170,7 +170,8 @@ export const cofheAdapter: FheProvider = {
     {
       type: "steps",
       items: [
-        { title: "Read-only dashboard", description: "reputation + activity — no wallet or FHE required", href: "/docs/first-app" },
+        { title: "Create agent token", description: "EIP-191 proof at /docs/agents → OBSCURA_AGENT_TOKEN", href: "/docs/agents" },
+        { title: "Read-only dashboard", description: "Authenticated reputation + activity via agent token", href: "/docs/first-app" },
         { title: "Tx builder + external signer", description: "encodeCall() → pass calldata to any wallet", href: "/docs/quick-start" },
         { title: "Full write flow", description: "FheProvider + walletClient + sendCall()", href: "/docs/sdk" },
         { title: "Pre-encrypted inputs", description: "Pass InEuint64 directly to skip adapter at build time", href: "/docs/sdk" },
@@ -180,7 +181,7 @@ export const cofheAdapter: FheProvider = {
       type: "callout",
       variant: "tip",
       title: "MCP servers",
-      text: "Official @obscura-fhe/mcp v1.0.2 packages three profiles (User, Developer, Documentation) for Cursor, Claude Desktop, VS Code, Windsurf, Continue, and any stdio agent. See /docs/mcp for full IDE setup.",
+      text: "Official @obscura-fhe/mcp packages three profiles (User, Developer, Documentation). User MCP requires OBSCURA_AGENT_TOKEN for wallet-scoped reads — create at /docs/agents. See /docs/mcp for IDE setup.",
     },
   ],
 };

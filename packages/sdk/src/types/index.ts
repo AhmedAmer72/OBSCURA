@@ -132,6 +132,8 @@ export interface ObscuraSDKConfig {
   rpcUrl?: string;
   /** Obscura API — activity, reputation, notifications (default: production) */
   apiUrl?: string;
+  /** Agent access token for wallet-scoped API reads (Authorization: Bearer obsc_at_…) */
+  agentToken?: string;
   /** @deprecated Activity reads use apiUrl. Supabase direct access is for Obscura frontend only. */
   supabaseUrl?: string;
   /** @deprecated Activity reads use apiUrl. Supabase direct access is for Obscura frontend only. */

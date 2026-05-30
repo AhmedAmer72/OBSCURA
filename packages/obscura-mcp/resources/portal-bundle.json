@@ -78,6 +78,10 @@
         {
           "slug": "mcp",
           "label": "MCP servers"
+        },
+        {
+          "slug": "agents",
+          "label": "Agent access"
         }
       ]
     }
@@ -229,14 +233,24 @@
         {
           "type": "heading",
           "level": 2,
+          "text": "Agent token (wallet-scoped reads)",
+          "id": "agent-token"
+        },
+        {
+          "type": "paragraph",
+          "text": "Activity and reputation reads require an agent token bound to your wallet. Create one at /docs/agents (EIP-191 signature, no gas). Set OBSCURA_AGENT_TOKEN in your environment or MCP config."
+        },
+        {
+          "type": "heading",
+          "level": 2,
           "text": "Read reputation & activity",
           "id": "read"
         },
         {
           "type": "code",
           "language": "typescript",
-          "title": "Off-chain reads (no wallet required)",
-          "code": "const wallet = \"0xYourWallet\" as const;\n\nconst rep = await sdk.reputation.getSummary(wallet);\nconsole.log(rep.tier, rep.totalCappedWeight);\n\nconst { items } = await sdk.activity.listForWallet(wallet, { filter: \"credit\" });"
+          "title": "Authenticated off-chain reads",
+          "code": "const sdk = ObscuraSDK.create({\n  agentToken: process.env.OBSCURA_AGENT_TOKEN,\n});\n\nconst rep = await sdk.reputation.getAuthenticatedSummary();\nconsole.log(rep.tier, rep.totalCappedWeight);\n\nconst { items } = await sdk.activity.listAuthenticated({ filter: \"credit\" });"
         },
         {
           "type": "heading",
@@ -373,8 +387,13 @@
           "type": "steps",
           "items": [
             {
+              "title": "Create agent token",
+              "description": "EIP-191 proof at /docs/agents → OBSCURA_AGENT_TOKEN",
+              "href": "/docs/agents"
+            },
+            {
               "title": "Read-only dashboard",
-              "description": "reputation + activity — no wallet or FHE required",
+              "description": "Authenticated reputation + activity via agent token",
               "href": "/docs/first-app"
             },
             {
@@ -398,7 +417,7 @@
           "type": "callout",
           "variant": "tip",
           "title": "MCP servers",
-          "text": "Official @obscura-fhe/mcp v1.0.2 packages three profiles (User, Developer, Documentation) for Cursor, Claude Desktop, VS Code, Windsurf, Continue, and any stdio agent. See /docs/mcp for full IDE setup."
+          "text": "Official @obscura-fhe/mcp packages three profiles (User, Developer, Documentation). User MCP requires OBSCURA_AGENT_TOKEN for wallet-scoped reads — create at /docs/agents. See /docs/mcp for IDE setup."
         }
       ]
     },
@@ -1177,7 +1196,7 @@
         {
           "type": "callout",
           "variant": "success",
-          "title": "@obscura-fhe/sdk v1.0.3",
+          "title": "@obscura-fhe/sdk v1.0.4",
           "text": "Published on npm · Arbitrum Sepolia (421614) · pairs with @obscura-fhe/mcp for agent tooling."
         },
         {
@@ -1190,7 +1209,7 @@
           "type": "code",
           "language": "bash",
           "title": "Install",
-          "code": "npm install @obscura-fhe/sdk@1.0.3 viem"
+          "code": "npm install @obscura-fhe/sdk@1.0.4 viem"
         },
         {
           "type": "visual",
@@ -1298,7 +1317,7 @@
           "type": "code",
           "language": "bash",
           "title": "Quick start",
-          "code": "npm install @obscura-fhe/mcp@1.0.3 @obscura-fhe/sdk@1.0.3\nnode ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js"
+          "code": "npm install @obscura-fhe/mcp@1.0.4 @obscura-fhe/sdk@1.0.4\nnode ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js"
         },
         {
           "type": "heading",
@@ -1390,7 +1409,7 @@
     {
       "slug": "mcp",
       "title": "MCP servers",
-      "description": "Official Model Context Protocol servers (@obscura-fhe/mcp v1.0.3) — User, Developer, and Documentation profiles for Cursor, Claude, VS Code, and any stdio agent.",
+      "description": "Official Model Context Protocol servers (@obscura-fhe/mcp v1.0.4) — User, Developer, and Documentation profiles for Cursor, Claude, VS Code, and any stdio agent.",
       "category": "Reference",
       "keywords": [
         "mcp",
@@ -1410,7 +1429,7 @@
         {
           "type": "callout",
           "variant": "success",
-          "title": "Published on npm · SDK v1.0.3 · MCP v1.0.3",
+          "title": "Published on npm · SDK v1.0.4 · MCP v1.0.4",
           "text": "Three isolated stdio servers wrap @obscura-fhe/sdk — no duplicate protocol logic. User MCP never decrypts FHE values or holds private keys."
         },
         {
@@ -1423,7 +1442,7 @@
           "type": "code",
           "language": "bash",
           "title": "Project setup",
-          "code": "# In your app or agent workspace\nnpm install @obscura-fhe/mcp@1.0.3 @obscura-fhe/sdk@1.0.3\n\n# Binaries (after install)\n# obscura-mcp-user   — wallet-scoped agent tools\n# obscura-mcp-dev    — local repo inspection\n# obscura-mcp-docs   — bundled docs portal (14 pages)"
+          "code": "# In your app or agent workspace\nnpm install @obscura-fhe/mcp@1.0.4 @obscura-fhe/sdk@1.0.4\n\n# Binaries (after install)\n# obscura-mcp-user   — wallet-scoped agent tools\n# obscura-mcp-dev    — local repo inspection\n# obscura-mcp-docs   — bundled docs portal (14 pages)"
         },
         {
           "type": "visual",
@@ -1470,7 +1489,7 @@
           "type": "code",
           "language": "json",
           "title": ".cursor/mcp.json",
-          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
+          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\",\n        \"OBSCURA_AGENT_TOKEN\": \"obsc_at_YOUR_TOKEN_FROM_DOCS_AGENTS\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
         },
         {
           "type": "heading",
@@ -1503,7 +1522,7 @@
           "type": "code",
           "language": "json",
           "title": "claude_desktop_config.json",
-          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
+          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\",\n        \"OBSCURA_AGENT_TOKEN\": \"obsc_at_YOUR_TOKEN_FROM_DOCS_AGENTS\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
         },
         {
           "type": "heading",
@@ -1536,7 +1555,7 @@
           "type": "code",
           "language": "json",
           "title": ".vscode/mcp.json",
-          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
+          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\",\n        \"OBSCURA_AGENT_TOKEN\": \"obsc_at_YOUR_TOKEN_FROM_DOCS_AGENTS\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
         },
         {
           "type": "heading",
@@ -1552,7 +1571,7 @@
           "type": "code",
           "language": "json",
           "title": "mcp_config.json",
-          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
+          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\",\n        \"OBSCURA_AGENT_TOKEN\": \"obsc_at_YOUR_TOKEN_FROM_DOCS_AGENTS\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
         },
         {
           "type": "heading",
@@ -1568,7 +1587,7 @@
           "type": "code",
           "language": "json",
           "title": "~/.continue/config.json (fragment)",
-          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
+          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\",\n        \"OBSCURA_AGENT_TOKEN\": \"obsc_at_YOUR_TOKEN_FROM_DOCS_AGENTS\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
         },
         {
           "type": "heading",
@@ -1588,9 +1607,40 @@
         },
         {
           "type": "callout",
+          "variant": "warning",
+          "title": "Agent token required",
+          "text": "Wallet-scoped tools (activity, reputation, balance handle) require OBSCURA_AGENT_TOKEN. Create one at /docs/agents before configuring User MCP."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Agent authentication",
+          "id": "agent-auth"
+        },
+        {
+          "type": "paragraph",
+          "text": "User MCP resolves wallet identity from Authorization: Bearer obsc_at_… — no arbitrary wallet parameters. Token creation requires EIP-191 wallet signature at /docs/agents."
+        },
+        {
+          "type": "link-grid",
+          "items": [
+            {
+              "label": "Create Agent Token",
+              "href": "/docs/agents",
+              "description": "Connect wallet · sign · copy token once"
+            },
+            {
+              "label": "Agent security model",
+              "href": "/docs/agents#security",
+              "description": "Hash storage · permissions · revocation"
+            }
+          ]
+        },
+        {
+          "type": "callout",
           "variant": "info",
           "title": "Trust boundary",
-          "text": "User MCP never talks to Supabase. Activity, reputation, and notification reads go through Obscura API (service role server-side). End users need only OBSCURA_API_URL."
+          "text": "User MCP never talks to Supabase. Activity and reputation reads go through Obscura API with bearer agent tokens (service role server-side). End users need OBSCURA_API_URL and OBSCURA_AGENT_TOKEN."
         },
         {
           "type": "heading",
@@ -1614,8 +1664,12 @@
               "Public endpoints"
             ],
             [
+              "user_get_agent_identity",
+              "Resolve token → wallet"
+            ],
+            [
               "pay_get_encrypted_balance_handle",
-              "Opaque ctHash — never decrypted"
+              "Authenticated wallet — opaque ctHash"
             ],
             [
               "pay_build_shield / unshield / transfer",
@@ -1639,11 +1693,11 @@
             ],
             [
               "reputation_get_summary",
-              "ReputationModule"
+              "GET /agent/reputation (Bearer token)"
             ],
             [
               "activity_list_for_wallet",
-              "ActivityModule (max 25 rows)"
+              "GET /agent/activity (Bearer token, max 25 rows)"
             ],
             [
               "user_encode_call",
@@ -1669,6 +1723,11 @@
               "OBSCURA_API_URL",
               "User",
               "Default: production obscura-api"
+            ],
+            [
+              "OBSCURA_AGENT_TOKEN",
+              "User",
+              "Required — create at /docs/agents"
             ],
             [
               "OBSCURA_RPC_URL",
@@ -1710,7 +1769,7 @@
             {
               "label": "SDK reference",
               "href": "/docs/sdk",
-              "description": "@obscura-fhe/sdk v1.0.3"
+              "description": "@obscura-fhe/sdk v1.0.4"
             },
             {
               "label": "Privacy model",
@@ -1723,15 +1782,162 @@
               "description": "Five-tier system design"
             },
             {
+              "label": "Agent access",
+              "href": "/docs/agents",
+              "description": "Token creation & security"
+            },
+            {
               "label": "npm @obscura-fhe/mcp",
               "href": "https://www.npmjs.com/package/@obscura-fhe/mcp",
-              "description": "v1.0.3"
+              "description": "v1.0.4"
             },
             {
               "label": "npm @obscura-fhe/sdk",
               "href": "https://www.npmjs.com/package/@obscura-fhe/sdk",
-              "description": "v1.0.3"
+              "description": "v1.0.4"
             }
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "agents",
+      "title": "Agent access & tokens",
+      "description": "Privacy-first MCP authentication — prove wallet ownership with EIP-191, issue bearer tokens, and bind agents to your wallet identity.",
+      "category": "Reference",
+      "keywords": [
+        "agent",
+        "token",
+        "mcp",
+        "authentication",
+        "bearer",
+        "eip-191",
+        "security"
+      ],
+      "blocks": [
+        {
+          "type": "callout",
+          "variant": "info",
+          "title": "Encrypted by default · Revealed by choice",
+          "text": "Agent tokens authenticate wallet-scoped metadata reads (activity, reputation, balance handles). They never decrypt FHE state and cannot bypass the reveal flow."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Agent authentication",
+          "id": "agent-auth"
+        },
+        {
+          "type": "paragraph",
+          "text": "User MCP tools that access wallet-scoped data require OBSCURA_AGENT_TOKEN. The token is resolved server-side to your wallet — agents cannot pass arbitrary addresses for activity or reputation reads."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Token lifecycle",
+          "id": "lifecycle"
+        },
+        {
+          "type": "steps",
+          "items": [
+            {
+              "title": "Connect wallet",
+              "description": "Use the panel above on Arbitrum Sepolia"
+            },
+            {
+              "title": "Sign EIP-191 message",
+              "description": "Proves ownership — no on-chain tx, no gas"
+            },
+            {
+              "title": "Receive token once",
+              "description": "obsc_at_… prefix — store in password manager or MCP env"
+            },
+            {
+              "title": "Configure MCP",
+              "description": "Add OBSCURA_AGENT_TOKEN to obscura-user mcpServers env"
+            },
+            {
+              "title": "Rotate or revoke",
+              "description": "Compromised token? Revoke immediately and regenerate"
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "MCP configuration",
+          "id": "mcp-config"
+        },
+        {
+          "type": "code",
+          "language": "json",
+          "title": ".cursor/mcp.json (User profile)",
+          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\",\n        \"OBSCURA_AGENT_TOKEN\": \"obsc_at_YOUR_TOKEN_FROM_DOCS_AGENTS\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Security model",
+          "id": "security"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Control",
+            "Guarantee"
+          ],
+          "rows": [
+            [
+              "Storage",
+              "Only SHA-256 hash stored — never plaintext token"
+            ],
+            [
+              "Scope",
+              "Token bound to one wallet; API rejects cross-wallet reads"
+            ],
+            [
+              "Permissions",
+              "activity:read · reputation:read · balance:read"
+            ],
+            [
+              "Expiry",
+              "Default 90 days — rotate before expiry"
+            ],
+            [
+              "FHE",
+              "No decrypt, permit, or reveal tools in User MCP"
+            ],
+            [
+              "Legacy API",
+              "Set AGENT_AUTH_LEGACY_PUBLIC=false to require tokens on all wallet paths"
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "SDK usage",
+          "id": "sdk"
+        },
+        {
+          "type": "code",
+          "language": "typescript",
+          "title": "Authenticated reads",
+          "code": "import { ObscuraSDK } from \"@obscura-fhe/sdk\";\n\nconst sdk = ObscuraSDK.create({\n  agentToken: process.env.OBSCURA_AGENT_TOKEN,\n});\n\nconst reputation = await sdk.reputation.getAuthenticatedSummary();\nconst activity = await sdk.activity.listAuthenticated({ pageSize: 10 });"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Revocation & rotation",
+          "id": "revocation"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Revoke — immediately invalidates the token hash server-side",
+            "Regenerate — revokes old token and issues a new one (shown once)",
+            "Max 5 active tokens per wallet — revoke unused tokens",
+            "SDK v1.0.4 · MCP v1.0.4"
           ]
         }
       ]
@@ -1834,14 +2040,21 @@
       "title": "SDK reference",
       "description": "Complete @obscura-fhe/sdk module API, types, and constants.",
       "category": "Reference",
-      "excerpt": "@obscura-fhe/sdk v1.0.3 Published on npm · Arbitrum Sepolia (421614) · pairs with @obscura-fhe/mcp for agent tooling. Requirements by module activity → Obscura API (`GET /activity/:wallet`). On-chain "
+      "excerpt": "@obscura-fhe/sdk v1.0.4 Published on npm · Arbitrum Sepolia (421614) · pairs with @obscura-fhe/mcp for agent tooling. Requirements by module activity → Obscura API (`GET /activity/:wallet`). On-chain "
     },
     {
       "slug": "mcp",
       "title": "MCP servers",
-      "description": "Official Model Context Protocol servers (@obscura-fhe/mcp v1.0.3) — User, Developer, and Documentation profiles for Cursor, Claude, VS Code, and any stdio agent.",
+      "description": "Official Model Context Protocol servers (@obscura-fhe/mcp v1.0.4) — User, Developer, and Documentation profiles for Cursor, Claude, VS Code, and any stdio agent.",
       "category": "Reference",
-      "excerpt": "mcp-profiles Published on npm · SDK v1.0.3 · MCP v1.0.3 Three isolated stdio servers wrap @obscura-fhe/sdk — no duplicate protocol logic. User MCP never decrypts FHE values or holds private keys. Inst"
+      "excerpt": "mcp-profiles Published on npm · SDK v1.0.4 · MCP v1.0.4 Three isolated stdio servers wrap @obscura-fhe/sdk — no duplicate protocol logic. User MCP never decrypts FHE values or holds private keys. Inst"
+    },
+    {
+      "slug": "agents",
+      "title": "Agent access & tokens",
+      "description": "Privacy-first MCP authentication — prove wallet ownership with EIP-191, issue bearer tokens, and bind agents to your wallet identity.",
+      "category": "Reference",
+      "excerpt": "Encrypted by default · Revealed by choice Agent tokens authenticate wallet-scoped metadata reads (activity, reputation, balance handles). They never decrypt FHE state and cannot bypass the reveal flow"
     }
   ]
 }

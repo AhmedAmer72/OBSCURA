@@ -42,6 +42,13 @@ export { PayModule } from "./modules/pay.js";
 export { CreditModule } from "./modules/credit.js";
 export { VoteModule } from "./modules/vote.js";
 export { ReputationModule } from "./modules/reputation.js";
+export { AgentModule, buildAgentTokenMessage } from "./modules/agent.js";
+export type {
+  AgentIdentity,
+  AgentPermission,
+  AgentTokenCreateResult,
+  AgentTokenPublic,
+} from "./modules/agent.js";
 export { ActivityModule } from "./modules/activity.js";
 export { NotificationsModule } from "./modules/notifications.js";
 

@@ -168,6 +168,17 @@ export default function SettingsPage() {
           </div>
         </Section>
 
+        <Section title="Agent access">
+          <p className="text-[12px] text-muted-foreground/70 mb-3">
+            Create an MCP agent token to bind AI tools to your wallet — no arbitrary address lookups.
+          </p>
+          <Link to="/docs/agents">
+            <Button variant="outline" size="sm">
+              Manage agent tokens
+            </Button>
+          </Link>
+        </Section>
+
         <Section title="Onboarding">
           <Button variant="outline" onClick={() => prefs.setPreference("hasCompletedOnboarding", false)}>
             <SettingsIcon className="w-3.5 h-3.5 mr-1.5" />

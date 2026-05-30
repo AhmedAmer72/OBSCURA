@@ -28,6 +28,7 @@ describe("User MCP SDK adapter", () => {
     const cfg = getPublicChainConfig();
     expect(cfg.apiUrl).toBeTruthy();
     expect(cfg).not.toHaveProperty("supabaseAnonKey");
-    expect(String(cfg.note)).toMatch(/Obscura API/i);
+    expect(cfg.agentTokenConfigured).toBe(false);
+    expect(String(cfg.note)).toMatch(/OBSCURA_AGENT_TOKEN|agent token/i);
   });
 });

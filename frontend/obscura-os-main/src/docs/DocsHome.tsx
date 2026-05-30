@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Search, BookOpen, Terminal, Shield } from "lucide-react";
 import { DocVisual } from "./DocVisuals";
-import { DocsMcpQuickAction } from "./DocsMcpSection";
+import { DocsMcpQuickAction, DocsAgentQuickAction } from "./DocsMcpSection";
 
 interface DocsHomeProps {
   onOpenSearch: () => void;
@@ -52,6 +52,7 @@ export function DocsHome({ onOpenSearch }: DocsHomeProps) {
       </section>
 
       <DocsMcpQuickAction />
+      <DocsAgentQuickAction />
 
       <section className="docs-home-section">
         <h2 className="docs-home-section-title">Platform scale</h2>

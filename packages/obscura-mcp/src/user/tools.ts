@@ -12,6 +12,7 @@ import {
   serializeContractCall,
 } from "../shared/privacy-guard.js";
 import { readLimiter, writePrepLimiter } from "../shared/rate-limit.js";
+import { resolveAgentContext, requirePermission } from "./agent-context.js";
 import { createUserSdk, getPublicChainConfig } from "./sdk-adapter.js";
 
 const walletSchema = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
@@ -53,14 +54,32 @@ export function registerUserTools(server: McpServer): void {
   );
 
   server.tool(
-    "pay_get_encrypted_balance_handle",
-    "Read opaque encrypted balance handle for a wallet (never decrypted)",
-    { wallet: walletSchema },
-    async ({ wallet }) => {
-      rateLimitRead(`balance:${wallet}`);
-      const ctHash = await sdk.pay.getShieldedBalance(wallet as `0x${string}`);
+    "user_get_agent_identity",
+    "Resolve authenticated wallet from OBSCURA_AGENT_TOKEN (no arbitrary wallet lookup)",
+    {},
+    async () => {
+      rateLimitRead("agent_identity");
+      const ctx = await resolveAgentContext();
       return jsonText({
-        wallet: wallet.toLowerCase(),
+        wallet: ctx.wallet,
+        permissions: ctx.permissions,
+        expiresAt: ctx.expiresAt,
+        tokenId: ctx.tokenId,
+      });
+    },
+  );
+
+  server.tool(
+    "pay_get_encrypted_balance_handle",
+    "Read opaque encrypted balance handle for authenticated wallet (never decrypted)",
+    {},
+    async () => {
+      const ctx = await resolveAgentContext();
+      requirePermission("balance:read");
+      rateLimitRead(`balance:${ctx.wallet}`);
+      const ctHash = await sdk.pay.getShieldedBalance(ctx.wallet as `0x${string}`);
+      return jsonText({
+        wallet: ctx.wallet,
         encryptedBalanceHandle: `0x${ctHash.toString(16).padStart(64, "0")}`,
         displayHint: ENCRYPTED_HANDLE_DISPLAY,
       });
@@ -243,29 +262,32 @@ export function registerUserTools(server: McpServer): void {
 
   server.tool(
     "reputation_get_summary",
-    "Wallet-scoped reputation tier and capped signals",
-    { wallet: walletSchema },
-    async ({ wallet }) => {
-      rateLimitRead(`rep:${wallet}`);
-      const summary = await sdk.reputation.getSummary(wallet as `0x${string}`);
+    "Authenticated wallet reputation tier and capped signals (requires OBSCURA_AGENT_TOKEN)",
+    {},
+    async () => {
+      await resolveAgentContext();
+      requirePermission("reputation:read");
+      rateLimitRead("rep:authenticated");
+      const summary = await sdk.reputation.getAuthenticatedSummary();
       return jsonText(summary);
     },
   );
 
   server.tool(
     "activity_list_for_wallet",
-    "Wallet-scoped activity feed (max pageSize 25)",
+    "Authenticated wallet activity feed — max pageSize 25 (requires OBSCURA_AGENT_TOKEN)",
     {
-      wallet: walletSchema,
       filter: z
         .enum(["all", "sent", "received", "stream", "invoice", "escrow", "stealth", "credit", "vote"])
         .optional(),
       page: z.number().int().min(0).optional(),
       pageSize: z.number().int().min(1).max(MAX_ACTIVITY_PAGE_SIZE).optional(),
     },
-    async ({ wallet, filter, page, pageSize }) => {
-      rateLimitRead(`activity:${wallet}`);
-      const result = await sdk.activity.listForWallet(wallet as `0x${string}`, {
+    async ({ filter, page, pageSize }) => {
+      await resolveAgentContext();
+      requirePermission("activity:read");
+      rateLimitRead("activity:authenticated");
+      const result = await sdk.activity.listAuthenticated({
         filter,
         page,
         pageSize: Math.min(pageSize ?? 25, MAX_ACTIVITY_PAGE_SIZE),
@@ -331,6 +353,8 @@ export function registerUserResources(server: McpServer): void {
             "4. Use pre-encrypted InEuint64 from browser CoFHE SDK only",
             "5. Never bulk-scan activity or stealth announcements",
             "6. Private mode = ocUSDC + EOA; Public mode = USDC + AA (no FHE writes)",
+            "7. Wallet-scoped reads require OBSCURA_AGENT_TOKEN — no arbitrary wallet parameters",
+            "8. Create and rotate agent tokens at /docs/agents — revoke on compromise",
           ].join("\n"),
         },
       ],

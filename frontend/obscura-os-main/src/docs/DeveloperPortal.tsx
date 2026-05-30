@@ -6,6 +6,7 @@ import { DocSidebar } from "./DocSidebar";
 import { DocContent } from "./DocContent";
 import { DocsHome } from "./DocsHome";
 import { DocsMcpPageHero } from "./DocsMcpSection";
+import { AgentAccessPage } from "./AgentAccessPage";
 import "./docs-portal.css";
 
 function DocBreadcrumb({ slug, title }: { slug: string; title: string }) {
@@ -49,7 +50,11 @@ export default function DeveloperPortal() {
                   <p className="docs-portal-lead">{page.description}</p>
                 )}
               </header>
-              <DocContent blocks={page.blocks} />
+              {page.slug === "agents" ? (
+                <AgentAccessPage page={page} />
+              ) : (
+                <DocContent blocks={page.blocks} />
+              )}
               <footer className="docs-page-footer">
                 <span>Obscura Developer Portal · Arbitrum Sepolia</span>
                 <a

@@ -38,6 +38,7 @@ export const DOC_NAV: DocNavGroup[] = [
     items: [
       { slug: "sdk", label: "SDK reference" },
       { slug: "mcp", label: "MCP servers" },
+      { slug: "agents", label: "Agent access" },
     ],
   },
 ];

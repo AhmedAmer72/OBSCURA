@@ -46,6 +46,7 @@ describe("ObscuraSDK", () => {
     expect(sdk.credit).toBeDefined();
     expect(sdk.vote).toBeDefined();
     expect(sdk.reputation).toBeDefined();
+    expect(sdk.agent).toBeDefined();
     expect(sdk.activity).toBeDefined();
     expect(sdk.notifications).toBeDefined();
   });

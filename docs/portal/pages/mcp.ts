@@ -175,9 +175,32 @@ OBSCURA_REPO_ROOT=/path/to/Obscura \\
     },
     {
       type: "callout",
+      variant: "warning",
+      title: "Agent token required",
+      text: "Wallet-scoped tools (activity, reputation, balance handle) require OBSCURA_AGENT_TOKEN. Create one at /docs/agents before configuring User MCP.",
+    },
+    {
+      type: "heading",
+      level: 2,
+      text: "Agent authentication",
+      id: "agent-auth",
+    },
+    {
+      type: "paragraph",
+      text: "User MCP resolves wallet identity from Authorization: Bearer obsc_at_… — no arbitrary wallet parameters. Token creation requires EIP-191 wallet signature at /docs/agents.",
+    },
+    {
+      type: "link-grid",
+      items: [
+        { label: "Create Agent Token", href: "/docs/agents", description: "Connect wallet · sign · copy token once" },
+        { label: "Agent security model", href: "/docs/agents#security", description: "Hash storage · permissions · revocation" },
+      ],
+    },
+    {
+      type: "callout",
       variant: "info",
       title: "Trust boundary",
-      text: "User MCP never talks to Supabase. Activity, reputation, and notification reads go through Obscura API (service role server-side). End users need only OBSCURA_API_URL.",
+      text: "User MCP never talks to Supabase. Activity and reputation reads go through Obscura API with bearer agent tokens (service role server-side). End users need OBSCURA_API_URL and OBSCURA_AGENT_TOKEN.",
     },
     {
       type: "heading",
@@ -191,14 +214,15 @@ OBSCURA_REPO_ROOT=/path/to/Obscura \\
       rows: [
         ["user_health_api", "API liveness"],
         ["user_get_chain_config", "Public endpoints"],
-        ["pay_get_encrypted_balance_handle", "Opaque ctHash — never decrypted"],
+        ["user_get_agent_identity", "Resolve token → wallet"],
+        ["pay_get_encrypted_balance_handle", "Authenticated wallet — opaque ctHash"],
         ["pay_build_shield / unshield / transfer", "PayModule tx builders"],
         ["credit_get_market_utilization", "CreditModule.getMarketUtilization()"],
         ["credit_build_supply_collateral / borrow / repay", "CreditModule tx builders"],
         ["vote_get_proposal_count / get_proposal", "VoteModule reads"],
         ["vote_build_cast_vote / delegate", "VoteModule tx builders"],
-        ["reputation_get_summary", "ReputationModule"],
-        ["activity_list_for_wallet", "ActivityModule (max 25 rows)"],
+        ["reputation_get_summary", "GET /agent/reputation (Bearer token)"],
+        ["activity_list_for_wallet", "GET /agent/activity (Bearer token, max 25 rows)"],
         ["user_encode_call", "encodeCall() for external signers"],
       ],
     },
@@ -213,6 +237,7 @@ OBSCURA_REPO_ROOT=/path/to/Obscura \\
       headers: ["Variable", "Profile", "Required"],
       rows: [
         ["OBSCURA_API_URL", "User", "Default: production obscura-api"],
+        ["OBSCURA_AGENT_TOKEN", "User", "Required — create at /docs/agents"],
         ["OBSCURA_RPC_URL", "User", "Optional Arbitrum Sepolia RPC override"],
         ["OBSCURA_REPO_ROOT", "Developer", "Path to Obscura clone"],
         ["OBSCURA_PRIVACY_MODE", "User", "standard | strict"],
@@ -241,6 +266,7 @@ OBSCURA_REPO_ROOT=/path/to/Obscura \\
         { label: "SDK reference", href: "/docs/sdk", description: `@obscura-fhe/sdk v${SDK_VERSION}` },
         { label: "Privacy model", href: "/docs/privacy", description: "Encrypted vs public surfaces" },
         { label: "Architecture", href: "/docs/architecture", description: "Five-tier system design" },
+        { label: "Agent access", href: "/docs/agents", description: "Token creation & security" },
         { label: "npm @obscura-fhe/mcp", href: "https://www.npmjs.com/package/@obscura-fhe/mcp", description: `v${MCP_VERSION}` },
         { label: "npm @obscura-fhe/sdk", href: "https://www.npmjs.com/package/@obscura-fhe/sdk", description: `v${SDK_VERSION}` },
       ],

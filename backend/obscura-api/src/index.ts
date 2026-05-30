@@ -18,6 +18,7 @@ import { relayRouter, ENTRY_POINT, PAYMASTER_ADDR } from "./relay";
 import { notificationsRouter, startNotificationListener } from "./notifications";
 import { reputationRouter } from "./reputation";
 import { activityRouter } from "./activity";
+import { agentRouter } from "./agent-tokens";
 
 const PORT = parseInt(process.env.PORT ?? "3000");
 const DEFAULT_ALLOWED_ORIGINS = [
@@ -65,6 +66,7 @@ app.get("/health", (_req, res) => {
 // ─── Route modules ────────────────────────────────────────────────────────────
 app.use(relayRouter);
 app.use(notificationsRouter);
+app.use(agentRouter);
 app.use(reputationRouter);
 app.use(activityRouter);
 

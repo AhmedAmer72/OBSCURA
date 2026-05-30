@@ -35,8 +35,8 @@ describe("developer denylist", () => {
 });
 
 describe("documentation portal", () => {
-  it("loads all 14 docs slugs", () => {
-    expect(getDocPages().length).toBe(14);
+  it("loads all 15 docs slugs", () => {
+    expect(getDocPages().length).toBe(15);
   });
 
   it("builds search index", () => {

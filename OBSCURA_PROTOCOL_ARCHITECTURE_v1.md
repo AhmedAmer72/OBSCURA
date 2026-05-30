@@ -2885,9 +2885,83 @@ Recommended integrator sequence (also visualized at `/docs`):
 6. **Credit flows** — supply / borrow / repay builders
 7. **Vote flows** — proposals, cast, delegate
 
-### 39.13 MCP architecture (`@obscura-fhe/mcp` v1.0.3)
+### 39.13 MCP architecture (`@obscura-fhe/mcp` v1.0.4)
 
 Obscura ships **three isolated MCP profiles** on npm. Each profile has a separate binary, threat model, and tool namespace. MCP wraps `@obscura-fhe/sdk` — it does not duplicate protocol logic.
+
+#### Agent authentication architecture
+
+Wallet-scoped MCP tools (activity, reputation, encrypted balance handle) require **Obscura Agent Tokens** — bearer credentials bound to a single wallet via EIP-191 ownership proof at issuance.
+
+| Layer | Responsibility |
+|---|---|
+| **Frontend** (`/docs/agents`) | Connect wallet → sign message → display token once → revoke / rotate |
+| **obscura-api** | Store SHA-256 hash only · validate `Authorization: Bearer obsc_at_…` · resolve wallet |
+| **User MCP** | Read `OBSCURA_AGENT_TOKEN` env · call `GET /agent/me` · no wallet parameters on owner-only tools |
+| **SDK** | `agentToken` in `ObscuraSDK.create()` · routes to `/agent/activity` and `/agent/reputation` |
+
+#### Agent token lifecycle
+
+```mermaid
+sequenceDiagram
+  participant User as Wallet (EOA)
+  participant UI as /docs/agents
+  participant API as obscura-api
+  participant MCP as obscura-mcp-user
+
+  User->>UI: Connect wallet
+  User->>UI: Sign EIP-191 (Action: create)
+  UI->>API: POST /agent-tokens
+  API->>API: hash(token) → Supabase
+  API-->>UI: plaintext token (once)
+  User->>MCP: Set OBSCURA_AGENT_TOKEN
+  MCP->>API: GET /agent/me (Bearer)
+  API-->>MCP: wallet + permissions
+  MCP->>API: GET /agent/activity (Bearer)
+```
+
+| Event | Endpoint | Auth |
+|---|---|---|
+| Create | `POST /agent-tokens` | EIP-191 wallet signature |
+| Validate | `GET /agent/me` | Bearer token |
+| List / revoke / rotate | `GET/DELETE/POST /agent-tokens` | EIP-191 wallet signature |
+| Activity read | `GET /agent/activity` | Bearer + `activity:read` |
+| Reputation read | `GET /agent/reputation` | Bearer + `reputation:read` |
+
+**Never stored:** plaintext token. **Default TTL:** 90 days. **Max active tokens:** 5 per wallet.
+
+#### MCP authentication flow
+
+1. User creates token at `/docs/agents` (or `POST /agent-tokens` via SDK `AgentModule`)
+2. User adds `OBSCURA_AGENT_TOKEN` to MCP env (`.cursor/mcp.json`, etc.)
+3. User MCP resolves identity via `GET /agent/me` on first wallet-scoped tool call
+4. SDK sends `Authorization: Bearer …` on `/agent/*` routes
+5. API rejects cross-wallet access — token wallet must match requested scope
+
+#### Trust boundaries
+
+| Zone | Access |
+|---|---|
+| **Public MCP tools** | Chain RPC public reads (proposals, market utilization) — no token |
+| **Authenticated MCP tools** | Activity, reputation, balance handle — Bearer required |
+| **Forbidden** | Decrypt, permit, reveal, service-role, Supabase keys |
+| **Legacy API** | `/activity/:wallet` and `/reputation/:wallet` — public when `AGENT_AUTH_LEGACY_PUBLIC=true` (default); set `false` in production for full enforcement |
+
+#### Wallet ownership verification
+
+- **Token creation:** EIP-191 over `Obscura Agent Token Request` message (wallet, timestamp, action)
+- **Token use:** Bearer hash lookup — no wallet parameter on authenticated routes
+- **Cross-wallet block:** Legacy paths return 403 if Bearer wallet ≠ path wallet
+
+#### Privacy guarantees (post v1.0.4)
+
+| Guarantee | Enforcement |
+|---|---|
+| No arbitrary activity reads | `GET /agent/activity` — no wallet param |
+| No arbitrary reputation reads | `GET /agent/reputation` — no wallet param |
+| No FHE decrypt via MCP | No decrypt/permit tools · banned patterns |
+| No plaintext balances | Opaque ctHash + `***` display hint only |
+| Token compromise recovery | Revoke + regenerate at `/docs/agents` |
 
 #### Production data flow (User MCP)
 
@@ -2895,6 +2969,7 @@ Obscura ships **three isolated MCP profiles** on npm. Each profile has a separat
 flowchart LR
   subgraph AGENT[User Agent]
     MCP[obscura-mcp-user]
+    TOK[OBSCURA_AGENT_TOKEN]
   end
 
   subgraph SDK_LAYER[@obscura-fhe/sdk]
@@ -2904,12 +2979,13 @@ flowchart LR
   end
 
   subgraph API[obscura-api]
-    A1["GET /activity/:wallet"]
-    A2["GET /reputation/:wallet"]
-    A3["GET /prefs/:wallet"]
+    ME["GET /agent/me"]
+    A1["GET /agent/activity"]
+    A2["GET /agent/reputation"]
   end
 
   subgraph DATA[(Supabase)]
+    T0[obscura_agent_tokens]
     T1[obscura_activity]
     T2[obscura_reputation_events]
   end
@@ -2918,30 +2994,33 @@ flowchart LR
     C[Contracts]
   end
 
+  TOK --> MCP
   MCP --> SDK_LAYER
   ACT --> A1
   REP --> A2
+  MCP --> ME
+  ME --> T0
   A1 --> T1
   A2 --> T2
   PAY --> C
 ```
 
-**Critical trust boundary:** User MCP → Obscura API → Supabase. **Never** User MCP → Supabase directly.
+**Critical trust boundary:** User MCP → Obscura API (Bearer agent token) → Supabase. **Never** User MCP → Supabase directly.
 
 | Profile | Binary | Audience | Data sources |
 |---|---|---|---|
 | **User** | `obscura-mcp-user` | End-user wallet agents | Obscura API + chain RPC |
 | **Developer** | `obscura-mcp-dev` | Contributors / auditors | Local repo files only |
-| **Documentation** | `obscura-mcp-docs` | Integrators | Bundled docs portal (14 pages) |
+| **Documentation** | `obscura-mcp-docs` | Integrators | Bundled docs portal (15 pages) |
 
 #### User MCP security model
 
 | Requirement | Policy |
 |---|---|
-| End-user env vars | `OBSCURA_API_URL` (optional, defaults to production) · `OBSCURA_RPC_URL` (optional) |
+| End-user env vars | `OBSCURA_API_URL` · **`OBSCURA_AGENT_TOKEN` (required for wallet-scoped reads)** · `OBSCURA_RPC_URL` (optional) |
 | Forbidden env vars | Supabase anon/service keys, VAPID private keys, keeper keys, relay secrets |
-| Activity reads | `GET /activity/:wallet` — wallet-scoped, max 25 rows per page |
-| Reputation reads | `GET /reputation/:wallet` — capped tier summary only |
+| Activity reads | `GET /agent/activity` — authenticated wallet, max 25 rows per page |
+| Reputation reads | `GET /agent/reputation` — authenticated wallet, capped tier summary |
 | Encrypted values | Opaque `ctHash` handles only — never decrypt |
 | Writes | Unsigned `ContractCall` builders — user signs with EOA wallet |
 | Bulk surveillance | Blocked — no graph scans, no stealth announcement enumeration |
@@ -2969,7 +3048,8 @@ npm install @obscura-fhe/mcp @obscura-fhe/sdk
       "command": "node",
       "args": ["./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js"],
       "env": {
-        "OBSCURA_API_URL": "https://obscura-api-n62v.onrender.com"
+        "OBSCURA_API_URL": "https://obscura-api-n62v.onrender.com",
+        "OBSCURA_AGENT_TOKEN": "obsc_at_YOUR_TOKEN_FROM_DOCS_AGENTS"
       }
     },
     "obscura-dev": {
@@ -2994,8 +3074,8 @@ Same JSON works for Claude Desktop, VS Code (`.vscode/mcp.json`), Windsurf, and 
 | Public chain reads (rates, proposal metadata, market utilization) | FHE decrypt or permit tools |
 | Opaque encrypted handles (`ctHash` → `***` in UI) | ERC-4337 relay / keeper infrastructure |
 | Unsigned `ContractCall` builders with pre-encrypted `InEuint64` | Supabase credentials of any kind |
-| Wallet-scoped activity (max 25 rows) | Bulk activity or stealth announcement graph scans |
-| Reputation summary for connected wallet | Server-side transaction signing |
+| Wallet-scoped activity (max 25 rows) | Arbitrary wallet parameter on owner-only tools |
+| Reputation summary for authenticated wallet | Server-side transaction signing |
 
 #### User MCP tool manifest
 
@@ -3003,13 +3083,14 @@ Same JSON works for Claude Desktop, VS Code (`.vscode/mcp.json`), Windsurf, and 
 |---|---|
 | `user_health_api` | `GET /health` |
 | `user_get_chain_config` | Public env (no secrets) |
-| `pay_get_encrypted_balance_handle` | Chain RPC — opaque handle |
+| `user_get_agent_identity` | `GET /agent/me` |
+| `pay_get_encrypted_balance_handle` | Authenticated wallet — opaque handle |
 | `pay_build_shield` / `unshield` / `transfer` | Chain calldata builders |
 | `credit_get_market_utilization` | Chain RPC — public aggregates |
 | `credit_build_*` | Chain calldata builders |
 | `vote_get_proposal_*` / `vote_build_*` | Chain RPC + calldata |
-| `reputation_get_summary` | `GET /reputation/:wallet` |
-| `activity_list_for_wallet` | `GET /activity/:wallet` |
+| `reputation_get_summary` | `GET /agent/reputation` (Bearer) |
+| `activity_list_for_wallet` | `GET /agent/activity` (Bearer) |
 | `user_encode_call` | Local ABI encode |
 
 #### CoFHE boundary
@@ -3041,6 +3122,7 @@ Same JSON works for Claude Desktop, VS Code (`.vscode/mcp.json`), Windsurf, and 
 | v1.0 | 2026-05-29 | Initial canonical merge of Pay (`docs/pay_wave5.md`), Credit (`credit_wave5_protocol_bible_v1.md`), Vote (`vote_wave5_protocol_bible_v1.md` v1.3) into unified ecosystem architecture reference. 36 sections, institutional terminology, mermaid diagrams, complete registries. |
 | v1.1 | 2026-05-29 | Added §37 Ecosystem Scale (verified codebase counts) and §38 Why Obscura Is Technically Difficult; updated TOC and cross-references. |
 | v1.2 | 2026-05-30 | Added §39 Official TypeScript SDK (`@obscura-fhe/sdk` v1.0.1) — links, module API, requirements matrix, examples, full test/release validation; updated §37.1 scale counts and executive vision. |
+| v1.5 | 2026-05-30 | Agent Token authentication (v1.0.4): EIP-191 wallet proof · Bearer tokens · `/agent/*` routes · `/docs/agents` UI · MCP wallet-scoped tools without arbitrary address params. |
 | v1.4 | 2026-05-30 | MCP architecture hardening (v1.0.3): User MCP decoupled from Supabase — `GET /activity/:wallet` API route; SDK activity via API; trust boundary docs; env vars reduced to `OBSCURA_API_URL` only. |
 
 ---

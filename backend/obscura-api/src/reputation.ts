@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { db } from "./db";
+import { requireAgentToken, enforceWalletScopeOrLegacy } from "./agent-middleware";
 
 const PAY_SIGNAL_CAPS: Record<string, number> = {
   private_payment_sent: 20,
@@ -94,8 +95,44 @@ function summarizeRows(rows: ReputationEventRow[]) {
   };
 }
 
+export async function queryReputationForWallet(wallet: string) {
+  const { data, error } = await db
+    .from("obscura_reputation_events")
+    .select("source_app, signal_type, signal_weight, created_at, public_context")
+    .eq("wallet", wallet)
+    .in("source_app", ["pay", "credit", "vote"])
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  if (error) throw error;
+  const rows = (data ?? []) as ReputationEventRow[];
+  return {
+    wallet,
+    sourceApp: "all" as const,
+    ...summarizeRows(rows),
+  };
+}
+
 export const reputationRouter = Router();
 
+/** GET /agent/reputation — authenticated wallet reputation (Bearer agent token) */
+reputationRouter.get(
+  "/agent/reputation",
+  requireAgentToken("reputation:read"),
+  async (req: Request, res: Response) => {
+    const wallet = req.agentToken!.wallet;
+    try {
+      res.json(await queryReputationForWallet(wallet));
+    } catch (e) {
+      console.error(
+        `[reputation] agent summary failed wallet=${wallet.slice(0, 6)}... error=${(e as Error).message}`,
+      );
+      res.status(503).json({ error: "Reputation summary unavailable" });
+    }
+  },
+);
+
+/** GET /reputation/:wallet — legacy path; requires agent token when AGENT_AUTH_LEGACY_PUBLIC=false */
 reputationRouter.get("/reputation/:wallet", async (req: Request, res: Response) => {
   const wallet = normalizeWallet(req.params.wallet);
   if (!wallet) {
@@ -103,24 +140,15 @@ reputationRouter.get("/reputation/:wallet", async (req: Request, res: Response) 
     return;
   }
 
-  try {
-    const { data, error } = await db
-      .from("obscura_reputation_events")
-      .select("source_app, signal_type, signal_weight, created_at, public_context")
-      .eq("wallet", wallet)
-      .in("source_app", ["pay", "credit", "vote"])
-      .order("created_at", { ascending: false })
-      .limit(500);
+  const scope = await enforceWalletScopeOrLegacy(req, res, wallet);
+  if (scope === "done") return;
 
-    if (error) throw error;
-    const rows = (data ?? []) as ReputationEventRow[];
-    res.json({
-      wallet,
-      sourceApp: "all",
-      ...summarizeRows(rows),
-    });
+  try {
+    res.json(await queryReputationForWallet(wallet));
   } catch (e) {
-    console.error(`[reputation] summary failed wallet=${wallet.slice(0, 6)}...${wallet.slice(-4)} error=${(e as Error).message}`);
+    console.error(
+      `[reputation] summary failed wallet=${wallet.slice(0, 6)}...${wallet.slice(-4)} error=${(e as Error).message}`,
+    );
     res.status(503).json({ error: "Reputation summary unavailable" });
   }
 });

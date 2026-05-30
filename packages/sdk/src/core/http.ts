@@ -1,17 +1,32 @@
 import { stripTrailingSlash } from "./utils.js";
 
 export class HttpClient {
-  constructor(private readonly baseUrl: string) {}
+  constructor(
+    private readonly baseUrl: string,
+    private readonly agentToken?: string,
+  ) {}
 
   get url(): string {
     return stripTrailingSlash(this.baseUrl);
+  }
+
+  hasAgentToken(): boolean {
+    return Boolean(this.agentToken);
+  }
+
+  private authHeaders(extra?: HeadersInit): HeadersInit {
+    return {
+      Accept: "application/json",
+      ...(this.agentToken ? { Authorization: `Bearer ${this.agentToken}` } : {}),
+      ...extra,
+    };
   }
 
   async get<T>(path: string, init?: RequestInit): Promise<T> {
     const response = await fetch(`${this.url}${path}`, {
       ...init,
       method: "GET",
-      headers: { Accept: "application/json", ...init?.headers },
+      headers: this.authHeaders(init?.headers),
     });
     if (!response.ok) {
       const body = await response.text().catch(() => "");
@@ -25,8 +40,9 @@ export class HttpClient {
       ...init,
       method: "POST",
       headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
+        ...this.authHeaders({
+          "Content-Type": "application/json",
+        }),
         ...init?.headers,
       },
       body: JSON.stringify(body),
@@ -43,8 +59,9 @@ export class HttpClient {
       ...init,
       method: "DELETE",
       headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
+        ...this.authHeaders({
+          "Content-Type": "application/json",
+        }),
         ...init?.headers,
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,

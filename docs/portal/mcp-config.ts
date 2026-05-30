@@ -2,6 +2,7 @@
 
 const USER_ENV = {
   OBSCURA_API_URL: "https://obscura-api-n62v.onrender.com",
+  OBSCURA_AGENT_TOKEN: "obsc_at_YOUR_TOKEN_FROM_DOCS_AGENTS",
 } as const;
 
 export const MCP_SERVERS = {
@@ -23,6 +24,10 @@ export const MCP_SERVERS = {
 
 export function mcpConfigJson(): string {
   return JSON.stringify({ mcpServers: MCP_SERVERS }, null, 2);
+}
+
+export function mcpConfigJsonWithAgentToken(): string {
+  return mcpConfigJson();
 }
 
 /** Claude Desktop wraps under top-level mcpServers (same shape) */
@@ -61,6 +66,7 @@ export function genericStdioExample(profile: "user" | "dev" | "docs"): string {
   ];
   if (profile === "user") {
     lines.push("env.OBSCURA_API_URL: https://obscura-api-n62v.onrender.com");
+    lines.push("env.OBSCURA_AGENT_TOKEN: (required) create at /docs/agents");
     lines.push("env.OBSCURA_RPC_URL: (optional) Arbitrum Sepolia RPC override");
   }
   if (profile === "dev") {
