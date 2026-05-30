@@ -154,16 +154,23 @@ describe("Pay P0.4 privacy gates", () => {
     expect(notificationSources).not.toMatch(/body:\s*`[^`]*(amount|USDC|ocUSDC|memo|label|recipient)/i);
   });
 
-  it("keeps activity reads scoped via wallet-authenticated API", () => {
+  it("uses wallet session provider for authenticated API reads", () => {
     const source = readSource("hooks/useActivityFeed.ts");
-    expect(source).toContain("/activity/");
-    expect(source).toContain("fetchWalletApi");
+    expect(source).toContain("useWalletSession");
+    expect(source).toContain("fetchWithAppSession");
   });
 
-  it("loads reputation via wallet-authenticated API", () => {
+  it("loads reputation via wallet session context", () => {
     const source = readSource("hooks/useReputationSummary.ts");
-    expect(source).toContain("/reputation/");
-    expect(source).toContain("fetchWalletApi");
+    expect(source).toContain("useWalletSession");
+    expect(source).toContain("fetchWithAppSession");
+  });
+
+  it("provides proactive wallet verification modal", () => {
+    expect(readSource("contexts/WalletSessionContext.tsx")).toContain("WalletVerifyModal");
+    expect(readSource("components/wallet/WalletVerifyModal.tsx")).toContain(
+      "Verify your wallet to enable private activity",
+    );
   });
 
   it("wires Credit activity through the shared feed and notification preferences", () => {

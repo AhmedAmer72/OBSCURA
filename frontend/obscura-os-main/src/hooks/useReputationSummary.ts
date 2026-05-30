@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { useAccount, useSignMessage } from "wagmi";
-import { fetchWalletApi } from "@/lib/walletApiSession";
+import { useWalletSession } from "@/contexts/WalletSessionContext";
+import { fetchWithAppSession } from "@/lib/walletApiSession";
 
 export interface ReputationSignalSummary {
   label: string;
@@ -25,29 +25,23 @@ interface UseReputationSummaryResult {
   error: string | null;
   refresh: () => void;
   lastFetchedAt: string | null;
+  awaitingSession: boolean;
 }
 
 export function useReputationSummary(): UseReputationSummaryResult {
-  const { address } = useAccount();
-  const { signMessageAsync } = useSignMessage();
-  const wallet = address?.toLowerCase() ?? null;
+  const { wallet, session, isReady } = useWalletSession();
   const [summary, setSummary] = useState<ReputationSummary | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshNonce, setRefreshNonce] = useState(0);
   const [lastFetchedAt, setLastFetchedAt] = useState<string | null>(null);
 
-  const signMessage = useCallback(
-    (message: string) => signMessageAsync({ message }),
-    [signMessageAsync],
-  );
-
   const refresh = useCallback(() => {
     setRefreshNonce((value) => value + 1);
   }, []);
 
   useEffect(() => {
-    if (!wallet) {
+    if (!wallet || !session || !isReady) {
       setSummary(null);
       setError(null);
       setIsLoading(false);
@@ -59,7 +53,7 @@ export function useReputationSummary(): UseReputationSummaryResult {
     setIsLoading(true);
     setError(null);
 
-    fetchWalletApi<ReputationSummary>(`/reputation/${wallet}`, wallet, signMessage, {
+    fetchWithAppSession<ReputationSummary>(`/reputation/${wallet}`, session, {
       signal: controller.signal,
     })
       .then((next) => {
@@ -74,13 +68,20 @@ export function useReputationSummary(): UseReputationSummaryResult {
       });
 
     return () => controller.abort();
-  }, [wallet, refreshNonce, signMessage]);
+  }, [wallet, session, isReady, refreshNonce]);
 
   useEffect(() => {
-    if (!wallet) return;
+    if (!isReady || !wallet) return;
     const id = window.setInterval(refresh, 60_000);
     return () => window.clearInterval(id);
-  }, [wallet, refresh]);
+  }, [wallet, isReady, refresh]);
 
-  return { summary, isLoading, error, refresh, lastFetchedAt };
+  return {
+    summary,
+    isLoading,
+    error,
+    refresh,
+    lastFetchedAt,
+    awaitingSession: Boolean(wallet) && !isReady,
+  };
 }

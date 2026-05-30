@@ -24,7 +24,7 @@ export const agentsPage: DocPage = {
     },
     {
       type: "paragraph",
-      text: "User MCP tools that access wallet-scoped data require OBSCURA_AGENT_TOKEN. The Obscura web app uses a separate wallet signature session — normal users never need an agent token.",
+      text: "The Obscura web app uses a 7-day wallet signature session (localStorage) after connect. MCP and SDK agents use OBSCURA_AGENT_TOKEN separately — normal app users never need an agent token.",
     },
     {
       type: "heading",

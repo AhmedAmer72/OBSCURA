@@ -10,7 +10,7 @@ import {
   isTokenActive,
   parseBearerToken,
 } from "./agent-auth";
-import { verifyWalletSignature } from "./wallet-auth";
+import { verifyAppWalletSession } from "./wallet-auth";
 
 declare global {
   namespace Express {
@@ -102,7 +102,7 @@ export async function enforceWalletScopeOrLegacy(
 
   if (!AGENT_AUTH_LEGACY_PUBLIC) {
     const { signature, timestamp } = extractWalletSessionHeaders(req);
-    const session = await verifyWalletSignature({
+    const session = await verifyAppWalletSession({
       wallet: pathWallet,
       signature,
       timestamp,

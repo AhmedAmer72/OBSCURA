@@ -6,8 +6,8 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { useAccount, useSignMessage } from "wagmi";
-import { fetchWalletApi, getApiBaseUrl } from "@/lib/walletApiSession";
+import { useWalletSession } from "@/contexts/WalletSessionContext";
+import { fetchWithAppSession, getApiBaseUrl } from "@/lib/walletApiSession";
 
 const NOTIFICATIONS_URL = getApiBaseUrl();
 
@@ -39,14 +39,7 @@ interface UseNotificationPrefsResult {
 }
 
 export function useNotificationPrefs(): UseNotificationPrefsResult {
-  const { address } = useAccount();
-  const { signMessageAsync } = useSignMessage();
-  const wallet = address?.toLowerCase() ?? null;
-
-  const signMessage = useCallback(
-    (message: string) => signMessageAsync({ message }),
-    [signMessageAsync],
-  );
+  const { wallet, session, isReady } = useWalletSession();
 
   const [prefs,         setPrefs]         = useState<NotificationPrefs | null>(null);
   const [isLoading,     setIsLoading]     = useState(false);
@@ -135,13 +128,16 @@ export function useNotificationPrefs(): UseNotificationPrefsResult {
 
   // ── Load prefs on connect ─────────────────────────────────────────────────
   useEffect(() => {
-    if (!wallet) { setPrefs(null); return; }
+    if (!wallet || !session || !isReady) {
+      if (!wallet) setPrefs(null);
+      return;
+    }
     setIsLoading(true);
-    fetchWalletApi<NotificationPrefs>(`/prefs/${wallet}`, wallet, signMessage)
+    fetchWithAppSession<NotificationPrefs>(`/prefs/${wallet}`, session)
       .then((data) => setPrefs(data ?? { wallet, ...DEFAULT_PREFS }))
       .catch(() => setPrefs({ wallet, ...DEFAULT_PREFS }))
       .finally(() => setIsLoading(false));
-  }, [wallet, signMessage]);
+  }, [wallet, session, isReady]);
 
   // ── Subscribe to Web Push ─────────────────────────────────────────────────
   const registerBrowserSubscription = async (forceNew: boolean) => {

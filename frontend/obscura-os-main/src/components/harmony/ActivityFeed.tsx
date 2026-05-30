@@ -221,6 +221,7 @@ export function ActivityFeed({
     realtimeStatus,
     lastEventAt,
     lastRefreshAt,
+    awaitingSession,
   } = useActivityFeed(defaultFilter);
 
   useEffect(() => {
@@ -289,20 +290,26 @@ export function ActivityFeed({
         </p>
       )}
 
-      {address && isLoading && items.length === 0 && (
+      {address && awaitingSession && (
+        <p className="py-8 text-center text-sm text-muted-foreground">
+          Verify your wallet to load private activity — check the prompt above.
+        </p>
+      )}
+
+      {address && !awaitingSession && isLoading && items.length === 0 && (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-5 w-5 animate-spin text-[#2D6A4F]" />
         </div>
       )}
 
-      {address && error && (
+      {address && !awaitingSession && error && (
         <div className="flex items-center gap-2 py-4 text-sm text-destructive">
           <AlertCircle className="h-4 w-4" />
           {error}
         </div>
       )}
 
-      {address && isEmpty && !error && (
+      {address && !awaitingSession && isEmpty && !error && (
         <p className="py-8 text-center text-sm text-muted-foreground">
           {emptyMessage ?? (mode === "public"
             ? "No indexed public USDC, smart-account, paymaster, or bridge activity found yet."
@@ -310,7 +317,7 @@ export function ActivityFeed({
         </p>
       )}
 
-      {address && visibleItems.length > 0 && (
+      {address && !awaitingSession && visibleItems.length > 0 && (
         <AnimatePresence initial={false}>
           {visibleItems.map((item) => (
             <ActivityRow key={`${item.tx_hash}-${item.log_index}`} item={item} />

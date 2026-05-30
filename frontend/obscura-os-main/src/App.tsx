@@ -21,6 +21,7 @@ import PMFPage from "./pages/PMFPage.tsx";
 import ContactsPage from "./pages/ContactsPage.tsx";
 import SettingsPage from "./pages/SettingsPage.tsx";
 import { PreferencesProvider } from "@/contexts/PreferencesContext";
+import { WalletSessionProvider } from "@/contexts/WalletSessionContext";
 import HowCoFHEModal from "@/components/shared/HowCoFHEModal";
 
 const ONBOARDING_KEY = "obscura.onboarding.cofhe.v1";
@@ -117,11 +118,13 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <PreferencesProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AnimatedRoutes />
-          </BrowserRouter>
+          <WalletSessionProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AnimatedRoutes />
+            </BrowserRouter>
+          </WalletSessionProvider>
         </PreferencesProvider>
       </TooltipProvider>
     </QueryClientProvider>

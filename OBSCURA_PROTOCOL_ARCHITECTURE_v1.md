@@ -3183,14 +3183,50 @@ Script: `scripts/production-agent-auth-audit.mjs`
 | `/prefs/:wallet` without token | **401** (after API deploy) |
 | Unit tests (API, SDK, MCP) | **All pass** |
 
+##### Obscura app wallet session (v1.9 — 2026-05-29)
+
+Production Web3 session for in-app users — separate from MCP Agent Tokens.
+
+```mermaid
+sequenceDiagram
+  participant User as Wallet (EOA)
+  participant App as Obscura Frontend
+  participant LS as localStorage
+  participant API as obscura-api
+
+  User->>App: Connect wallet
+  App->>LS: read obscura.appSession.v2:{wallet}
+  alt Valid 7-day session
+    LS-->>App: signature + issuedAt
+    App->>API: GET /reputation/:wallet + X-Obscura-Signature
+    API-->>App: 200 data (no popup)
+  else No / expired session
+    App->>User: Verify wallet modal (proactive)
+    User->>App: Sign Obscura App Session (EIP-191)
+    App->>LS: persist 7-day session
+    App->>API: authenticated reads
+  end
+```
+
+| Property | App session | MCP Agent Token |
+|---|---|---|
+| Auth | EIP-191 `Obscura App Session` message | Bearer `obsc_at_…` |
+| Storage | `localStorage` (7 days) | MCP env / password manager |
+| Duration | **7 days** (`APP_WALLET_SESSION_MAX_AGE_SEC`) | 90 days default |
+| Refresh | Banner at T-24h; re-sign on expiry or wallet change | Rotate at `/docs/agents` |
+| Routes | `/reputation/:wallet`, `/activity/:wallet`, `/prefs/:wallet` | `/agent/*` |
+| Cross-tab | `storage` + `BroadcastChannel` sync | N/A |
+
+**UX guarantees:** Modal appears immediately after connect when no session exists — never after Activity/Reputation appears broken. Returning users with valid session load data with zero signature prompts.
+
 ##### Frontend migration (complete)
 
 | Hook | Route | Status |
 |---|---|---|
-| `useReputationSummary` | `GET /reputation/:wallet` + wallet session | ✅ |
-| `useActivityFeed` | `GET /activity/:wallet` + wallet session | ✅ |
-| `useNotificationPrefs` (read) | `GET /prefs/:wallet` + wallet session | ✅ |
-| `AgentAccessPage` | MCP token creation only — not required for app | ✅ |
+| `useReputationSummary` | Wallet session → `/reputation/:wallet` | ✅ |
+| `useActivityFeed` | Wallet session → `/activity/:wallet` | ✅ |
+| `useNotificationPrefs` (read) | Wallet session → `/prefs/:wallet` | ✅ |
+| `WalletSessionProvider` | Proactive verify modal + 7-day localStorage | ✅ |
 
 ##### Security guarantees
 
@@ -3245,8 +3281,8 @@ Script: `scripts/production-agent-auth-audit.mjs`
 | v1.0 | 2026-05-29 | Initial canonical merge of Pay (`docs/pay_wave5.md`), Credit (`credit_wave5_protocol_bible_v1.md`), Vote (`vote_wave5_protocol_bible_v1.md` v1.3) into unified ecosystem architecture reference. 36 sections, institutional terminology, mermaid diagrams, complete registries. |
 | v1.1 | 2026-05-29 | Added §37 Ecosystem Scale (verified codebase counts) and §38 Why Obscura Is Technically Difficult; updated TOC and cross-references. |
 | v1.2 | 2026-05-30 | Added §39 Official TypeScript SDK (`@obscura-fhe/sdk` v1.0.1) — links, module API, requirements matrix, examples, full test/release validation; updated §37.1 scale counts and executive vision. |
-| v1.8 | 2026-05-29 | Agent auth hardening complete: `GET /agent/prefs`, legacy prefs auth gate, RLS migration 004, API-only activity feed, `notifications:read` scope, docs + architecture v1.8 audit. |
-| v1.7 | 2026-05-29 | Production readiness audit: frontend hooks migrated to `/agent/*`; live API 401 verification; `scripts/production-agent-auth-audit.mjs`. |
+| v1.9 | 2026-05-29 | 7-day app wallet session: localStorage, proactive verify modal, WalletSessionProvider, APP_WALLET_SESSION_MAX_AGE_SEC; MCP agent tokens unchanged. |
+| v1.8 | 2026-05-29 | Agent auth hardening complete: `GET /agent/prefs`, legacy prefs auth gate, RLS migration 004, API-only activity feed, `notifications:read` scope. |
 | v1.6 | 2026-05-30 | npm publish `@obscura-fhe/sdk@1.0.4` + `@obscura-fhe/mcp@1.0.4`; production agent-auth validation; `/docs/agents` UI copy-button and light-theme button fixes; MCP smoke-test script. |
 | v1.5 | 2026-05-30 | Agent Token authentication (v1.0.4): EIP-191 wallet proof · Bearer tokens · `/agent/*` routes · `/docs/agents` UI · MCP wallet-scoped tools without arbitrary address params. |
 | v1.4 | 2026-05-30 | MCP architecture hardening (v1.0.3): User MCP decoupled from Supabase — `GET /activity/:wallet` API route; SDK activity via API; trust boundary docs; env vars reduced to `OBSCURA_API_URL` only. |
