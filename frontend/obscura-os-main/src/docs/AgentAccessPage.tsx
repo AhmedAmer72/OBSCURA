@@ -15,6 +15,7 @@ import type { DocPage } from "@docs/types";
 import WalletConnect from "@/components/wallet/WalletConnect";
 import { DocContent } from "./DocContent";
 import { useAgentTokens } from "@/hooks/useAgentTokens";
+import { setAgentToken, getAgentToken } from "@/lib/agentToken";
 
 interface AgentAccessPageProps {
   page: DocPage;
@@ -28,6 +29,7 @@ export function AgentAccessPage({ page }: AgentAccessPageProps) {
   const agent = useAgentTokens();
   const [copiedToken, setCopiedToken] = useState(false);
   const [copiedMcp, setCopiedMcp] = useState(false);
+  const [savedForApp, setSavedForApp] = useState(() => Boolean(getAgentToken()));
   const [busy, setBusy] = useState<string | null>(null);
 
   const mcpEnvSnippet = agent.newToken
@@ -153,6 +155,17 @@ export function AgentAccessPage({ page }: AgentAccessPageProps) {
               <button type="button" className="docs-btn docs-btn--secondary" onClick={() => void handleCopyMcp()}>
                 {copiedMcp ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 Copy full MCP config
+              </button>
+              <button
+                type="button"
+                className="docs-btn docs-btn--primary"
+                onClick={() => {
+                  if (!agent.newToken) return;
+                  setAgentToken(agent.newToken);
+                  setSavedForApp(true);
+                }}
+              >
+                {savedForApp ? "Saved for Obscura app" : "Save for Obscura app"}
               </button>
             </div>
           </div>

@@ -7,9 +7,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "wagmi";
+import { fetchAgentApi, getAgentToken, getApiBaseUrl } from "@/lib/agentToken";
 
-const NOTIFICATIONS_URL =
-  (import.meta.env.VITE_NOTIFICATIONS_URL as string | undefined) ?? "http://localhost:3000";
+const NOTIFICATIONS_URL = getApiBaseUrl();
 
 export interface NotificationPrefs {
   wallet:       string;
@@ -130,9 +130,15 @@ export function useNotificationPrefs(): UseNotificationPrefsResult {
   // ── Load prefs on connect ─────────────────────────────────────────────────
   useEffect(() => {
     if (!wallet) { setPrefs(null); return; }
+
+    if (!getAgentToken()) {
+      setPrefs({ wallet, ...DEFAULT_PREFS });
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
-    fetch(`${NOTIFICATIONS_URL}/prefs/${wallet}`)
-      .then((r) => (r.ok ? r.json() : null))
+    fetchAgentApi<NotificationPrefs>("/agent/prefs")
       .then((data) => setPrefs(data ?? { wallet, ...DEFAULT_PREFS }))
       .catch(() => setPrefs({ wallet, ...DEFAULT_PREFS }))
       .finally(() => setIsLoading(false));

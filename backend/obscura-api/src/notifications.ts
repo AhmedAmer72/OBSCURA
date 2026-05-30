@@ -5,7 +5,8 @@
  *   POST   /subscribe       — save a Web Push subscription for a wallet
  *   DELETE /subscribe       — remove a subscription
  *   POST   /prefs           — save notification preferences for a wallet
- *   GET    /prefs/:wallet   — get notification preferences
+ *   GET    /agent/prefs    — get notification preferences (Bearer)
+ *   GET    /prefs/:wallet   — legacy; requires Bearer when AGENT_AUTH_LEGACY_PUBLIC=false
  *   GET    /vapid-public-key — public key for frontend subscription
  *
  * Background:
@@ -18,6 +19,7 @@ import webpush from "web-push";
 import { Resend } from "resend";
 import { db } from "./db";
 import { verifyWalletAuth } from "./wallet-auth";
+import { enforceWalletScopeOrLegacy, requireAgentToken } from "./agent-middleware";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const VAPID_PUBLIC_KEY    = process.env.VAPID_PUBLIC_KEY ?? "";
@@ -645,9 +647,37 @@ notificationsRouter.post("/prefs", async (req: Request, res: Response) => {
   }
 });
 
+notificationsRouter.get("/agent/prefs", requireAgentToken("notifications:read"), async (req: Request, res: Response) => {
+  try {
+    const wallet = req.agentToken!.wallet;
+    const p = await getPrefs(wallet);
+    if (!p) {
+      res.json({
+        wallet,
+        push_enabled: false,
+        email_enabled: false,
+        events: ["*"],
+      });
+      return;
+    }
+    res.json(p);
+  } catch (e) {
+    console.error(`[notifications] agent prefs load failed: ${(e as Error).message}`);
+    res.status(500).json({ error: "Failed to load preferences" });
+  }
+});
+
 notificationsRouter.get("/prefs/:wallet", async (req: Request, res: Response) => {
   try {
-    const p = await getPrefs(req.params.wallet);
+    const wallet = normalizeWallet(req.params.wallet);
+    if (!wallet) {
+      res.status(400).json({ error: "Invalid wallet address" });
+      return;
+    }
+    const scope = await enforceWalletScopeOrLegacy(req, res, wallet);
+    if (scope === "done") return;
+
+    const p = await getPrefs(wallet);
     if (!p) { res.status(404).json({ error: "Not found" }); return; }
     res.json(p);
   } catch (e) {

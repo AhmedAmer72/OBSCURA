@@ -6,6 +6,7 @@ export const DEFAULT_AGENT_PERMISSIONS = [
   "activity:read",
   "reputation:read",
   "balance:read",
+  "notifications:read",
 ] as const;
 
 export type AgentPermission = (typeof DEFAULT_AGENT_PERMISSIONS)[number];

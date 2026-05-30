@@ -1,26 +1,16 @@
 /**
- * useActivityFeed.ts — Supabase Realtime + polling activity feed hook
+ * useActivityFeed.ts — Authenticated activity feed via Obscura API
  *
- * Subscribes to live activity for the connected wallet:
- *   - Primary: Supabase Realtime channel (instant)
- *   - Fallback: 30s polling via REST query
- *
- * IMPORTANT: No auto-decrypt on mount. Wallet connection is user-initiated.
+ * Requires agent token saved at /docs/agents (localStorage).
+ * Polls GET /agent/activity every 30s for live-ish updates.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
 import { useAccount } from "wagmi";
+import { fetchAgentApi, getAgentToken } from "@/lib/agentToken";
 
-const SUPABASE_URL    = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const SUPABASE_ANON   = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
-const POLL_INTERVAL   = 30_000;
+const POLL_INTERVAL = 30_000;
 const PAGE_SIZE       = 20;
-
-// Lazy — only create client if env vars are present (Vercel must set these)
-const supabase = SUPABASE_URL && SUPABASE_ANON
-  ? createClient(SUPABASE_URL, SUPABASE_ANON)
-  : null;
 
 export type ActivityEventType =
   | "all"
@@ -114,31 +104,6 @@ export const VOTE_ACTIVITY_EVENT_NAMES = [
   ]),
 ];
 
-const EVENT_TYPE_FILTERS: Record<ActivityEventType, string[]> = {
-  all:      [],
-  sent:     ["ObscuraPay.PaymentSent"],
-  received: ["ObscuraPay.PaymentReceived"],
-  stream:   [
-    "ObscuraPayStreamV2.StreamCreated",
-    "ObscuraPayStreamV2.StreamCancelled",
-    "ObscuraPayStreamV2.StreamWithdrawn",
-    "ObscuraPayStreamV3.StreamCreated",
-    "ObscuraPayStreamV3.StreamCancelled",
-    "ObscuraPayStreamV3.CycleSettled",
-  ],
-  invoice:  ["ObscuraInvoice.InvoiceCreated", "ObscuraInvoice.InvoicePaid"],
-  escrow:   [
-    "ObscuraConfidentialEscrow.EscrowCreated",
-    "ObscuraConfidentialEscrow.EscrowFunded",
-    "ObscuraConfidentialEscrow.EscrowRedeemed",
-    "ObscuraConfidentialEscrow.EscrowCancelled",
-    "ObscuraConfidentialEscrow.EscrowRefunded",
-  ],
-  stealth:  ["ObscuraStealthRegistry.Announcement", "ObscuraStealthRegistry.MetaAddressSet"],
-  credit:   CREDIT_ACTIVITY_EVENT_NAMES,
-  vote:     VOTE_ACTIVITY_EVENT_NAMES,
-};
-
 interface UseActivityFeedResult {
   items:      ActivityItem[];
   isLoading:  boolean;
@@ -151,6 +116,8 @@ interface UseActivityFeedResult {
   realtimeStatus: ActivityRealtimeStatus;
   lastEventAt: string | null;
   lastRefreshAt: string | null;
+  needsAgentToken: boolean;
+  usesAgentApi: boolean;
 }
 
 export function useActivityFeed(initialFilter: ActivityEventType = "all"): UseActivityFeedResult {
@@ -166,93 +133,71 @@ export function useActivityFeed(initialFilter: ActivityEventType = "all"): UseAc
   const [realtimeStatus, setRealtimeStatus] = useState<ActivityRealtimeStatus>("idle");
   const [lastEventAt, setLastEventAt] = useState<string | null>(null);
   const [lastRefreshAt, setLastRefreshAt] = useState<string | null>(null);
+  const [needsAgentToken, setNeedsAgentToken] = useState(false);
 
-  const channelRef = useRef<ReturnType<NonNullable<typeof supabase>["channel"]> | null>(null);
-  const pollRef    = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const prevTopIdRef = useRef<number | null>(null);
 
-  // ── Fetch page ─────────────────────────────────────────────────────────────
   const fetchPage = useCallback(async (pageIndex: number, replace: boolean) => {
-    if (!wallet || !supabase) return;
+    if (!wallet) return;
+
+    if (!getAgentToken()) {
+      setNeedsAgentToken(true);
+      setItems([]);
+      setHasMore(false);
+      setRealtimeStatus("idle");
+      return;
+    }
+
+    setNeedsAgentToken(false);
     setIsLoading(true);
     setError(null);
 
     try {
-      let query = supabase
-        .from("obscura_activity")
-        .select("*")
-        .contains("participants", [wallet])
-        .order("block_number", { ascending: false })
-        .range(pageIndex * PAGE_SIZE, pageIndex * PAGE_SIZE + PAGE_SIZE - 1);
+      const params = new URLSearchParams();
+      if (filter !== "all") params.set("filter", filter);
+      if (pageIndex > 0) params.set("page", String(pageIndex));
+      params.set("pageSize", String(PAGE_SIZE));
+      const qs = params.toString();
+      const data = await fetchAgentApi<{ items: ActivityItem[]; hasMore: boolean }>(
+        `/agent/activity${qs ? `?${qs}` : ""}`,
+      );
 
-      const allowed = EVENT_TYPE_FILTERS[filter];
-      if (allowed.length > 0) {
-        query = query.in("event_name", allowed);
+      if (replace && data.items[0]?.id && prevTopIdRef.current !== null && data.items[0].id !== prevTopIdRef.current) {
+        setLastEventAt(new Date().toISOString());
       }
+      if (data.items[0]?.id) prevTopIdRef.current = data.items[0].id;
 
-      const { data, error: err } = await query;
-      if (err) throw new Error(err.message);
-
-      const newItems = (data ?? []) as ActivityItem[];
-      setHasMore(newItems.length === PAGE_SIZE);
-      setItems((prev) => replace ? newItems : [...prev, ...newItems]);
+      setHasMore(data.hasMore);
+      setItems((prev) => (replace ? data.items : [...prev, ...data.items]));
       setLastRefreshAt(new Date().toISOString());
+      setRealtimeStatus("polling");
     } catch (e) {
       setError((e as Error).message);
+      setRealtimeStatus("error");
     } finally {
       setIsLoading(false);
     }
   }, [wallet, filter]);
 
-  // ── Initial fetch + re-fetch on wallet/filter change ──────────────────────
   useEffect(() => {
-    if (!wallet) { setItems([]); setRealtimeStatus("idle"); return; }
+    if (!wallet) {
+      setItems([]);
+      setRealtimeStatus("idle");
+      return;
+    }
     setPage(0);
     fetchPage(0, true);
   }, [wallet, filter, fetchPage]);
 
-  // ── Realtime subscription ─────────────────────────────────────────────────
   useEffect(() => {
-    if (!wallet || !supabase) {
-      setRealtimeStatus(wallet ? "error" : "idle");
+    if (!wallet || !getAgentToken()) {
+      if (pollRef.current) clearInterval(pollRef.current);
       return;
     }
 
-    setRealtimeStatus("connecting");
-
-    const channel = supabase
-      .channel(`activity:${wallet}`)
-      .on(
-        "postgres_changes" as never,
-        {
-          event:  "INSERT",
-          schema: "public",
-          table:  "obscura_activity",
-        } as never,
-        (payload: { new: ActivityItem }) => {
-          const newItem = payload.new;
-          const participants = (newItem.participants ?? []).map((p) => p.toLowerCase());
-          if (newItem.wallet.toLowerCase() !== wallet && !participants.includes(wallet)) return;
-
-          const allowed = EVENT_TYPE_FILTERS[filter];
-          if (allowed.length === 0 || allowed.includes(newItem.event_name)) {
-            setLastEventAt(new Date().toISOString());
-            setItems((prev) => [newItem, ...prev]);
-          }
-        }
-      )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") setRealtimeStatus("listening");
-        else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") setRealtimeStatus("polling");
-        else setRealtimeStatus("connecting");
-      });
-
-    channelRef.current = channel;
-
-    // Fallback polling (if Realtime drops)
     pollRef.current = setInterval(() => fetchPage(0, true), POLL_INTERVAL);
-
     return () => {
-      channel.unsubscribe();
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [wallet, filter, fetchPage]);
@@ -270,5 +215,6 @@ export function useActivityFeed(initialFilter: ActivityEventType = "all"): UseAc
 
   return useMemo(() => ({
     items, isLoading, error, filter, setFilter, loadMore, hasMore, refresh, realtimeStatus, lastEventAt, lastRefreshAt,
-  }), [items, isLoading, error, filter, loadMore, hasMore, refresh, realtimeStatus, lastEventAt, lastRefreshAt]);
+    needsAgentToken, usesAgentApi: Boolean(getAgentToken()),
+  }), [items, isLoading, error, filter, loadMore, hasMore, refresh, realtimeStatus, lastEventAt, lastRefreshAt, needsAgentToken]);
 }

@@ -19,7 +19,22 @@ export class NotificationsModule {
     return publicKey;
   }
 
+  async getAuthenticatedPrefs(): Promise<NotificationPrefs> {
+    if (!this.http.hasAgentToken()) {
+      throw new Error("agentToken required — create one at /docs/agents");
+    }
+    return this.http.get<NotificationPrefs>("/agent/prefs");
+  }
+
   async getPrefs(wallet: Address): Promise<NotificationPrefs | null> {
+    if (this.http.hasAgentToken()) {
+      try {
+        return await this.getAuthenticatedPrefs();
+      } catch (err) {
+        if (err instanceof HttpError && err.status === 404) return null;
+        throw err;
+      }
+    }
     const normalized = normalizeWallet(wallet);
     if (!normalized) throw new Error("Invalid wallet address");
 

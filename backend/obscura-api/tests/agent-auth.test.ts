@@ -45,6 +45,7 @@ describe("agent-auth", () => {
       "activity:read",
       "reputation:read",
       "balance:read",
+      "notifications:read",
     ]);
   });
 

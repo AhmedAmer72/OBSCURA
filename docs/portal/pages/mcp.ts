@@ -165,8 +165,9 @@ npm install @obscura-fhe/mcp@${MCP_VERSION} @obscura-fhe/sdk@${SDK_VERSION}
       title: "Documentation MCP (no secrets)",
       code: `node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js
 
-# User MCP (API only — no Supabase keys)
+# User MCP (API + agent token — no Supabase keys)
 OBSCURA_API_URL=https://obscura-api-n62v.onrender.com \\
+OBSCURA_AGENT_TOKEN=obsc_at_YOUR_TOKEN_FROM_DOCS_AGENTS \\
   node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js
 
 # Developer MCP (local repo)

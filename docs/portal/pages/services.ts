@@ -40,7 +40,8 @@ export const reputationPage: DocPage = {
     {
       type: "code",
       language: "json",
-      code: `GET https://obscura-api-n62v.onrender.com/reputation/0xWallet
+      code: `GET https://obscura-api-n62v.onrender.com/agent/reputation
+Authorization: Bearer obsc_at_…
 
 {
   "wallet": "0x...",
@@ -60,7 +61,8 @@ export const reputationPage: DocPage = {
     {
       type: "code",
       language: "typescript",
-      code: `const summary = await sdk.reputation.getSummary(wallet);
+      code: `const sdk = ObscuraSDK.create({ agentToken: process.env.OBSCURA_AGENT_TOKEN });
+const summary = await sdk.reputation.getAuthenticatedSummary();
 // summary.tier: "new" | "active" | "steady" | "reliable"`,
     },
     {
@@ -79,12 +81,12 @@ export const reputationPage: DocPage = {
 export const activityPage: DocPage = {
   slug: "activity",
   title: "Activity",
-  description: "Indexed on-chain activity via Supabase Realtime — no REST /activity endpoint.",
+  description: "Indexed on-chain activity via Obscura API (authenticated) and Supabase Realtime (frontend fallback).",
   category: "Shared services",
   blocks: [
     {
       type: "paragraph",
-      text: "The obscura-worker indexes 51 event types from 19 live contract instances into obscura_activity. The frontend and SDK read directly from Supabase with wallet-scoped filters.",
+      text: "The obscura-worker indexes 51 event types from 19 live contract instances into obscura_activity. MCP and SDK read via GET /agent/activity with a bearer agent token. The Obscura app uses the same API when a token is saved at /docs/agents; without a token it falls back to Supabase Realtime (see security notes).",
     },
     {
       type: "heading",
@@ -131,7 +133,8 @@ export const activityPage: DocPage = {
       type: "table",
       headers: ["Method", "Path", "Purpose"],
       rows: [
-        ["GET", "/activity/:wallet", "Wallet-scoped feed (?filter=&page=&pageSize=, max 25)"],
+        ["GET", "/agent/activity", "Authenticated wallet feed (?filter=&page=&pageSize=, max 25)"],
+        ["GET", "/activity/:wallet", "Legacy — requires Bearer matching wallet when AGENT_AUTH_LEGACY_PUBLIC=false"],
       ],
     },
     {
@@ -143,7 +146,8 @@ export const activityPage: DocPage = {
     {
       type: "code",
       language: "typescript",
-      code: `const { items, hasMore } = await sdk.activity.listForWallet(wallet, {
+      code: `const sdk = ObscuraSDK.create({ agentToken: process.env.OBSCURA_AGENT_TOKEN });
+const { items, hasMore } = await sdk.activity.listAuthenticated({
   filter: "vote",
   page: 0,
   pageSize: 20,
@@ -155,7 +159,7 @@ const filters = sdk.activity.getEventFilters();`,
       type: "callout",
       variant: "info",
       title: "Frontend hook",
-      text: "Wallet-scoped feed via Obscura API (`GET /activity/:wallet`). Obscura frontend also uses Supabase Realtime directly for live updates — MCP and SDK use API only.",
+      text: "Production: use GET /agent/activity with agent token. In the Obscura app, save your token at /docs/agents → Save for Obscura app. Direct Supabase reads are blocked by RLS migration 004.",
     },
   ],
 };
@@ -191,11 +195,12 @@ export const notificationsPage: DocPage = {
       type: "table",
       headers: ["Method", "Path", "Purpose"],
       rows: [
-        ["GET", "/vapid-public-key", "Web Push public key"],
-        ["POST", "/subscribe", "Save push subscription"],
-        ["DELETE", "/subscribe", "Remove subscription"],
-        ["POST", "/prefs", "Save notification preferences"],
-        ["GET", "/prefs/:wallet", "Read preferences"],
+        ["GET", "/vapid-public-key", "Web Push public key (public)"],
+        ["POST", "/subscribe", "Save push subscription (wallet signature)"],
+        ["DELETE", "/subscribe", "Remove subscription (wallet signature)"],
+        ["POST", "/prefs", "Save notification preferences (wallet signature)"],
+        ["GET", "/agent/prefs", "Read preferences (Bearer + notifications:read)"],
+        ["GET", "/prefs/:wallet", "Legacy — Bearer matching wallet when legacy=false"],
       ],
     },
     {
@@ -207,8 +212,9 @@ export const notificationsPage: DocPage = {
     {
       type: "code",
       language: "typescript",
-      code: `const vapid = await sdk.notifications.getVapidPublicKey();
-const prefs = await sdk.notifications.getPrefs(wallet);
+      code: `const sdk = ObscuraSDK.create({ agentToken: process.env.OBSCURA_AGENT_TOKEN });
+const vapid = await sdk.notifications.getVapidPublicKey();
+const prefs = await sdk.notifications.getAuthenticatedPrefs();
 await sdk.notifications.savePrefs({ wallet, push_enabled: true, email_enabled: false, events: ["*"] });
 await sdk.notifications.subscribe(wallet, pushSubscription);`,
     },

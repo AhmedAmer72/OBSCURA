@@ -954,7 +954,7 @@
         {
           "type": "code",
           "language": "json",
-          "code": "GET https://obscura-api-n62v.onrender.com/reputation/0xWallet\n\n{\n  \"wallet\": \"0x...\",\n  \"sourceApp\": \"all\",\n  \"totalCappedWeight\": 47,\n  \"tier\": \"steady\",\n  \"signals\": { \"credit_repaid\": { \"count\": 2, \"cappedWeight\": 24 } },\n  \"sources\": { \"credit\": 44, \"pay\": 3, \"vote\": 0 }\n}"
+          "code": "GET https://obscura-api-n62v.onrender.com/agent/reputation\nAuthorization: Bearer obsc_at_…\n\n{\n  \"wallet\": \"0x...\",\n  \"sourceApp\": \"all\",\n  \"totalCappedWeight\": 47,\n  \"tier\": \"steady\",\n  \"signals\": { \"credit_repaid\": { \"count\": 2, \"cappedWeight\": 24 } },\n  \"sources\": { \"credit\": 44, \"pay\": 3, \"vote\": 0 }\n}"
         },
         {
           "type": "heading",
@@ -965,7 +965,7 @@
         {
           "type": "code",
           "language": "typescript",
-          "code": "const summary = await sdk.reputation.getSummary(wallet);\n// summary.tier: \"new\" | \"active\" | \"steady\" | \"reliable\""
+          "code": "const sdk = ObscuraSDK.create({ agentToken: process.env.OBSCURA_AGENT_TOKEN });\nconst summary = await sdk.reputation.getAuthenticatedSummary();\n// summary.tier: \"new\" | \"active\" | \"steady\" | \"reliable\""
         },
         {
           "type": "heading",
@@ -982,12 +982,12 @@
     {
       "slug": "activity",
       "title": "Activity",
-      "description": "Indexed on-chain activity via Supabase Realtime — no REST /activity endpoint.",
+      "description": "Indexed on-chain activity via Obscura API (authenticated) and Supabase Realtime (frontend fallback).",
       "category": "Shared services",
       "blocks": [
         {
           "type": "paragraph",
-          "text": "The obscura-worker indexes 51 event types from 19 live contract instances into obscura_activity. The frontend and SDK read directly from Supabase with wallet-scoped filters."
+          "text": "The obscura-worker indexes 51 event types from 19 live contract instances into obscura_activity. MCP and SDK read via GET /agent/activity with a bearer agent token. The Obscura app uses the same API when a token is saved at /docs/agents; without a token it falls back to Supabase Realtime (see security notes)."
         },
         {
           "type": "heading",
@@ -1079,8 +1079,13 @@
           "rows": [
             [
               "GET",
+              "/agent/activity",
+              "Authenticated wallet feed (?filter=&page=&pageSize=, max 25)"
+            ],
+            [
+              "GET",
               "/activity/:wallet",
-              "Wallet-scoped feed (?filter=&page=&pageSize=, max 25)"
+              "Legacy — requires Bearer matching wallet when AGENT_AUTH_LEGACY_PUBLIC=false"
             ]
           ]
         },
@@ -1093,13 +1098,13 @@
         {
           "type": "code",
           "language": "typescript",
-          "code": "const { items, hasMore } = await sdk.activity.listForWallet(wallet, {\n  filter: \"vote\",\n  page: 0,\n  pageSize: 20,\n});\n\nconst filters = sdk.activity.getEventFilters();"
+          "code": "const sdk = ObscuraSDK.create({ agentToken: process.env.OBSCURA_AGENT_TOKEN });\nconst { items, hasMore } = await sdk.activity.listAuthenticated({\n  filter: \"vote\",\n  page: 0,\n  pageSize: 20,\n});\n\nconst filters = sdk.activity.getEventFilters();"
         },
         {
           "type": "callout",
           "variant": "info",
           "title": "Frontend hook",
-          "text": "Wallet-scoped feed via Obscura API (`GET /activity/:wallet`). Obscura frontend also uses Supabase Realtime directly for live updates — MCP and SDK use API only."
+          "text": "Production: use GET /agent/activity with agent token. In the Obscura app, save your token at /docs/agents → Save for Obscura app. Direct Supabase reads are blocked by RLS migration 004."
         }
       ]
     },
@@ -1135,27 +1140,32 @@
             [
               "GET",
               "/vapid-public-key",
-              "Web Push public key"
+              "Web Push public key (public)"
             ],
             [
               "POST",
               "/subscribe",
-              "Save push subscription"
+              "Save push subscription (wallet signature)"
             ],
             [
               "DELETE",
               "/subscribe",
-              "Remove subscription"
+              "Remove subscription (wallet signature)"
             ],
             [
               "POST",
               "/prefs",
-              "Save notification preferences"
+              "Save notification preferences (wallet signature)"
+            ],
+            [
+              "GET",
+              "/agent/prefs",
+              "Read preferences (Bearer + notifications:read)"
             ],
             [
               "GET",
               "/prefs/:wallet",
-              "Read preferences"
+              "Legacy — Bearer matching wallet when legacy=false"
             ]
           ]
         },
@@ -1168,7 +1178,7 @@
         {
           "type": "code",
           "language": "typescript",
-          "code": "const vapid = await sdk.notifications.getVapidPublicKey();\nconst prefs = await sdk.notifications.getPrefs(wallet);\nawait sdk.notifications.savePrefs({ wallet, push_enabled: true, email_enabled: false, events: [\"*\"] });\nawait sdk.notifications.subscribe(wallet, pushSubscription);"
+          "code": "const sdk = ObscuraSDK.create({ agentToken: process.env.OBSCURA_AGENT_TOKEN });\nconst vapid = await sdk.notifications.getVapidPublicKey();\nconst prefs = await sdk.notifications.getAuthenticatedPrefs();\nawait sdk.notifications.savePrefs({ wallet, push_enabled: true, email_enabled: false, events: [\"*\"] });\nawait sdk.notifications.subscribe(wallet, pushSubscription);"
         },
         {
           "type": "heading",
@@ -1603,7 +1613,7 @@
           "type": "code",
           "language": "bash",
           "title": "Documentation MCP (no secrets)",
-          "code": "node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\n\n# User MCP (API only — no Supabase keys)\nOBSCURA_API_URL=https://obscura-api-n62v.onrender.com \\\n  node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\n\n# Developer MCP (local repo)\nOBSCURA_REPO_ROOT=/path/to/Obscura \\\n  node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js"
+          "code": "node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\n\n# User MCP (API + agent token — no Supabase keys)\nOBSCURA_API_URL=https://obscura-api-n62v.onrender.com \\\nOBSCURA_AGENT_TOKEN=obsc_at_YOUR_TOKEN_FROM_DOCS_AGENTS \\\n  node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\n\n# Developer MCP (local repo)\nOBSCURA_REPO_ROOT=/path/to/Obscura \\\n  node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js"
         },
         {
           "type": "callout",
@@ -1834,7 +1844,111 @@
         {
           "type": "heading",
           "level": 2,
-          "text": "Token lifecycle",
+          "text": "Token lifecycle & expiry",
+          "id": "expiry"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Property",
+            "Value"
+          ],
+          "rows": [
+            [
+              "Format",
+              "obsc_at_ + base64url (shown once at creation)"
+            ],
+            [
+              "Storage",
+              "SHA-256 hash only in obscura_agent_tokens"
+            ],
+            [
+              "Default TTL",
+              "90 days (AGENT_TOKEN_TTL_DAYS env on API)"
+            ],
+            [
+              "User-selectable TTL",
+              "Not yet — fixed 90d default; 7d/30d/90d/never planned"
+            ],
+            [
+              "Server enforcement",
+              "expires_at checked on every Bearer lookup; expired → 401"
+            ],
+            [
+              "Revocation",
+              "revoked_at set server-side; immediate invalidation"
+            ],
+            [
+              "Max active tokens",
+              "5 per wallet"
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Permission scopes",
+          "id": "scopes"
+        },
+        {
+          "type": "paragraph",
+          "text": "Scopes are stored on each token and enforced on authenticated API routes. Four scopes are implemented today; pay, credit, and vote read scopes are planned."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Scope",
+            "Status",
+            "Enforced on"
+          ],
+          "rows": [
+            [
+              "activity:read",
+              "Implemented",
+              "GET /agent/activity"
+            ],
+            [
+              "reputation:read",
+              "Implemented",
+              "GET /agent/reputation"
+            ],
+            [
+              "balance:read",
+              "Implemented",
+              "Encrypted balance handle routes"
+            ],
+            [
+              "notifications:read",
+              "Implemented",
+              "GET /agent/prefs"
+            ],
+            [
+              "pay:read",
+              "Planned",
+              "Pay metadata, invoice summaries"
+            ],
+            [
+              "credit:read",
+              "Planned",
+              "Position summaries without FHE decrypt"
+            ],
+            [
+              "vote:read",
+              "Planned",
+              "Delegation + participation metadata"
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "variant": "info",
+          "title": "Legacy wallet paths",
+          "text": "GET /prefs/:wallet, /activity/:wallet, and /reputation/:wallet require a Bearer token matching the path wallet when AGENT_AUTH_LEGACY_PUBLIC=false. Prefer GET /agent/* routes."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Setup steps",
           "id": "lifecycle"
         },
         {
@@ -1855,6 +1969,10 @@
             {
               "title": "Configure MCP",
               "description": "Add OBSCURA_AGENT_TOKEN to obscura-user mcpServers env"
+            },
+            {
+              "title": "Save for Obscura app",
+              "description": "Optional — enables in-app reputation & activity without MCP"
             },
             {
               "title": "Rotate or revoke",
@@ -1897,7 +2015,7 @@
             ],
             [
               "Permissions",
-              "activity:read · reputation:read · balance:read"
+              "activity:read · reputation:read · balance:read · notifications:read"
             ],
             [
               "Expiry",
@@ -1923,7 +2041,7 @@
           "type": "code",
           "language": "typescript",
           "title": "Authenticated reads",
-          "code": "import { ObscuraSDK } from \"@obscura-fhe/sdk\";\n\nconst sdk = ObscuraSDK.create({\n  agentToken: process.env.OBSCURA_AGENT_TOKEN,\n});\n\nconst reputation = await sdk.reputation.getAuthenticatedSummary();\nconst activity = await sdk.activity.listAuthenticated({ pageSize: 10 });"
+          "code": "import { ObscuraSDK } from \"@obscura-fhe/sdk\";\n\nconst sdk = ObscuraSDK.create({\n  agentToken: process.env.OBSCURA_AGENT_TOKEN,\n});\n\nconst reputation = await sdk.reputation.getAuthenticatedSummary();\nconst activity = await sdk.activity.listAuthenticated({ pageSize: 10 });\nconst prefs = await sdk.notifications.getAuthenticatedPrefs();"
         },
         {
           "type": "heading",
@@ -1938,6 +2056,49 @@
             "Regenerate — revokes old token and issues a new one (shown once)",
             "Max 5 active tokens per wallet — revoke unused tokens",
             "SDK v1.0.4 · MCP v1.0.4"
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Production readiness checklist",
+          "id": "production-checklist"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Check",
+            "Status"
+          ],
+          "rows": [
+            [
+              "AGENT_AUTH_LEGACY_PUBLIC=false on production API",
+              "Required — legacy wallet paths return 401 without Bearer"
+            ],
+            [
+              "OBSCURA_AGENT_TOKEN in User MCP env",
+              "Required for activity, reputation, balance handle tools"
+            ],
+            [
+              "Token saved in Obscura app (Save for Obscura app)",
+              "Required for in-app reputation with legacy=false"
+            ],
+            [
+              "Rotate token if exposed in chat or logs",
+              "Best practice"
+            ],
+            [
+              "Supabase RLS migration 004 applied",
+              "Run 004_tighten_rls_agent_auth.sql in Supabase Dashboard"
+            ],
+            [
+              "GET /agent/prefs live on API",
+              "Done — legacy /prefs/:wallet requires Bearer when legacy=false"
+            ],
+            [
+              "User-selectable token TTL (7d / 30d / 90d / never)",
+              "Future — fixed 90d default today"
+            ]
           ]
         }
       ]
@@ -2024,9 +2185,9 @@
     {
       "slug": "activity",
       "title": "Activity",
-      "description": "Indexed on-chain activity via Supabase Realtime — no REST /activity endpoint.",
+      "description": "Indexed on-chain activity via Obscura API (authenticated) and Supabase Realtime (frontend fallback).",
       "category": "Shared services",
-      "excerpt": "The obscura-worker indexes 51 event types from 19 live contract instances into obscura_activity. The frontend and SDK read directly from Supabase with wallet-scoped filters. Row schema Field Meaning c"
+      "excerpt": "The obscura-worker indexes 51 event types from 19 live contract instances into obscura_activity. MCP and SDK read via GET /agent/activity with a bearer agent token. The Obscura app uses the same API w"
     },
     {
       "slug": "notifications",

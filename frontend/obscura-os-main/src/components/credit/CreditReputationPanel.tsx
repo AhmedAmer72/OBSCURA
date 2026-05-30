@@ -1,4 +1,5 @@
 import { Award, CheckCircle2, Loader2, RefreshCcw, ShieldCheck, Vote } from "lucide-react";
+import { Link } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import { useReputationSummary, type ReputationSummary } from "@/hooks/useReputationSummary";
 import { cn } from "@/lib/utils";
@@ -31,7 +32,7 @@ function CategoryRow({ label, value, icon: Icon }: { label: string; value: numbe
 }
 
 export function CreditReputationPanel({ compact = false }: { compact?: boolean }) {
-  const { summary, isLoading, error, refresh, lastFetchedAt } = useReputationSummary();
+  const { summary, isLoading, error, refresh, lastFetchedAt, needsAgentToken } = useReputationSummary();
   const payScore = categoryScore(summary, REPUTATION_CATEGORY_SIGNALS.pay);
   const creditScore = categoryScore(summary, REPUTATION_CATEGORY_SIGNALS.credit);
   const governanceScore = categoryScore(summary, REPUTATION_CATEGORY_SIGNALS.governance);
@@ -80,8 +81,17 @@ export function CreditReputationPanel({ compact = false }: { compact?: boolean }
           </div>
         </div>
 
+        {needsAgentToken && (
+          <p className="mt-4 rounded-xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+            Agent token required for reputation reads in production.{" "}
+            <Link to="/docs/agents" className="font-medium text-foreground underline underline-offset-2">
+              Create one at /docs/agents
+            </Link>{" "}
+            and click &quot;Save for Obscura app&quot;.
+          </p>
+        )}
         {error && <p className="mt-4 text-xs text-destructive">{error}</p>}
-        {!error && !summary && !isLoading && (
+        {!needsAgentToken && !error && !summary && !isLoading && (
           <p className="mt-4 text-sm text-muted-foreground">
             No reputation signals have been indexed for this wallet yet. Pay activity, repayments, and governance participation will appear as broad categories after indexing.
             New wallets can still test Credit with a small beta limit.
