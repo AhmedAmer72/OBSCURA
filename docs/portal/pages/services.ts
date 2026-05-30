@@ -159,7 +159,7 @@ const filters = sdk.activity.getEventFilters();`,
       type: "callout",
       variant: "info",
       title: "Frontend hook",
-      text: "Production: use GET /agent/activity with agent token. In the Obscura app, save your token at /docs/agents → Save for Obscura app. Direct Supabase reads are blocked by RLS migration 004.",
+      text: "Production: Obscura app users authenticate with a wallet signature session. MCP and SDK agents use OBSCURA_AGENT_TOKEN and GET /agent/* routes.",
     },
   ],
 };

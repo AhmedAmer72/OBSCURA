@@ -1104,7 +1104,7 @@
           "type": "callout",
           "variant": "info",
           "title": "Frontend hook",
-          "text": "Production: use GET /agent/activity with agent token. In the Obscura app, save your token at /docs/agents → Save for Obscura app. Direct Supabase reads are blocked by RLS migration 004."
+          "text": "Production: Obscura app users authenticate with a wallet signature session. MCP and SDK agents use OBSCURA_AGENT_TOKEN and GET /agent/* routes."
         }
       ]
     },
@@ -1839,7 +1839,7 @@
         },
         {
           "type": "paragraph",
-          "text": "User MCP tools that access wallet-scoped data require OBSCURA_AGENT_TOKEN. The token is resolved server-side to your wallet — agents cannot pass arbitrary addresses for activity or reputation reads."
+          "text": "User MCP tools that access wallet-scoped data require OBSCURA_AGENT_TOKEN. The Obscura web app uses a separate wallet signature session — normal users never need an agent token."
         },
         {
           "type": "heading",
@@ -1968,11 +1968,7 @@
             },
             {
               "title": "Configure MCP",
-              "description": "Add OBSCURA_AGENT_TOKEN to obscura-user mcpServers env"
-            },
-            {
-              "title": "Save for Obscura app",
-              "description": "Optional — enables in-app reputation & activity without MCP"
+              "description": "Add OBSCURA_AGENT_TOKEN to obscura-user mcpServers env (Cursor, Claude, VS Code)"
             },
             {
               "title": "Rotate or revoke",
@@ -2081,7 +2077,7 @@
             ],
             [
               "Token saved in Obscura app (Save for Obscura app)",
-              "Required for in-app reputation with legacy=false"
+              "Not required — app uses wallet signature session"
             ],
             [
               "Rotate token if exposed in chat or logs",

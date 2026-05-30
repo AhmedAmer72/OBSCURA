@@ -17,22 +17,16 @@ export function buildWalletAuthMessage(wallet: string, timestamp: number): strin
   return `Obscura API wallet auth\nWallet: ${wallet.toLowerCase()}\nTimestamp: ${timestamp}`;
 }
 
-export async function verifyWalletAuth(params: {
+export async function verifyWalletSignature(params: {
   wallet: unknown;
   signature?: unknown;
   timestamp?: unknown;
 }): Promise<{ ok: true; wallet: string } | { ok: false; error: string }> {
-  if (!WALLET_AUTH_REQUIRED) {
-    const wallet = normalizeWallet(params.wallet);
-    if (!wallet) return { ok: false, error: "Invalid wallet address" };
-    return { ok: true, wallet };
-  }
-
   const wallet = normalizeWallet(params.wallet);
   if (!wallet) return { ok: false, error: "Invalid wallet address" };
 
   if (typeof params.signature !== "string" || !params.signature.startsWith("0x")) {
-    return { ok: false, error: "wallet signature required (WALLET_AUTH_REQUIRED=true)" };
+    return { ok: false, error: "Wallet signature required" };
   }
 
   const timestamp =
@@ -60,4 +54,18 @@ export async function verifyWalletAuth(params: {
 
   if (!valid) return { ok: false, error: "invalid wallet signature" };
   return { ok: true, wallet };
+}
+
+export async function verifyWalletAuth(params: {
+  wallet: unknown;
+  signature?: unknown;
+  timestamp?: unknown;
+}): Promise<{ ok: true; wallet: string } | { ok: false; error: string }> {
+  if (!WALLET_AUTH_REQUIRED) {
+    const wallet = normalizeWallet(params.wallet);
+    if (!wallet) return { ok: false, error: "Invalid wallet address" };
+    return { ok: true, wallet };
+  }
+
+  return verifyWalletSignature(params);
 }

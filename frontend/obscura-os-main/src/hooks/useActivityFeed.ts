@@ -1,13 +1,13 @@
 /**
- * useActivityFeed.ts — Authenticated activity feed via Obscura API
+ * useActivityFeed.ts — Wallet-authenticated activity feed via Obscura API
  *
- * Requires agent token saved at /docs/agents (localStorage).
- * Polls GET /agent/activity every 30s for live-ish updates.
+ * App users: EIP-191 wallet session (one sign per tab, cached ~4 min).
+ * MCP/agents: use OBSCURA_AGENT_TOKEN separately — not used here.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useAccount } from "wagmi";
-import { fetchAgentApi, getAgentToken } from "@/lib/agentToken";
+import { useAccount, useSignMessage } from "wagmi";
+import { fetchWalletApi } from "@/lib/walletApiSession";
 
 const POLL_INTERVAL = 30_000;
 const PAGE_SIZE       = 20;
@@ -116,13 +116,17 @@ interface UseActivityFeedResult {
   realtimeStatus: ActivityRealtimeStatus;
   lastEventAt: string | null;
   lastRefreshAt: string | null;
-  needsAgentToken: boolean;
-  usesAgentApi: boolean;
 }
 
 export function useActivityFeed(initialFilter: ActivityEventType = "all"): UseActivityFeedResult {
   const { address } = useAccount();
+  const { signMessageAsync } = useSignMessage();
   const wallet      = address?.toLowerCase() ?? null;
+
+  const signMessage = useCallback(
+    (message: string) => signMessageAsync({ message }),
+    [signMessageAsync],
+  );
 
   const [items,     setItems]     = useState<ActivityItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -133,23 +137,12 @@ export function useActivityFeed(initialFilter: ActivityEventType = "all"): UseAc
   const [realtimeStatus, setRealtimeStatus] = useState<ActivityRealtimeStatus>("idle");
   const [lastEventAt, setLastEventAt] = useState<string | null>(null);
   const [lastRefreshAt, setLastRefreshAt] = useState<string | null>(null);
-  const [needsAgentToken, setNeedsAgentToken] = useState(false);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const prevTopIdRef = useRef<number | null>(null);
 
   const fetchPage = useCallback(async (pageIndex: number, replace: boolean) => {
     if (!wallet) return;
-
-    if (!getAgentToken()) {
-      setNeedsAgentToken(true);
-      setItems([]);
-      setHasMore(false);
-      setRealtimeStatus("idle");
-      return;
-    }
-
-    setNeedsAgentToken(false);
     setIsLoading(true);
     setError(null);
 
@@ -159,8 +152,10 @@ export function useActivityFeed(initialFilter: ActivityEventType = "all"): UseAc
       if (pageIndex > 0) params.set("page", String(pageIndex));
       params.set("pageSize", String(PAGE_SIZE));
       const qs = params.toString();
-      const data = await fetchAgentApi<{ items: ActivityItem[]; hasMore: boolean }>(
-        `/agent/activity${qs ? `?${qs}` : ""}`,
+      const data = await fetchWalletApi<{ items: ActivityItem[]; hasMore: boolean }>(
+        `/activity/${wallet}${qs ? `?${qs}` : ""}`,
+        wallet,
+        signMessage,
       );
 
       if (replace && data.items[0]?.id && prevTopIdRef.current !== null && data.items[0].id !== prevTopIdRef.current) {
@@ -178,7 +173,7 @@ export function useActivityFeed(initialFilter: ActivityEventType = "all"): UseAc
     } finally {
       setIsLoading(false);
     }
-  }, [wallet, filter]);
+  }, [wallet, filter, signMessage]);
 
   useEffect(() => {
     if (!wallet) {
@@ -191,7 +186,7 @@ export function useActivityFeed(initialFilter: ActivityEventType = "all"): UseAc
   }, [wallet, filter, fetchPage]);
 
   useEffect(() => {
-    if (!wallet || !getAgentToken()) {
+    if (!wallet) {
       if (pollRef.current) clearInterval(pollRef.current);
       return;
     }
@@ -215,6 +210,5 @@ export function useActivityFeed(initialFilter: ActivityEventType = "all"): UseAc
 
   return useMemo(() => ({
     items, isLoading, error, filter, setFilter, loadMore, hasMore, refresh, realtimeStatus, lastEventAt, lastRefreshAt,
-    needsAgentToken, usesAgentApi: Boolean(getAgentToken()),
-  }), [items, isLoading, error, filter, loadMore, hasMore, refresh, realtimeStatus, lastEventAt, lastRefreshAt, needsAgentToken]);
+  }), [items, isLoading, error, filter, loadMore, hasMore, refresh, realtimeStatus, lastEventAt, lastRefreshAt]);
 }

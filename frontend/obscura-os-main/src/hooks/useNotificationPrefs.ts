@@ -6,8 +6,8 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { useAccount } from "wagmi";
-import { fetchAgentApi, getAgentToken, getApiBaseUrl } from "@/lib/agentToken";
+import { useAccount, useSignMessage } from "wagmi";
+import { fetchWalletApi, getApiBaseUrl } from "@/lib/walletApiSession";
 
 const NOTIFICATIONS_URL = getApiBaseUrl();
 
@@ -40,7 +40,13 @@ interface UseNotificationPrefsResult {
 
 export function useNotificationPrefs(): UseNotificationPrefsResult {
   const { address } = useAccount();
+  const { signMessageAsync } = useSignMessage();
   const wallet = address?.toLowerCase() ?? null;
+
+  const signMessage = useCallback(
+    (message: string) => signMessageAsync({ message }),
+    [signMessageAsync],
+  );
 
   const [prefs,         setPrefs]         = useState<NotificationPrefs | null>(null);
   const [isLoading,     setIsLoading]     = useState(false);
@@ -130,19 +136,12 @@ export function useNotificationPrefs(): UseNotificationPrefsResult {
   // ── Load prefs on connect ─────────────────────────────────────────────────
   useEffect(() => {
     if (!wallet) { setPrefs(null); return; }
-
-    if (!getAgentToken()) {
-      setPrefs({ wallet, ...DEFAULT_PREFS });
-      setIsLoading(false);
-      return;
-    }
-
     setIsLoading(true);
-    fetchAgentApi<NotificationPrefs>("/agent/prefs")
+    fetchWalletApi<NotificationPrefs>(`/prefs/${wallet}`, wallet, signMessage)
       .then((data) => setPrefs(data ?? { wallet, ...DEFAULT_PREFS }))
       .catch(() => setPrefs({ wallet, ...DEFAULT_PREFS }))
       .finally(() => setIsLoading(false));
-  }, [wallet]);
+  }, [wallet, signMessage]);
 
   // ── Subscribe to Web Push ─────────────────────────────────────────────────
   const registerBrowserSubscription = async (forceNew: boolean) => {

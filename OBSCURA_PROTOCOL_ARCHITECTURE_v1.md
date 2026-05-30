@@ -3144,7 +3144,8 @@ sequenceDiagram
 |---|---|
 | User MCP → API | Bearer resolves wallet; no wallet params on owner tools |
 | SDK/MCP legacy paths | 401 without token when `AGENT_AUTH_LEGACY_PUBLIC=false` |
-| Obscura app (reputation, activity, prefs read) | `GET /agent/*` + token in localStorage (Save for Obscura app) |
+| Obscura app (reputation, activity, prefs read) | Wallet EIP-191 session → `/reputation/:wallet`, `/activity/:wallet`, `/prefs/:wallet` |
+| MCP / SDK agents | `OBSCURA_AGENT_TOKEN` → `/agent/*` |
 | Legacy wallet-param routes | Bearer must match path wallet; else 403 |
 | Supabase direct reads | **Blocked** — migration `004_tighten_rls_agent_auth.sql` denies anon SELECT on activity + prefs |
 
@@ -3186,10 +3187,10 @@ Script: `scripts/production-agent-auth-audit.mjs`
 
 | Hook | Route | Status |
 |---|---|---|
-| `useReputationSummary` | `GET /agent/reputation` | ✅ |
-| `useActivityFeed` | `GET /agent/activity` (API polling, no Supabase) | ✅ |
-| `useNotificationPrefs` (read) | `GET /agent/prefs` | ✅ |
-| `AgentAccessPage` | Save for Obscura app → localStorage | ✅ |
+| `useReputationSummary` | `GET /reputation/:wallet` + wallet session | ✅ |
+| `useActivityFeed` | `GET /activity/:wallet` + wallet session | ✅ |
+| `useNotificationPrefs` (read) | `GET /prefs/:wallet` + wallet session | ✅ |
+| `AgentAccessPage` | MCP token creation only — not required for app | ✅ |
 
 ##### Security guarantees
 
@@ -3215,13 +3216,13 @@ Script: `scripts/production-agent-auth-audit.mjs`
 | MCP User profile | **Ready** |
 | SDK authenticated modules | **Ready** |
 | Docs / onboarding | **Ready** |
-| Obscura app off-chain reads | **Ready** (requires saved agent token) |
+| Obscura app off-chain reads | **Ready** (wallet connect + one-time sign per tab session) |
 | Supabase RLS | **Ready** (migration 004 — apply in Dashboard) |
 | Notifications read API | **Ready** (`GET /agent/prefs`) |
 
 **Verdict:** MCP v1 and Obscura agent authentication are **production-ready** when `AGENT_AUTH_LEGACY_PUBLIC=false`, users configure `OBSCURA_AGENT_TOKEN`, and Supabase migration 004 is applied.
 
-**User setup:** `/docs/agents` → copy token → MCP env + **Save for Obscura app** → restart IDE if using MCP.
+**User setup:** Connect wallet in the Obscura app (one EIP-191 sign for activity/reputation). For MCP: `/docs/agents` → copy token → set `OBSCURA_AGENT_TOKEN` in IDE config.
 
 **Developer docs:** `/docs/mcp` · `/docs/agents` · **Packages:** [npm @obscura-fhe/mcp](https://www.npmjs.com/package/@obscura-fhe/mcp) · [npm @obscura-fhe/sdk](https://www.npmjs.com/package/@obscura-fhe/sdk)
 

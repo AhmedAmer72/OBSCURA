@@ -24,7 +24,7 @@ export const agentsPage: DocPage = {
     },
     {
       type: "paragraph",
-      text: "User MCP tools that access wallet-scoped data require OBSCURA_AGENT_TOKEN. The token is resolved server-side to your wallet — agents cannot pass arbitrary addresses for activity or reputation reads.",
+      text: "User MCP tools that access wallet-scoped data require OBSCURA_AGENT_TOKEN. The Obscura web app uses a separate wallet signature session — normal users never need an agent token.",
     },
     {
       type: "heading",
@@ -86,8 +86,7 @@ export const agentsPage: DocPage = {
         { title: "Connect wallet", description: "Use the panel above on Arbitrum Sepolia" },
         { title: "Sign EIP-191 message", description: "Proves ownership — no on-chain tx, no gas" },
         { title: "Receive token once", description: "obsc_at_… prefix — store in password manager or MCP env" },
-        { title: "Configure MCP", description: "Add OBSCURA_AGENT_TOKEN to obscura-user mcpServers env" },
-        { title: "Save for Obscura app", description: "Optional — enables in-app reputation & activity without MCP" },
+        { title: "Configure MCP", description: "Add OBSCURA_AGENT_TOKEN to obscura-user mcpServers env (Cursor, Claude, VS Code)" },
         { title: "Rotate or revoke", description: "Compromised token? Revoke immediately and regenerate" },
       ],
     },
@@ -168,7 +167,7 @@ const prefs = await sdk.notifications.getAuthenticatedPrefs();`,
       rows: [
         ["AGENT_AUTH_LEGACY_PUBLIC=false on production API", "Required — legacy wallet paths return 401 without Bearer"],
         ["OBSCURA_AGENT_TOKEN in User MCP env", "Required for activity, reputation, balance handle tools"],
-        ["Token saved in Obscura app (Save for Obscura app)", "Required for in-app reputation with legacy=false"],
+        ["Token saved in Obscura app (Save for Obscura app)", "Not required — app uses wallet signature session"],
         ["Rotate token if exposed in chat or logs", "Best practice"],
         ["Supabase RLS migration 004 applied", "Run 004_tighten_rls_agent_auth.sql in Supabase Dashboard"],
         ["GET /agent/prefs live on API", "Done — legacy /prefs/:wallet requires Bearer when legacy=false"],

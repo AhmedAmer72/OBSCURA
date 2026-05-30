@@ -154,11 +154,16 @@ describe("Pay P0.4 privacy gates", () => {
     expect(notificationSources).not.toMatch(/body:\s*`[^`]*(amount|USDC|ocUSDC|memo|label|recipient)/i);
   });
 
-  it("keeps activity reads scoped via authenticated API", () => {
+  it("keeps activity reads scoped via wallet-authenticated API", () => {
     const source = readSource("hooks/useActivityFeed.ts");
-    expect(source).toContain("/agent/activity");
-    expect(source).toContain("fetchAgentApi");
-    expect(source).toContain("needsAgentToken");
+    expect(source).toContain("/activity/");
+    expect(source).toContain("fetchWalletApi");
+  });
+
+  it("loads reputation via wallet-authenticated API", () => {
+    const source = readSource("hooks/useReputationSummary.ts");
+    expect(source).toContain("/reputation/");
+    expect(source).toContain("fetchWalletApi");
   });
 
   it("wires Credit activity through the shared feed and notification preferences", () => {

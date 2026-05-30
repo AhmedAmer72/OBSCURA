@@ -10,13 +10,25 @@ import {
   isTokenActive,
   parseBearerToken,
 } from "./agent-auth";
+import { verifyWalletSignature } from "./wallet-auth";
 
 declare global {
   namespace Express {
     interface Request {
       agentToken?: ResolvedAgentToken;
+      walletSession?: { wallet: string };
     }
   }
+}
+
+function extractWalletSessionHeaders(req: Request): { signature?: unknown; timestamp?: unknown } {
+  const signature =
+    req.headers["x-obscura-signature"] ??
+    (typeof req.query.signature === "string" ? req.query.signature : undefined);
+  const timestamp =
+    req.headers["x-obscura-timestamp"] ??
+    (typeof req.query.timestamp === "string" ? req.query.timestamp : undefined);
+  return { signature, timestamp };
 }
 
 export async function lookupAgentToken(token: string): Promise<ResolvedAgentToken | null> {
@@ -89,8 +101,18 @@ export async function enforceWalletScopeOrLegacy(
   }
 
   if (!AGENT_AUTH_LEGACY_PUBLIC) {
+    const { signature, timestamp } = extractWalletSessionHeaders(req);
+    const session = await verifyWalletSignature({
+      wallet: pathWallet,
+      signature,
+      timestamp,
+    });
+    if (session.ok) {
+      req.walletSession = { wallet: session.wallet };
+      return "ok";
+    }
     res.status(401).json({
-      error: "Agent token required for wallet-scoped reads. Create one at /docs/agents",
+      error: "Authentication required — connect wallet in the Obscura app or use an agent token for MCP",
     });
     return "done";
   }
