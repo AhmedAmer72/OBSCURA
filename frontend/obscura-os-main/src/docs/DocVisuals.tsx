@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Shield, Landmark, Vote, Database, Cpu, Layers } from "lucide-react";
+import { ArrowRight, Shield, Landmark, Vote, Database, Cpu, Layers, Bot, Terminal, Code2, BookOpen, Copy, Check } from "lucide-react";
 import type { DocVisualVariant } from "@docs/types";
+import { MCP_VERSION, SDK_VERSION } from "@docs/constants";
+import { mcpConfigJson } from "@docs/mcp-config";
 
 function FlowBox({
   label,
@@ -313,7 +315,7 @@ function OnboardingPath() {
 function SdkModules() {
   const modules = [
     { name: "pay", methods: "getShieldedBalance · buildShield · buildTransfer" },
-    { name: "credit", methods: "buildSupplyCollateral · buildBorrow · buildRepay" },
+    { name: "credit", methods: "getMarketUtilization · buildSupplyCollateral · buildBorrow" },
     { name: "vote", methods: "getProposal · buildCastVote · buildDelegate" },
     { name: "reputation", methods: "getSummary" },
     { name: "activity", methods: "listForWallet · getEventFilters" },
@@ -331,6 +333,151 @@ function SdkModules() {
   );
 }
 
+function McpProfiles() {
+  const profiles = [
+    { id: "user", name: "User MCP", bin: "obscura-mcp-user", tools: "17 tools", accent: "user", desc: "Wallet-scoped reads + unsigned tx builders" },
+    { id: "dev", name: "Developer MCP", bin: "obscura-mcp-dev", tools: "Repo tools", accent: "dev", desc: "Local clone inspection · secret denylist" },
+    { id: "docs", name: "Documentation MCP", bin: "obscura-mcp-docs", tools: "11 tools", accent: "docs", desc: "14-page portal · no chain RPC" },
+  ];
+  return (
+    <div className="docs-visual docs-visual--mcp">
+      <div className="docs-visual-header">
+        <span className="docs-visual-label">MCP v{MCP_VERSION}</span>
+        <span className="docs-visual-title">Three isolated profiles · one SDK foundation</span>
+      </div>
+      <div className="docs-mcp-profile-grid">
+        {profiles.map((p, i) => (
+          <div
+            key={p.id}
+            className={`docs-mcp-profile-card docs-mcp-profile-card--${p.accent}`}
+            style={{ animationDelay: `${i * 0.12}s` }}
+          >
+            <div className="docs-mcp-profile-card-head">
+              <span className="docs-mcp-profile-card-name">{p.name}</span>
+              <span className="docs-mcp-profile-card-tools">{p.tools}</span>
+            </div>
+            <code className="docs-mcp-profile-card-bin">{p.bin}</code>
+            <p className="docs-mcp-profile-card-desc">{p.desc}</p>
+          </div>
+        ))}
+      </div>
+      <div className="docs-mcp-version-strip">
+        <span>@obscura-fhe/mcp@{MCP_VERSION}</span>
+        <span>@obscura-fhe/sdk@{SDK_VERSION}</span>
+      </div>
+    </div>
+  );
+}
+
+function McpAgentFlow() {
+  const steps = [
+    { icon: Bot, label: "AI Agent", sub: "Cursor · Claude · VS Code" },
+    { icon: Terminal, label: "MCP stdio", sub: "Privacy guard" },
+    { icon: Code2, label: "SDK", sub: "sdk.pay · credit · vote" },
+    { icon: Shield, label: "CoFHE + Chain", sub: "421614" },
+  ];
+  return (
+    <div className="docs-visual docs-mcp-flow-visual">
+      <div className="docs-visual-header">
+        <span className="docs-visual-label">Agent flow</span>
+        <span className="docs-visual-title">Encrypt in browser → pre-encrypted InEuint64 → MCP builds tx → user signs</span>
+      </div>
+      <div className="docs-mcp-flow-steps">
+        {steps.map((s, i) => (
+          <div key={s.label} className="docs-mcp-flow-step-wrap">
+            <div className="docs-mcp-flow-step">
+              <s.icon className="h-5 w-5" />
+              <span className="docs-mcp-flow-step-label">{s.label}</span>
+              <span className="docs-mcp-flow-step-sub">{s.sub}</span>
+            </div>
+            {i < steps.length - 1 ? (
+              <div className="docs-mcp-flow-connector">
+                <span className="docs-mcp-flow-packet" style={{ animationDelay: `${i * 0.5}s` }} />
+              </div>
+            ) : null}
+          </div>
+        ))}
+      </div>
+      <p className="docs-mcp-flow-note">
+        MCP never decrypts balances. User MCP returns opaque ctHash handles and unsigned ContractCall objects only.
+      </p>
+    </div>
+  );
+}
+
+const IDE_TABS = [
+  { id: "cursor", label: "Cursor", path: ".cursor/mcp.json", hint: "Project or ~/.cursor/mcp.json (global)" },
+  { id: "claude", label: "Claude", path: "claude_desktop_config.json", hint: "macOS: ~/Library/Application Support/Claude/ · Windows: %APPDATA%\\Claude\\" },
+  { id: "vscode", label: "VS Code", path: ".vscode/mcp.json", hint: "GitHub Copilot MCP · workspace root" },
+  { id: "windsurf", label: "Windsurf", path: "mcp_config.json", hint: "~/.codeium/windsurf/ or .windsurf/" },
+  { id: "continue", label: "Continue", path: "~/.continue/config.json", hint: "Merge mcpServers into existing config" },
+  { id: "generic", label: "Any agent", path: "stdio", hint: "command + args + env · one profile per process" },
+] as const;
+
+function McpIdeSetup() {
+  const [tab, setTab] = useState<(typeof IDE_TABS)[number]["id"]>("cursor");
+  const [copied, setCopied] = useState(false);
+  const active = IDE_TABS.find((t) => t.id === tab)!;
+  const configText = tab === "generic"
+    ? `# Documentation MCP (zero secrets)
+node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js
+
+# User MCP
+OBSCURA_SUPABASE_ANON_KEY=<anon> node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js`
+    : mcpConfigJson();
+
+  const copy = async () => {
+    await navigator.clipboard.writeText(configText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="docs-visual docs-mcp-ide-setup">
+      <div className="docs-visual-header">
+        <span className="docs-visual-label">Setup wizard</span>
+        <span className="docs-visual-title">Pick your IDE — same mcpServers JSON everywhere</span>
+      </div>
+      <div className="docs-mcp-ide-tabs" role="tablist">
+        {IDE_TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.id}
+            className={`docs-mcp-ide-tab${tab === t.id ? " docs-mcp-ide-tab--active" : ""}`}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <div className="docs-mcp-ide-panel">
+        <div className="docs-mcp-ide-meta">
+          <BookOpen className="h-4 w-4 shrink-0" />
+          <div>
+            <strong>{active.path}</strong>
+            <span>{active.hint}</span>
+          </div>
+        </div>
+        <div className="docs-mcp-ide-code-wrap">
+          <pre className="docs-mcp-ide-code"><code>{configText}</code></pre>
+          <button type="button" className="docs-mcp-copy-btn docs-mcp-copy-btn--panel" onClick={copy}>
+            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            {copied ? "Copied" : "Copy"}
+          </button>
+        </div>
+        <ol className="docs-mcp-ide-steps">
+          <li>Run <code>npm install @obscura-fhe/mcp@{MCP_VERSION}</code> in your project</li>
+          <li>Paste config into {active.path}</li>
+          <li>Set <code>OBSCURA_SUPABASE_ANON_KEY</code> for User MCP (optional for docs/dev)</li>
+          <li>Restart your IDE / agent</li>
+        </ol>
+      </div>
+    </div>
+  );
+}
+
 const VISUALS: Record<DocVisualVariant, () => JSX.Element> = {
   "ecosystem-map": EcosystemMap,
   "product-overview": ProductOverview,
@@ -343,6 +490,9 @@ const VISUALS: Record<DocVisualVariant, () => JSX.Element> = {
   "cofhe-lifecycle": CofheLifecycle,
   "onboarding-path": OnboardingPath,
   "sdk-modules": SdkModules,
+  "mcp-profiles": McpProfiles,
+  "mcp-agent-flow": McpAgentFlow,
+  "mcp-ide-setup": McpIdeSetup,
 };
 
 export function DocVisual({ variant }: { variant: DocVisualVariant }) {

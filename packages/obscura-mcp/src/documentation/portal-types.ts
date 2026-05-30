@@ -1,3 +1,5 @@
+/** Minimal docs portal types (mirrors docs/portal/types.ts) */
+
 export type DocBlock =
   | { type: "paragraph"; text: string }
   | { type: "heading"; level: 2 | 3; text: string; id?: string }
@@ -8,25 +10,9 @@ export type DocBlock =
   | { type: "diagram"; title: string; mermaid: string }
   | { type: "cards"; items: { title: string; description: string; href?: string }[] }
   | { type: "link-grid"; items: { label: string; href: string; description?: string }[] }
-  | { type: "visual"; variant: DocVisualVariant }
+  | { type: "visual"; variant: string }
   | { type: "steps"; items: { title: string; description: string; href?: string }[] }
   | { type: "scale"; metrics: { label: string; value: string; detail?: string }[] };
-
-export type DocVisualVariant =
-  | "ecosystem-map"
-  | "product-overview"
-  | "shared-state"
-  | "reputation-flow"
-  | "scale-grid"
-  | "data-flow"
-  | "system-tiers"
-  | "privacy-zones"
-  | "cofhe-lifecycle"
-  | "onboarding-path"
-  | "sdk-modules"
-  | "mcp-profiles"
-  | "mcp-agent-flow"
-  | "mcp-ide-setup";
 
 export interface DocPage {
   slug: string;

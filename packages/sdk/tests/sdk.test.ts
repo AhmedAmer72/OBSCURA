@@ -87,6 +87,57 @@ describe("ObscuraSDK", () => {
   });
 });
 
+describe("CreditModule reads", () => {
+  it("getMarketUtilization reads public aggregates via publicClient", async () => {
+    const mockRead = vi.fn()
+      .mockResolvedValueOnce(5000n)
+      .mockResolvedValueOnce(1000000n)
+      .mockResolvedValueOnce(500000n);
+
+    const sdk = ObscuraSDK.create({
+      publicClient: { readContract: mockRead } as never,
+    });
+
+    const util = await sdk.credit.getMarketUtilization();
+    expect(util.utilizationBps).toBe(5000n);
+    expect(util.totalSupplyAssets).toBe(1000000n);
+    expect(util.totalBorrowAssets).toBe(500000n);
+    expect(util.marketAddress).toBe(DEFAULT_ADDRESSES.CreditCanonicalPayOcUSDCMarket);
+    expect(mockRead).toHaveBeenCalledTimes(3);
+  });
+
+  it("getPositionHandles returns opaque handles without shadows by default", async () => {
+    const mockRead = vi.fn().mockResolvedValueOnce([0xabcn, 1n, 2n, 3n]);
+
+    const sdk = ObscuraSDK.create({
+      publicClient: { readContract: mockRead } as never,
+    });
+
+    const pos = await sdk.credit.getPositionHandles(WALLET);
+    expect(pos.encryptedSupplySharesHandle).toMatch(/^0x/);
+    expect(pos.plainCollateral).toBeUndefined();
+    expect(pos.plaintextShadowWarning).toBeUndefined();
+    expect(mockRead).toHaveBeenCalledTimes(1);
+  });
+
+  it("getPositionHandles includes shadow warning when requested", async () => {
+    const mockRead = vi
+      .fn()
+      .mockResolvedValueOnce([0n, 0n, 0n, 0n])
+      .mockResolvedValueOnce(100n)
+      .mockResolvedValueOnce(50n);
+
+    const sdk = ObscuraSDK.create({
+      publicClient: { readContract: mockRead } as never,
+    });
+
+    const pos = await sdk.credit.getPositionHandles(WALLET, { includePlaintextShadows: true });
+    expect(pos.plaintextShadowWarning).toContain("Plaintext shadows");
+    expect(pos.plainCollateral).toBe(100n);
+    expect(pos.plainBorrow).toBe(50n);
+  });
+});
+
 describe("ReputationModule", () => {
   const fetchMock = vi.fn();
 

@@ -35,7 +35,10 @@ export const DOC_NAV: DocNavGroup[] = [
   },
   {
     title: "Reference",
-    items: [{ slug: "sdk", label: "SDK reference" }],
+    items: [
+      { slug: "sdk", label: "SDK reference" },
+      { slug: "mcp", label: "MCP servers" },
+    ],
   },
 ];
 

@@ -184,8 +184,8 @@ export const cofheAdapter: FheProvider = {
     {
       type: "callout",
       variant: "tip",
-      title: "MCP-ready",
-      text: "Each sdk.* method is a flat, typed API surface designed to map 1:1 to future automation tools.",
+      title: "MCP servers",
+      text: "Official @obscura-fhe/mcp v1.0.2 packages three profiles (User, Developer, Documentation) for Cursor, Claude Desktop, VS Code, Windsurf, Continue, and any stdio agent. See /docs/mcp for full IDE setup.",
     },
   ],
 };

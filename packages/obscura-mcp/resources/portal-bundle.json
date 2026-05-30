@@ -1,0 +1,1835 @@
+{
+  "navigation": [
+    {
+      "title": "Getting started",
+      "items": [
+        {
+          "slug": "ecosystem",
+          "label": "Ecosystem overview"
+        },
+        {
+          "slug": "quick-start",
+          "label": "Quick start"
+        },
+        {
+          "slug": "first-app",
+          "label": "Build your first app"
+        },
+        {
+          "slug": "sdk-onboarding",
+          "label": "SDK onboarding"
+        }
+      ]
+    },
+    {
+      "title": "Platform",
+      "items": [
+        {
+          "slug": "architecture",
+          "label": "Architecture"
+        },
+        {
+          "slug": "privacy",
+          "label": "Privacy model"
+        }
+      ]
+    },
+    {
+      "title": "Products",
+      "items": [
+        {
+          "slug": "pay",
+          "label": "Obscura Pay"
+        },
+        {
+          "slug": "credit",
+          "label": "Obscura Credit"
+        },
+        {
+          "slug": "vote",
+          "label": "Obscura Vote"
+        }
+      ]
+    },
+    {
+      "title": "Shared services",
+      "items": [
+        {
+          "slug": "reputation",
+          "label": "Reputation"
+        },
+        {
+          "slug": "activity",
+          "label": "Activity"
+        },
+        {
+          "slug": "notifications",
+          "label": "Notifications"
+        }
+      ]
+    },
+    {
+      "title": "Reference",
+      "items": [
+        {
+          "slug": "sdk",
+          "label": "SDK reference"
+        },
+        {
+          "slug": "mcp",
+          "label": "MCP servers"
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "slug": "ecosystem",
+      "title": "Ecosystem overview",
+      "description": "Three products, one encrypted asset, shared reputation and activity infrastructure.",
+      "category": "Getting started",
+      "keywords": [
+        "pay",
+        "credit",
+        "vote",
+        "fhe",
+        "harmony"
+      ],
+      "blocks": [
+        {
+          "type": "visual",
+          "variant": "product-overview"
+        },
+        {
+          "type": "visual",
+          "variant": "shared-state"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Cross-product value flows",
+          "id": "cross-product"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Pay → Credit: Shield ocUSDC in Pay, supply collateral and borrow on the canonical market.",
+            "All products → Reputation: Worker derives 28 capped signal types into tier buckets.",
+            "Vote → Credit: voterParticipation feeds ObscuraCreditScoreV2 for LLTV boosts.",
+            "Governor → Pay/Credit: Timelock executes treasury streams and factory parameter updates."
+          ]
+        },
+        {
+          "type": "visual",
+          "variant": "reputation-flow"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Ecosystem scale",
+          "id": "ecosystem-scale"
+        },
+        {
+          "type": "visual",
+          "variant": "scale-grid"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Shared infrastructure",
+          "id": "shared-infrastructure"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Layer",
+            "Service",
+            "Role"
+          ],
+          "rows": [
+            [
+              "Chain",
+              "Arbitrum Sepolia + Fhenix CoFHE",
+              "Encrypted state on EVM"
+            ],
+            [
+              "Asset",
+              "ocUSDC_Pay",
+              "Canonical confidential USDC (6 dec)"
+            ],
+            [
+              "API",
+              "obscura-api-n62v.onrender.com",
+              "Reputation, notifications, UserOp relay"
+            ],
+            [
+              "Worker",
+              "obscura-worker-0ppj.onrender.com",
+              "Indexer, reputation derive, push"
+            ],
+            [
+              "Data",
+              "Supabase",
+              "Activity, reputation, notification prefs"
+            ],
+            [
+              "SDK",
+              "@obscura-fhe/sdk",
+              "Six modules · framework-agnostic"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "quick-start",
+      "title": "Quick start",
+      "description": "Install the SDK and read your first on-chain and off-chain Obscura data in under five minutes.",
+      "category": "Getting started",
+      "keywords": [
+        "install",
+        "npm",
+        "viem",
+        "sdk"
+      ],
+      "blocks": [
+        {
+          "type": "visual",
+          "variant": "onboarding-path"
+        },
+        {
+          "type": "callout",
+          "variant": "info",
+          "title": "What you need before starting",
+          "text": "Reputation + notifications: npm install only. Activity: Supabase anon key required (URL defaults to Obscura project). On-chain reads: Arbitrum Sepolia RPC (default provided). Encrypted writes: optional FheProvider. sendCall(): optional walletClient."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Install",
+          "id": "install"
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "code": "npm install @obscura-fhe/sdk viem"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Initialize",
+          "id": "client"
+        },
+        {
+          "type": "code",
+          "language": "typescript",
+          "title": "Minimal client",
+          "code": "import { ObscuraSDK, DEFAULT_SUPABASE_URL } from \"@obscura-fhe/sdk\";\nimport { createPublicClient, http } from \"viem\";\nimport { arbitrumSepolia } from \"viem/chains\";\n\nconst rpcUrl = process.env.ARB_SEPOLIA_RPC_URL ?? \"https://sepolia-rollup.arbitrum.io/rpc\";\n\nexport const sdk = ObscuraSDK.create({\n  rpcUrl,\n  publicClient: createPublicClient({ chain: arbitrumSepolia, transport: http(rpcUrl) }),\n  supabaseUrl: process.env.OBSCURA_SUPABASE_URL ?? DEFAULT_SUPABASE_URL,\n  supabaseAnonKey: process.env.OBSCURA_SUPABASE_ANON_KEY,\n});\n\n// Defaults: chain 421614 · production API · deployment registry"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Read reputation & activity",
+          "id": "read"
+        },
+        {
+          "type": "code",
+          "language": "typescript",
+          "title": "Off-chain reads (no wallet required)",
+          "code": "const wallet = \"0xYourWallet\" as const;\n\nconst rep = await sdk.reputation.getSummary(wallet);\nconsole.log(rep.tier, rep.totalCappedWeight);\n\nif (sdk.activity.isConfigured()) {\n  const { items } = await sdk.activity.listForWallet(wallet, { filter: \"credit\" });\n} else {\n  console.warn(\"Set OBSCURA_SUPABASE_ANON_KEY for activity feed\");\n}"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "On-chain reads & tx builders",
+          "id": "onchain"
+        },
+        {
+          "type": "code",
+          "language": "typescript",
+          "title": "ContractCall pattern",
+          "code": "const ctHash = await sdk.pay.getShieldedBalance(wallet);\nconst count = await sdk.vote.getProposalCount(); // reads nextProposalId()\nconst call = sdk.vote.buildDelegate(\"0xDelegatee...\");\nconst calldata = sdk.encodeCall(call);\n// Sign with viem walletClient → sdk.sendCall(call, account)"
+        },
+        {
+          "type": "callout",
+          "variant": "warning",
+          "title": "Encrypted writes require FHE",
+          "text": "Pass a FheProvider wrapping @cofhe/sdk, or supply pre-encrypted InEuint64 to buildShield / buildTransfer / buildCastVote."
+        }
+      ]
+    },
+    {
+      "slug": "first-app",
+      "title": "Build your first app",
+      "description": "Reputation dashboard, activity timeline, and a governance delegate transaction.",
+      "category": "Getting started",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "A minimal Node or browser app: display reputation tier, list recent activity, and prepare a Vote delegate ContractCall."
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "code": "mkdir obscura-demo && cd obscura-demo\nnpm init -y\nnpm install @obscura-fhe/sdk viem dotenv"
+        },
+        {
+          "type": "code",
+          "language": "typescript",
+          "title": "Reputation + activity",
+          "code": "import { ObscuraSDK } from \"@obscura-fhe/sdk\";\nimport \"dotenv/config\";\n\nconst sdk = ObscuraSDK.create({\n  supabaseAnonKey: process.env.OBSCURA_SUPABASE_ANON_KEY,\n});\nconst wallet = process.argv[2] as `0x${string}`;\n\nconst summary = await sdk.reputation.getSummary(wallet);\nconst { items } = await sdk.activity.listForWallet(wallet, { pageSize: 10 });\n\nconsole.log(summary.tier, summary.totalCappedWeight);\nitems.forEach((r) => console.log(r.event_name, r.tx_hash.slice(0, 10)));"
+        },
+        {
+          "type": "code",
+          "language": "typescript",
+          "title": "Delegate transaction builder",
+          "code": "const call = sdk.vote.buildDelegate(\"0xDelegatee...\");\nconsole.log(sdk.encodeCall(call));"
+        }
+      ]
+    },
+    {
+      "slug": "sdk-onboarding",
+      "title": "SDK onboarding",
+      "description": "Configure ObscuraSDK, wire viem clients, and inject FHE for encrypted writes.",
+      "category": "Getting started",
+      "blocks": [
+        {
+          "type": "callout",
+          "variant": "info",
+          "title": "Module requirements",
+          "text": "reputation · notifications — API only, no wallet. activity — Supabase URL + anon key. pay · credit · vote reads — RPC (421614). Encrypted writes — FheProvider. sendCall — walletClient."
+        },
+        {
+          "type": "visual",
+          "variant": "sdk-modules"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Full configuration",
+          "id": "config"
+        },
+        {
+          "type": "code",
+          "language": "typescript",
+          "title": "ObscuraSDK.create()",
+          "code": "import { ObscuraSDK, DEFAULT_SUPABASE_URL } from \"@obscura-fhe/sdk\";\nimport { createPublicClient, createWalletClient, http, custom } from \"viem\";\nimport { arbitrumSepolia } from \"viem/chains\";\n\nconst rpcUrl = process.env.ARB_SEPOLIA_RPC_URL ?? \"https://sepolia-rollup.arbitrum.io/rpc\";\n\nconst publicClient = createPublicClient({\n  chain: arbitrumSepolia,\n  transport: http(rpcUrl),\n});\n\n// Browser: custom(window.ethereum) · Node: http(rpcUrl) + account\nconst walletClient = createWalletClient({\n  chain: arbitrumSepolia,\n  transport: http(rpcUrl),\n});\n\nconst sdk = ObscuraSDK.create({\n  chainId: 421614,\n  rpcUrl,\n  publicClient,\n  walletClient,              // optional — enables sendCall()\n  supabaseUrl: process.env.OBSCURA_SUPABASE_URL ?? DEFAULT_SUPABASE_URL,\n  supabaseAnonKey: process.env.OBSCURA_SUPABASE_ANON_KEY, // required for activity\n  fhe: cofheAdapter,        // optional — enables encryptUint64\n});"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "TypeScript (verbatimModuleSyntax)",
+          "id": "typescript"
+        },
+        {
+          "type": "code",
+          "language": "json",
+          "title": "Recommended tsconfig.json",
+          "code": "{\n  \"compilerOptions\": {\n    \"target\": \"ES2022\",\n    \"module\": \"ESNext\",\n    \"moduleResolution\": \"bundler\",\n    \"strict\": true,\n    \"skipLibCheck\": true,\n    \"verbatimModuleSyntax\": true\n  }\n}"
+        },
+        {
+          "type": "callout",
+          "variant": "warning",
+          "title": "Type-only imports",
+          "text": "With verbatimModuleSyntax: true, import types with import type { FheProvider, ReputationSummary }. Mixing value + type imports causes TS1363. Use import type or set verbatimModuleSyntax: false."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Supabase for activity",
+          "id": "supabase"
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "title": "Environment",
+          "code": "OBSCURA_SUPABASE_URL=https://quoovjkjwgtdqwdofubh.supabase.co\nOBSCURA_SUPABASE_ANON_KEY=eyJ...   # Supabase → Settings → API → anon public"
+        },
+        {
+          "type": "code",
+          "language": "typescript",
+          "title": "Guard before querying",
+          "code": "if (!sdk.activity.isConfigured()) {\n  throw new Error(\"Set OBSCURA_SUPABASE_ANON_KEY\");\n}\nconst feed = await sdk.activity.listForWallet(wallet);"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "FHE adapter",
+          "id": "fhe"
+        },
+        {
+          "type": "code",
+          "language": "typescript",
+          "title": "FheProvider interface",
+          "code": "import type { FheProvider } from \"@obscura-fhe/sdk\";\n\nexport const cofheAdapter: FheProvider = {\n  async encryptUint64(value, { contractAddress }) {\n    // Wrap @cofhe/sdk — user must trigger encrypt (never on mount)\n    return { ctHash, securityZone, utype, signature };\n  },\n};"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Common patterns",
+          "id": "patterns"
+        },
+        {
+          "type": "steps",
+          "items": [
+            {
+              "title": "Read-only dashboard",
+              "description": "reputation + activity — no wallet or FHE required",
+              "href": "/docs/first-app"
+            },
+            {
+              "title": "Tx builder + external signer",
+              "description": "encodeCall() → pass calldata to any wallet",
+              "href": "/docs/quick-start"
+            },
+            {
+              "title": "Full write flow",
+              "description": "FheProvider + walletClient + sendCall()",
+              "href": "/docs/sdk"
+            },
+            {
+              "title": "Pre-encrypted inputs",
+              "description": "Pass InEuint64 directly to skip adapter at build time",
+              "href": "/docs/sdk"
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "variant": "tip",
+          "title": "MCP servers",
+          "text": "Official @obscura-fhe/mcp v1.0.2 packages three profiles (User, Developer, Documentation) for Cursor, Claude Desktop, VS Code, Windsurf, Continue, and any stdio agent. See /docs/mcp for full IDE setup."
+        }
+      ]
+    },
+    {
+      "slug": "architecture",
+      "title": "Architecture",
+      "description": "Five-tier system design from client SDK to CoFHE coprocessor and Supabase persistence.",
+      "category": "Platform",
+      "blocks": [
+        {
+          "type": "visual",
+          "variant": "system-tiers"
+        },
+        {
+          "type": "visual",
+          "variant": "data-flow"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Layer responsibilities",
+          "id": "layers"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Layer",
+            "Responsibility",
+            "Failure mode"
+          ],
+          "rows": [
+            [
+              "Client",
+              "UX, encryption, wallet signing, reveal-on-demand",
+              "Masked values; no auto-decrypt"
+            ],
+            [
+              "EVM + CoFHE",
+              "Encrypted state, ACL, public aggregates",
+              "ACL errors if FHE.allowThis omitted"
+            ],
+            [
+              "Index",
+              "Decode, sanitize, activity, reputation, push",
+              "Worker down → empty activity feed"
+            ],
+            [
+              "API",
+              "Prefs, subscriptions, reputation, UserOp relay",
+              "Render cold start ~30s"
+            ],
+            [
+              "Persistence",
+              "Activity, reputation, push state",
+              "RLS permissive on testnet"
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Product stack",
+          "id": "product-stack"
+        },
+        {
+          "type": "paragraph",
+          "text": "Private Payments (Pay) → Private Credit → Private Reputation → Private Governance (Vote). Each layer consumes signals from the prior without leaking individual amounts."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Production endpoints",
+          "id": "endpoints"
+        },
+        {
+          "type": "code",
+          "language": "text",
+          "title": "Deployment registry",
+          "code": "Frontend   https://obscuraos.online\nAPI        https://obscura-api-n62v.onrender.com\nWorker     https://obscura-worker-0ppj.onrender.com\nSupabase   https://quoovjkjwgtdqwdofubh.supabase.co\nChain      Arbitrum Sepolia · chainId 421614"
+        }
+      ]
+    },
+    {
+      "slug": "privacy",
+      "title": "Privacy model",
+      "description": "What stays encrypted, what is public by design, and when users choose to reveal.",
+      "category": "Platform",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Obscura stores financial amounts as euint64 ciphertext handles on-chain. Plaintext appears only at explicit user reveal, intentional public aggregates, or unavoidable bridge metadata."
+        },
+        {
+          "type": "visual",
+          "variant": "privacy-zones"
+        },
+        {
+          "type": "visual",
+          "variant": "cofhe-lifecycle"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Product-specific guarantees",
+          "id": "guarantees"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Product",
+            "Encrypted",
+            "Public by design"
+          ],
+          "rows": [
+            [
+              "Pay",
+              "Transfer amounts, invoice/escrow/stream values",
+              "Addresses, announce events, shield/unshield amounts"
+            ],
+            [
+              "Credit",
+              "Supply/borrow/collateral shares, auction bids",
+              "TVL, utilization, tier bucket"
+            ],
+            [
+              "Vote",
+              "Ballot option, pre-finalize tallies",
+              "Metadata, participation, delegation, post-finalize aggregates"
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Indexer sanitization",
+          "id": "indexer"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Governor VoteCast — support, weight, reason stripped from Supabase args",
+            "Treasury/Rewards events — amount fields removed before insert",
+            "Credit market events — amount-free by contract design"
+          ]
+        },
+        {
+          "type": "callout",
+          "variant": "warning",
+          "title": "Core Vote invariant",
+          "text": "Observers learn participation and aggregates; never individual choices unless the voter opts in to self-decrypt."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Frontend enforcement",
+          "id": "frontend-rules"
+        },
+        {
+          "type": "list",
+          "items": [
+            "No decryptForView in useEffect — user-triggered only",
+            "Masked UI (***) until explicit Reveal click",
+            "Contact labels and receipts in localStorage only"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "pay",
+      "title": "Obscura Pay",
+      "description": "Encrypted ocUSDC payments, streams, escrows, invoices, stealth receiving, and public-mode smart accounts.",
+      "category": "Products",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Obscura Pay is the payment layer on /pay. Canonical asset: ocUSDC_Pay (0xEd46020Df8abe7BB1E096f27d089F4326D223a53). Supports private EOA mode (FHE) and public ERC-4337 smart-account mode (Circle USDC)."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Execution modes",
+          "id": "modes"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Mode",
+            "Asset",
+            "Privacy rule"
+          ],
+          "rows": [
+            [
+              "Private Mode",
+              "ocUSDC_Pay",
+              "Encrypted FHE writes only; smart-account forwarding rejected (InvalidSigner)"
+            ],
+            [
+              "Public Mode",
+              "Circle USDC",
+              "Passkey smart account + ERC-4337 relay; no encrypted ocUSDC via AA"
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Core contracts",
+          "id": "contracts"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Contract",
+            "Address",
+            "Role"
+          ],
+          "rows": [
+            [
+              "ocUSDC_Pay",
+              "0xEd46020Df8abe7BB1E096f27d089F4326D223a53",
+              "Confidential USDC wrapper (6 decimals)"
+            ],
+            [
+              "ObscuraPay",
+              "0x91CdD9a481C732bEB09Ce039da23DC11e83547a4",
+              "Wave 1 payroll foundation"
+            ],
+            [
+              "ObscuraPayStreamV3",
+              "0xE4328F139F03138D63f7fdF90A8Ef240e04653fA",
+              "Handle-based recurring streams"
+            ],
+            [
+              "ObscuraConfidentialEscrow",
+              "0x293810A2081114CcE0c98A709a0c31aE07c01D75",
+              "Confidential escrow"
+            ],
+            [
+              "ObscuraInvoice",
+              "0x62a86C8d68fF32ea41Faf349db6EF7EF496620b7",
+              "Encrypted invoices"
+            ],
+            [
+              "ObscuraStealthRegistry",
+              "0xa36e791a611D36e2C817a7DA0f41547D30D4917d",
+              "ERC-5564 meta-address registry"
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "SDK integration",
+          "id": "sdk"
+        },
+        {
+          "type": "code",
+          "language": "typescript",
+          "code": "const balanceCt = await sdk.pay.getShieldedBalance(wallet);\nconst call = await sdk.pay.buildTransfer(to, amount, encryptedInput);\nconst calldata = sdk.encodeCall(call);"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Key lifecycles",
+          "id": "lifecycles"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Shield — Approve USDC → shield(amount) → FHE.allowThis",
+            "Unshield — Encrypt → unshield(amtPlain, encAmt, to)",
+            "Direct send — Encrypt → confidentialTransfer(to, encAmount)",
+            "Stealth send — Derive stealth → transfer → announce() with retry",
+            "Stream V3 — createStream → setOperator → tickStream → escrow cycle",
+            "Public UserOp — Build → sign → POST /relay → poll /userop-receipt"
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Frontend hooks",
+          "id": "hooks"
+        },
+        {
+          "type": "list",
+          "items": [
+            "useOcUSDCBalance — shield/unshield/reveal",
+            "useOcUSDCTransfer — direct private send",
+            "usePayStreamV3 — V3 stream create/tick",
+            "useInvoice — encrypted invoice create/pay",
+            "useStealthInbox / useStealthScan — private inbox (explicit unlock)",
+            "useActivityFeed — Supabase Realtime + 30s poll"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "credit",
+      "title": "Obscura Credit",
+      "description": "Privacy-first Morpho Blue-shaped money market with encrypted positions and sealed liquidations.",
+      "category": "Products",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Obscura Credit on /credit is an isolated FHE money market. Per-user supply shares, borrow shares, and collateral are euint64 handles. Public TVL and utilization remain plaintext."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Canonical market",
+          "id": "market"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Parameter",
+            "Value"
+          ],
+          "rows": [
+            [
+              "Market address",
+              "0x1Ec113297c7F9516A6604aa3b18C180559a6f551"
+            ],
+            [
+              "Loan / collateral asset",
+              "ocUSDC_Pay"
+            ],
+            [
+              "LLTV",
+              "8600 bps (86%)"
+            ],
+            [
+              "Liquidation threshold",
+              "9000 bps (90%)"
+            ],
+            [
+              "Liquidation bonus",
+              "500 bps (5%)"
+            ]
+          ]
+        },
+        {
+          "type": "diagram",
+          "title": "Credit architecture",
+          "mermaid": "flowchart TB\n  USER[User EOA]\n  OCUSDC[ocUSDC_Pay]\n  MARKET[CreditMarket]\n  ROUTER[CreditRouter]\n  SCORE[ScoreV2]\n  AUCT[CreditAuction]\n  USER --> OCUSDC --> MARKET\n  USER --> ROUTER --> MARKET\n  MARKET --> SCORE\n  MARKET --> AUCT"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Two-step CoFHE pattern",
+          "id": "two-step"
+        },
+        {
+          "type": "paragraph",
+          "text": "CoFHE rate limiter requires a follow-up FHE op on the same handle: (1) cToken.confidentialTransfer(target, encAmt), then (2) target.recordWithEnc(amtPlain, encAmt2). Used for supply, borrow, repay, and collateral."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "SDK integration",
+          "id": "sdk"
+        },
+        {
+          "type": "code",
+          "language": "typescript",
+          "code": "const market = sdk.credit.getMarketAddress();\nconst supply = await sdk.credit.buildSupplyCollateral(amount, enc);\nconst borrow = await sdk.credit.buildBorrow(amount, enc);\nconst repay = await sdk.credit.buildRepay(amount, enc);"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Product tabs",
+          "id": "tabs"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Overview — market status, TVL, ActivityFeed",
+            "Borrow — BorrowForm on canonical market",
+            "Position — EncryptedTiles, health factor, actions (reveal-on-demand)",
+            "Earn — supply and vaults",
+            "Liquidations — sealed auction cards",
+            "Risk — reputation, notifications, activity"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "vote",
+      "title": "Obscura Vote",
+      "description": "FHE-encrypted multi-option governance with treasury, rewards, and OpenZeppelin Governor.",
+      "category": "Products",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Obscura Vote on /vote provides coercion-resistant encrypted ballots (ObscuraVote V5) plus executable OZ Governor proposals. Eligibility requires ObscuraToken lastClaim > 0."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Two governance tracks",
+          "id": "tracks"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Track",
+            "Contract",
+            "Ballot privacy"
+          ],
+          "rows": [
+            [
+              "Private app governance",
+              "ObscuraVote 0xe358…1730",
+              "Encrypted option index"
+            ],
+            [
+              "Executable OZ governance",
+              "ObscuraGovernor + Timelock",
+              "Plaintext support/weight (Advanced tab)"
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Vote stack",
+          "id": "stack"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Contract",
+            "Address",
+            "Role"
+          ],
+          "rows": [
+            [
+              "ObscuraVote V5",
+              "0xe358776AfdbA95d7c9F040e6ef1f5A021aF91730",
+              "FHE ballots, delegation, finalization"
+            ],
+            [
+              "ObscuraTreasury",
+              "0x89252ee3f920978EEfDB650760fe56BA1Ede8c08",
+              "ETH vault + FHE-attested spends"
+            ],
+            [
+              "ObscuraRewards",
+              "0x435ea117404553A6868fbe728A7A284FCEd15BC2",
+              "0.001 ETH per vote accrual"
+            ],
+            [
+              "ObscuraGovernor",
+              "0xE4807C9F90a0da8F5B5bafa4361B15ff855b7186",
+              "Executable governance"
+            ],
+            [
+              "ObscuraTimelock",
+              "0x07b7961627f433a1d9001F82Ac4af9F19b9a9E05",
+              "2-day min delay"
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "SDK integration",
+          "id": "sdk"
+        },
+        {
+          "type": "code",
+          "language": "typescript",
+          "code": "const count = await sdk.vote.getProposalCount();\nconst proposal = await sdk.vote.getProposal(1n);\nconst voteCall = await sdk.vote.buildCastVote(proposalId, optionIndex, enc);\nconst delegateCall = sdk.vote.buildDelegate(delegatee);"
+        },
+        {
+          "type": "callout",
+          "variant": "success",
+          "title": "Production status",
+          "text": "Private vote, treasury, rewards, and Governor propose/vote/queue/execute lifecycles are E2E validated on Sepolia. Worker indexes four contracts with sanitized args."
+        }
+      ]
+    },
+    {
+      "slug": "reputation",
+      "title": "Reputation",
+      "description": "Cross-product reputation pipeline from indexed events to tiered API summaries.",
+      "category": "Shared services",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Reputation derives capped signal weights from Pay, Credit, and Vote indexed events. The worker writes obscura_reputation_events; the API aggregates into tier buckets for UI panels and Credit Score V2 inputs."
+        },
+        {
+          "type": "visual",
+          "variant": "reputation-flow"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Tier thresholds",
+          "id": "tiers"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Tier",
+            "Capped weight"
+          ],
+          "rows": [
+            [
+              "new",
+              "< 3"
+            ],
+            [
+              "active",
+              "3 – 11"
+            ],
+            [
+              "steady",
+              "12 – 23"
+            ],
+            [
+              "reliable",
+              "≥ 24"
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "API response",
+          "id": "api"
+        },
+        {
+          "type": "code",
+          "language": "json",
+          "code": "GET https://obscura-api-n62v.onrender.com/reputation/0xWallet\n\n{\n  \"wallet\": \"0x...\",\n  \"sourceApp\": \"all\",\n  \"totalCappedWeight\": 47,\n  \"tier\": \"steady\",\n  \"signals\": { \"credit_repaid\": { \"count\": 2, \"cappedWeight\": 24 } },\n  \"sources\": { \"credit\": 44, \"pay\": 3, \"vote\": 0 }\n}"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "SDK usage",
+          "id": "sdk"
+        },
+        {
+          "type": "code",
+          "language": "typescript",
+          "code": "const summary = await sdk.reputation.getSummary(wallet);\n// summary.tier: \"new\" | \"active\" | \"steady\" | \"reliable\""
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Signal coverage",
+          "id": "signals"
+        },
+        {
+          "type": "paragraph",
+          "text": "28 signal types across products: 7 Pay (payments, streams, escrows, invoices), 11 Credit (supply, borrow, repay, liquidation, vault, score), 10 Vote (participation, delegation, treasury, rewards, governor). Deduplication key: (wallet, source_app, signal_type, event_ref)."
+        }
+      ]
+    },
+    {
+      "slug": "activity",
+      "title": "Activity",
+      "description": "Indexed on-chain activity via Supabase Realtime — no REST /activity endpoint.",
+      "category": "Shared services",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "The obscura-worker indexes 51 event types from 19 live contract instances into obscura_activity. The frontend and SDK read directly from Supabase with wallet-scoped filters."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Row schema",
+          "id": "schema"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Field",
+            "Meaning"
+          ],
+          "rows": [
+            [
+              "chain_id",
+              "421614"
+            ],
+            [
+              "block_number, tx_hash, log_index",
+              "Idempotency key"
+            ],
+            [
+              "event_name",
+              "Namespaced e.g. ObscuraVote.VoteCast"
+            ],
+            [
+              "wallet",
+              "Primary extracted wallet"
+            ],
+            [
+              "participants",
+              "All addresses from event args"
+            ],
+            [
+              "args",
+              "JSON — sanitized; amounts stripped where required"
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Event filters",
+          "id": "filters"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Filter",
+            "Use case"
+          ],
+          "rows": [
+            [
+              "sent / received",
+              "Pay transfers"
+            ],
+            [
+              "stream",
+              "PayStreamV3 lifecycle"
+            ],
+            [
+              "invoice / escrow",
+              "Pay commerce flows"
+            ],
+            [
+              "credit",
+              "Market, vault, auction, score events"
+            ],
+            [
+              "vote",
+              "Vote, Governor, Treasury, Rewards"
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "SDK usage",
+          "id": "sdk"
+        },
+        {
+          "type": "code",
+          "language": "typescript",
+          "code": "const { items, hasMore } = await sdk.activity.listForWallet(wallet, {\n  filter: \"vote\",\n  page: 0,\n  pageSize: 20,\n});\n\nconst filters = sdk.activity.getEventFilters();"
+        },
+        {
+          "type": "callout",
+          "variant": "info",
+          "title": "Frontend hook",
+          "text": "useActivityFeed mirrors SDK filters with Supabase Realtime primary and 30-second polling fallback. Requires VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY."
+        }
+      ]
+    },
+    {
+      "slug": "notifications",
+      "title": "Notifications",
+      "description": "Web Push pipeline with amount-free payloads and opt-in UX.",
+      "category": "Shared services",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Notifications dispatch on obscura_activity INSERT via worker and API Realtime listeners. Payloads are generic and amount-free — no decrypted values in push body."
+        },
+        {
+          "type": "diagram",
+          "title": "Dispatch pipeline",
+          "mermaid": "flowchart LR\n  ACT[activity INSERT] --> WK[Worker dispatch]\n  WK --> PREFS[notification_prefs]\n  WK --> SUBS[push_subscriptions]\n  PREFS --> PUSH[web-push]\n  PUSH --> SW[/sw.js]\n  SW --> BROWSER[Browser notification]"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "API routes",
+          "id": "routes"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Method",
+            "Path",
+            "Purpose"
+          ],
+          "rows": [
+            [
+              "GET",
+              "/vapid-public-key",
+              "Web Push public key"
+            ],
+            [
+              "POST",
+              "/subscribe",
+              "Save push subscription"
+            ],
+            [
+              "DELETE",
+              "/subscribe",
+              "Remove subscription"
+            ],
+            [
+              "POST",
+              "/prefs",
+              "Save notification preferences"
+            ],
+            [
+              "GET",
+              "/prefs/:wallet",
+              "Read preferences"
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "SDK usage",
+          "id": "sdk"
+        },
+        {
+          "type": "code",
+          "language": "typescript",
+          "code": "const vapid = await sdk.notifications.getVapidPublicKey();\nconst prefs = await sdk.notifications.getPrefs(wallet);\nawait sdk.notifications.savePrefs({ wallet, push_enabled: true, email_enabled: false, events: [\"*\"] });\nawait sdk.notifications.subscribe(wallet, pushSubscription);"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "UX rules",
+          "id": "ux"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Opt-in only — user triggers permission from Settings",
+            "Service worker /sw.js handles click navigation to /pay, /credit, or /vote",
+            "Stale subscriptions removed on Web Push 404/410",
+            "Credit health alerts (useCreditAlerts) are local browser notifications, not server push"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "sdk",
+      "title": "SDK reference",
+      "description": "Complete @obscura-fhe/sdk module API, types, and constants.",
+      "category": "Reference",
+      "blocks": [
+        {
+          "type": "callout",
+          "variant": "success",
+          "title": "@obscura-fhe/sdk v1.0.2",
+          "text": "Published on npm · Arbitrum Sepolia (421614) · pairs with @obscura-fhe/mcp for agent tooling."
+        },
+        {
+          "type": "callout",
+          "variant": "info",
+          "title": "Requirements by module",
+          "text": "activity → supabaseAnonKey (+ optional supabaseUrl). On-chain reads → rpcUrl or publicClient (chain 421614). Encrypted writes → fhe or pre-encrypted InEuint64. sendCall → walletClient."
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "title": "Install",
+          "code": "npm install @obscura-fhe/sdk@1.0.2 viem"
+        },
+        {
+          "type": "visual",
+          "variant": "sdk-modules"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "ObscuraSDK",
+          "id": "obscura-sdk"
+        },
+        {
+          "type": "code",
+          "language": "typescript",
+          "code": "ObscuraSDK.create(config?: ObscuraSDKConfig): ObscuraSDK\n\n// Instance properties\nsdk.chainId, sdk.addresses, sdk.publicClient, sdk.fhe\nsdk.pay, sdk.credit, sdk.vote, sdk.reputation, sdk.activity, sdk.notifications\n\n// Helpers\nsdk.encodeCall(call: ContractCall): Hex\nsdk.sendCall(call, account): Promise<Hex>  // requires walletClient"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "PayModule",
+          "id": "pay-module"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Method",
+            "Returns",
+            "Notes"
+          ],
+          "rows": [
+            [
+              "getShieldedBalance(account)",
+              "Promise<bigint>",
+              "ctHash handle"
+            ],
+            [
+              "buildShield(amount, enc?)",
+              "Promise<ContractCall>",
+              "FHE or pre-encrypted"
+            ],
+            [
+              "buildUnshield(to, amount, enc?)",
+              "Promise<ContractCall>",
+              ""
+            ],
+            [
+              "buildTransfer(to, amount, enc?)",
+              "Promise<ContractCall>",
+              ""
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "CreditModule",
+          "id": "credit-module"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Method",
+            "Returns"
+          ],
+          "rows": [
+            [
+              "getMarketAddress(override?)",
+              "Address"
+            ],
+            [
+              "getMarketUtilization(market?)",
+              "Promise<CreditMarketUtilization>",
+              "Public TVL / utilization"
+            ],
+            [
+              "getPositionHandles(wallet, opts?)",
+              "Promise<CreditPositionHandles>",
+              "Opaque handles; shadows optional"
+            ],
+            [
+              "buildSupplyCollateral(amount, enc?, market?)",
+              "Promise<ContractCall>"
+            ],
+            [
+              "buildBorrow(amount, enc?, market?)",
+              "Promise<ContractCall>"
+            ],
+            [
+              "buildRepay(amount, enc?, market?)",
+              "Promise<ContractCall>"
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "MCP servers",
+          "id": "mcp"
+        },
+        {
+          "type": "paragraph",
+          "text": "@obscura-fhe/mcp exposes User, Developer, and Documentation MCP profiles for Cursor, Claude Desktop, VS Code, Windsurf, Continue, and any stdio agent. User MCP maps sdk.* to privacy-first tools. Full setup: /docs/mcp."
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "title": "Quick start",
+          "code": "npm install @obscura-fhe/mcp@1.0.2 @obscura-fhe/sdk@1.0.2\nnode ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "VoteModule",
+          "id": "vote-module"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Method",
+            "Returns"
+          ],
+          "rows": [
+            [
+              "getProposalCount()",
+              "Promise<bigint>",
+              "Reads ObscuraVote.nextProposalId()"
+            ],
+            [
+              "getProposal(id)",
+              "Promise<ProposalState>"
+            ],
+            [
+              "buildCastVote(proposalId, optionIndex, enc?)",
+              "Promise<ContractCall>"
+            ],
+            [
+              "buildDelegate(delegatee)",
+              "ContractCall"
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "ReputationModule",
+          "id": "reputation-module"
+        },
+        {
+          "type": "code",
+          "language": "typescript",
+          "code": "getSummary(wallet: Address): Promise<ReputationSummary>"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "ActivityModule",
+          "id": "activity-module"
+        },
+        {
+          "type": "code",
+          "language": "typescript",
+          "code": "listForWallet(wallet, options?: ActivityListOptions): Promise<ActivityListResult>\ngetEventFilters(): ActivityEventFilterMap\nisConfigured(): boolean  // true when supabaseUrl + supabaseAnonKey set"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "NotificationsModule",
+          "id": "notifications-module"
+        },
+        {
+          "type": "list",
+          "items": [
+            "getVapidPublicKey(): Promise<string>",
+            "getPrefs(wallet): Promise<NotificationPrefs | null>",
+            "savePrefs(prefs): Promise<void>",
+            "subscribe(wallet, subscription): Promise<void>",
+            "unsubscribe(wallet): Promise<void>"
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Exported types & constants",
+          "id": "exports"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Types: ContractCall, InEuint64, FheProvider, ReputationSummary, ActivityItem, NotificationPrefs, ProposalState",
+            "Constants: DEFAULT_ADDRESSES, DEFAULT_SUPABASE_URL, ARBITRUM_SEPOLIA_CHAIN_ID, ACTIVITY_EVENT_FILTERS, DEFAULT_API_URL, DEFAULT_RPC_URL",
+            "Errors: FheRequiredError, HttpError",
+            "ABIs: OC_USDC_PAY_ABI, CREDIT_MARKET_ABI, OBSCURA_VOTE_ABI"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "mcp",
+      "title": "MCP servers",
+      "description": "Official Model Context Protocol servers (@obscura-fhe/mcp v1.0.2) — User, Developer, and Documentation profiles for Cursor, Claude, VS Code, and any stdio agent.",
+      "category": "Reference",
+      "keywords": [
+        "mcp",
+        "cursor",
+        "claude",
+        "vscode",
+        "windsurf",
+        "continue",
+        "agents",
+        "automation"
+      ],
+      "blocks": [
+        {
+          "type": "visual",
+          "variant": "mcp-profiles"
+        },
+        {
+          "type": "callout",
+          "variant": "success",
+          "title": "Published on npm · SDK v1.0.2 · MCP v1.0.2",
+          "text": "Three isolated stdio servers wrap @obscura-fhe/sdk — no duplicate protocol logic. User MCP never decrypts FHE values or holds private keys."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Install",
+          "id": "install"
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "title": "Project setup",
+          "code": "# In your app or agent workspace\nnpm install @obscura-fhe/mcp@1.0.2 @obscura-fhe/sdk@1.0.2\n\n# Binaries (after install)\n# obscura-mcp-user   — wallet-scoped agent tools\n# obscura-mcp-dev    — local repo inspection\n# obscura-mcp-docs   — bundled docs portal (14 pages)"
+        },
+        {
+          "type": "visual",
+          "variant": "mcp-agent-flow"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "IDE & agent setup",
+          "id": "ide-setup"
+        },
+        {
+          "type": "paragraph",
+          "text": "All IDEs use the same mcpServers JSON shape. Install the packages in your project first, then point your agent at node + dist/*.js (works on Windows, macOS, and Linux)."
+        },
+        {
+          "type": "visual",
+          "variant": "mcp-ide-setup"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Cursor",
+          "id": "cursor"
+        },
+        {
+          "type": "steps",
+          "items": [
+            {
+              "title": "Install packages",
+              "description": "npm install @obscura-fhe/mcp @obscura-fhe/sdk in your project root"
+            },
+            {
+              "title": "Create config",
+              "description": "Add .cursor/mcp.json (project) or ~/.cursor/mcp.json (global)"
+            },
+            {
+              "title": "Set env vars",
+              "description": "OBSCURA_SUPABASE_ANON_KEY for User MCP activity tools"
+            },
+            {
+              "title": "Restart Cursor",
+              "description": "Settings → MCP → verify obscura-* servers show green"
+            }
+          ]
+        },
+        {
+          "type": "code",
+          "language": "json",
+          "title": ".cursor/mcp.json",
+          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_SUPABASE_ANON_KEY\": \"${OBSCURA_SUPABASE_ANON_KEY}\",\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Claude Desktop",
+          "id": "claude"
+        },
+        {
+          "type": "steps",
+          "items": [
+            {
+              "title": "Install packages",
+              "description": "In a persistent project folder (e.g. ~/obscura-agent)"
+            },
+            {
+              "title": "Edit config",
+              "description": "macOS: ~/Library/Application Support/Claude/claude_desktop_config.json · Windows: %APPDATA%\\Claude\\claude_desktop_config.json"
+            },
+            {
+              "title": "Merge mcpServers",
+              "description": "Add obscura-* entries under top-level mcpServers"
+            },
+            {
+              "title": "Restart Claude",
+              "description": "Fully quit and reopen — hammer icon shows connected tools"
+            }
+          ]
+        },
+        {
+          "type": "code",
+          "language": "json",
+          "title": "claude_desktop_config.json",
+          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_SUPABASE_ANON_KEY\": \"${OBSCURA_SUPABASE_ANON_KEY}\",\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "VS Code (GitHub Copilot MCP)",
+          "id": "vscode"
+        },
+        {
+          "type": "steps",
+          "items": [
+            {
+              "title": "Enable MCP",
+              "description": "VS Code 1.99+ with GitHub Copilot — MCP support in workspace settings"
+            },
+            {
+              "title": "Create config",
+              "description": ".vscode/mcp.json in your project root"
+            },
+            {
+              "title": "Install packages",
+              "description": "npm install in the same workspace folder"
+            },
+            {
+              "title": "Reload window",
+              "description": "Command Palette → Developer: Reload Window"
+            }
+          ]
+        },
+        {
+          "type": "code",
+          "language": "json",
+          "title": ".vscode/mcp.json",
+          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_SUPABASE_ANON_KEY\": \"${OBSCURA_SUPABASE_ANON_KEY}\",\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Windsurf",
+          "id": "windsurf"
+        },
+        {
+          "type": "paragraph",
+          "text": "Windsurf uses the same MCP JSON as Cursor. Add to ~/.codeium/windsurf/mcp_config.json (global) or .windsurf/mcp.json (workspace). Use node + dist paths after npm install."
+        },
+        {
+          "type": "code",
+          "language": "json",
+          "title": "mcp_config.json",
+          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_SUPABASE_ANON_KEY\": \"${OBSCURA_SUPABASE_ANON_KEY}\",\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Continue.dev",
+          "id": "continue"
+        },
+        {
+          "type": "paragraph",
+          "text": "Add mcpServers to ~/.continue/config.json (merge with existing config). Same command/args/env shape as Cursor."
+        },
+        {
+          "type": "code",
+          "language": "json",
+          "title": "~/.continue/config.json (fragment)",
+          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_SUPABASE_ANON_KEY\": \"${OBSCURA_SUPABASE_ANON_KEY}\",\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Cline / any stdio agent",
+          "id": "generic"
+        },
+        {
+          "type": "paragraph",
+          "text": "Any MCP client that supports stdio transport can run one profile at a time. Use node with the absolute path to dist/*.js if your cwd differs from the install folder."
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "title": "Documentation MCP (no secrets)",
+          "code": "node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\n\n# User MCP (needs anon key in env)\nOBSCURA_SUPABASE_ANON_KEY=<anon> OBSCURA_API_URL=https://obscura-api-n62v.onrender.com \\\n  node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\n\n# Developer MCP (local repo)\nOBSCURA_REPO_ROOT=/path/to/Obscura \\\n  node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js"
+        },
+        {
+          "type": "callout",
+          "variant": "warning",
+          "title": "Privacy boundaries",
+          "text": "User MCP never exposes decrypt/permit tools, relay/keeper infra, service-role keys, or bulk graph scans. Encrypted balances return opaque ctHash handles only."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "User MCP tools",
+          "id": "user-tools"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Tool",
+            "SDK mapping"
+          ],
+          "rows": [
+            [
+              "user_health_api",
+              "API liveness"
+            ],
+            [
+              "user_get_chain_config",
+              "Public endpoints"
+            ],
+            [
+              "pay_get_encrypted_balance_handle",
+              "Opaque ctHash — never decrypted"
+            ],
+            [
+              "pay_build_shield / unshield / transfer",
+              "PayModule tx builders"
+            ],
+            [
+              "credit_get_market_utilization",
+              "CreditModule.getMarketUtilization()"
+            ],
+            [
+              "credit_build_supply_collateral / borrow / repay",
+              "CreditModule tx builders"
+            ],
+            [
+              "vote_get_proposal_count / get_proposal",
+              "VoteModule reads"
+            ],
+            [
+              "vote_build_cast_vote / delegate",
+              "VoteModule tx builders"
+            ],
+            [
+              "reputation_get_summary",
+              "ReputationModule"
+            ],
+            [
+              "activity_list_for_wallet",
+              "ActivityModule (max 25 rows)"
+            ],
+            [
+              "user_encode_call",
+              "encodeCall() for external signers"
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Environment variables",
+          "id": "env"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Variable",
+            "Profile",
+            "Required"
+          ],
+          "rows": [
+            [
+              "OBSCURA_SUPABASE_ANON_KEY",
+              "User",
+              "For activity tools"
+            ],
+            [
+              "OBSCURA_API_URL",
+              "User",
+              "Default: production API"
+            ],
+            [
+              "OBSCURA_RPC_URL",
+              "User",
+              "Default: Arbitrum Sepolia RPC"
+            ],
+            [
+              "OBSCURA_REPO_ROOT",
+              "Developer",
+              "Path to Obscura clone"
+            ],
+            [
+              "OBSCURA_PRIVACY_MODE",
+              "User",
+              "standard | strict"
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "CoFHE boundary",
+          "id": "cofhe"
+        },
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            "Browser CoFHE SDK encrypts amounts → InEuint64",
+            "Pass pre-encrypted InEuint64 to pay_build_* / credit_build_* / vote_build_cast_vote",
+            "MCP returns unsigned ContractCall + eoaFheWarning",
+            "User signs with EOA — smart accounts cannot forward InEuint64",
+            "Reveal balances only in Obscura UI — never via MCP"
+          ]
+        },
+        {
+          "type": "link-grid",
+          "items": [
+            {
+              "label": "SDK reference",
+              "href": "/docs/sdk",
+              "description": "@obscura-fhe/sdk v1.0.2"
+            },
+            {
+              "label": "Privacy model",
+              "href": "/docs/privacy",
+              "description": "Encrypted vs public surfaces"
+            },
+            {
+              "label": "Architecture",
+              "href": "/docs/architecture",
+              "description": "Five-tier system design"
+            },
+            {
+              "label": "npm @obscura-fhe/mcp",
+              "href": "https://www.npmjs.com/package/@obscura-fhe/mcp",
+              "description": "v1.0.2"
+            },
+            {
+              "label": "npm @obscura-fhe/sdk",
+              "href": "https://www.npmjs.com/package/@obscura-fhe/sdk",
+              "description": "v1.0.2"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "searchIndex": [
+    {
+      "slug": "home",
+      "title": "Developer Portal Overview",
+      "description": "Obscura docs home — Pay, Credit, Vote, SDK, architecture",
+      "category": "Getting started",
+      "excerpt": "Build privacy-first DeFi with Obscura on Arbitrum Sepolia"
+    },
+    {
+      "slug": "ecosystem",
+      "title": "Ecosystem overview",
+      "description": "Three products, one encrypted asset, shared reputation and activity infrastructure.",
+      "category": "Getting started",
+      "excerpt": "product-overview shared-state Cross-product value flows Pay → Credit: Shield ocUSDC in Pay, supply collateral and borrow on the canonical market. All products → Reputation: Worker derives 28 capped si"
+    },
+    {
+      "slug": "quick-start",
+      "title": "Quick start",
+      "description": "Install the SDK and read your first on-chain and off-chain Obscura data in under five minutes.",
+      "category": "Getting started",
+      "excerpt": "onboarding-path What you need before starting Reputation + notifications: npm install only. Activity: Supabase anon key required (URL defaults to Obscura project). On-chain reads: Arbitrum Sepolia RPC"
+    },
+    {
+      "slug": "first-app",
+      "title": "Build your first app",
+      "description": "Reputation dashboard, activity timeline, and a governance delegate transaction.",
+      "category": "Getting started",
+      "excerpt": "A minimal Node or browser app: display reputation tier, list recent activity, and prepare a Vote delegate ContractCall. mkdir obscura-demo && cd obscura-demo\nnpm init -y\nnpm install @obscura-fhe/sdk v"
+    },
+    {
+      "slug": "sdk-onboarding",
+      "title": "SDK onboarding",
+      "description": "Configure ObscuraSDK, wire viem clients, and inject FHE for encrypted writes.",
+      "category": "Getting started",
+      "excerpt": "Module requirements reputation · notifications — API only, no wallet. activity — Supabase URL + anon key. pay · credit · vote reads — RPC (421614). Encrypted writes — FheProvider. sendCall — walletCli"
+    },
+    {
+      "slug": "architecture",
+      "title": "Architecture",
+      "description": "Five-tier system design from client SDK to CoFHE coprocessor and Supabase persistence.",
+      "category": "Platform",
+      "excerpt": "system-tiers data-flow Layer responsibilities Layer Responsibility Failure mode Client UX, encryption, wallet signing, reveal-on-demand Masked values; no auto-decrypt EVM + CoFHE Encrypted state, ACL,"
+    },
+    {
+      "slug": "privacy",
+      "title": "Privacy model",
+      "description": "What stays encrypted, what is public by design, and when users choose to reveal.",
+      "category": "Platform",
+      "excerpt": "Obscura stores financial amounts as euint64 ciphertext handles on-chain. Plaintext appears only at explicit user reveal, intentional public aggregates, or unavoidable bridge metadata. privacy-zones co"
+    },
+    {
+      "slug": "pay",
+      "title": "Obscura Pay",
+      "description": "Encrypted ocUSDC payments, streams, escrows, invoices, stealth receiving, and public-mode smart accounts.",
+      "category": "Products",
+      "excerpt": "Obscura Pay is the payment layer on /pay. Canonical asset: ocUSDC_Pay (0xEd46020Df8abe7BB1E096f27d089F4326D223a53). Supports private EOA mode (FHE) and public ERC-4337 smart-account mode (Circle USDC)"
+    },
+    {
+      "slug": "credit",
+      "title": "Obscura Credit",
+      "description": "Privacy-first Morpho Blue-shaped money market with encrypted positions and sealed liquidations.",
+      "category": "Products",
+      "excerpt": "Obscura Credit on /credit is an isolated FHE money market. Per-user supply shares, borrow shares, and collateral are euint64 handles. Public TVL and utilization remain plaintext. Canonical market Para"
+    },
+    {
+      "slug": "vote",
+      "title": "Obscura Vote",
+      "description": "FHE-encrypted multi-option governance with treasury, rewards, and OpenZeppelin Governor.",
+      "category": "Products",
+      "excerpt": "Obscura Vote on /vote provides coercion-resistant encrypted ballots (ObscuraVote V5) plus executable OZ Governor proposals. Eligibility requires ObscuraToken lastClaim > 0. Two governance tracks Track"
+    },
+    {
+      "slug": "reputation",
+      "title": "Reputation",
+      "description": "Cross-product reputation pipeline from indexed events to tiered API summaries.",
+      "category": "Shared services",
+      "excerpt": "Reputation derives capped signal weights from Pay, Credit, and Vote indexed events. The worker writes obscura_reputation_events; the API aggregates into tier buckets for UI panels and Credit Score V2 "
+    },
+    {
+      "slug": "activity",
+      "title": "Activity",
+      "description": "Indexed on-chain activity via Supabase Realtime — no REST /activity endpoint.",
+      "category": "Shared services",
+      "excerpt": "The obscura-worker indexes 51 event types from 19 live contract instances into obscura_activity. The frontend and SDK read directly from Supabase with wallet-scoped filters. Row schema Field Meaning c"
+    },
+    {
+      "slug": "notifications",
+      "title": "Notifications",
+      "description": "Web Push pipeline with amount-free payloads and opt-in UX.",
+      "category": "Shared services",
+      "excerpt": "Notifications dispatch on obscura_activity INSERT via worker and API Realtime listeners. Payloads are generic and amount-free — no decrypted values in push body. Dispatch pipeline flowchart LR\n  ACT[a"
+    },
+    {
+      "slug": "sdk",
+      "title": "SDK reference",
+      "description": "Complete @obscura-fhe/sdk module API, types, and constants.",
+      "category": "Reference",
+      "excerpt": "@obscura-fhe/sdk v1.0.2 Published on npm · Arbitrum Sepolia (421614) · pairs with @obscura-fhe/mcp for agent tooling. Requirements by module activity → supabaseAnonKey (+ optional supabaseUrl). On-cha"
+    },
+    {
+      "slug": "mcp",
+      "title": "MCP servers",
+      "description": "Official Model Context Protocol servers (@obscura-fhe/mcp v1.0.2) — User, Developer, and Documentation profiles for Cursor, Claude, VS Code, and any stdio agent.",
+      "category": "Reference",
+      "excerpt": "mcp-profiles Published on npm · SDK v1.0.2 · MCP v1.0.2 Three isolated stdio servers wrap @obscura-fhe/sdk — no duplicate protocol logic. User MCP never decrypts FHE values or holds private keys. Inst"
+    }
+  ]
+}

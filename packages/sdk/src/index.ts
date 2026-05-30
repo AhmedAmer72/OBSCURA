@@ -9,6 +9,8 @@ export type {
   ContractCall,
   InEuint64,
   NotificationPrefs,
+  CreditMarketUtilization,
+  CreditPositionHandles,
   ProposalState,
   PushSubscriptionJSON,
   ReputationSignalSummary,

@@ -4,6 +4,7 @@ import { firstAppPage, sdkOnboardingPage } from "./pages/onboarding";
 import { architecturePage, privacyPage } from "./pages/platform";
 import { payPage, creditPage, votePage } from "./pages/products";
 import { reputationPage, activityPage, notificationsPage, sdkReferencePage } from "./pages/services";
+import { mcpPage } from "./pages/mcp";
 
 export const DOC_PAGES: DocPage[] = [
   ecosystemPage,
@@ -19,6 +20,7 @@ export const DOC_PAGES: DocPage[] = [
   activityPage,
   notificationsPage,
   sdkReferencePage,
+  mcpPage,
 ];
 
 export const DOC_PAGES_BY_SLUG = Object.fromEntries(

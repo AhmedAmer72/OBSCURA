@@ -2,6 +2,14 @@
 
 All notable changes to `@obscura-fhe/sdk` are documented in this file.
 
+## [1.0.2] - 2026-05-30
+
+### Added
+
+- **Credit module:** `getMarketUtilization()` — public pool aggregates (`utilizationBps`, `totalSupplyAssets`, `totalBorrowAssets`)
+- **Credit module:** `getPositionHandles()` — encrypted position handles as opaque hex; optional plaintext shadows with explicit warning
+- Exported types: `CreditMarketUtilization`, `CreditPositionHandles`
+
 ## [1.0.1] - 2026-05-29
 
 ### Fixed

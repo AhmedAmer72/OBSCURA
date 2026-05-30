@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Search, BookOpen, Terminal, Shield } from "lucide-react";
 import { DocVisual } from "./DocVisuals";
+import { DocsMcpQuickAction } from "./DocsMcpSection";
 
 interface DocsHomeProps {
   onOpenSearch: () => void;
@@ -50,6 +51,8 @@ export function DocsHome({ onOpenSearch }: DocsHomeProps) {
         <DocVisual variant="onboarding-path" />
       </section>
 
+      <DocsMcpQuickAction />
+
       <section className="docs-home-section">
         <h2 className="docs-home-section-title">Platform scale</h2>
         <DocVisual variant="scale-grid" />
@@ -70,6 +73,11 @@ export function DocsHome({ onOpenSearch }: DocsHomeProps) {
           <Terminal className="h-5 w-5 text-[#2d8a5e]" />
           <span className="docs-home-card-title">SDK reference</span>
           <span className="docs-home-card-desc">All six modules, types & patterns</span>
+        </Link>
+        <Link to="/docs/mcp" className="docs-home-card">
+          <Terminal className="h-5 w-5 text-[#2d8a5e]" />
+          <span className="docs-home-card-title">MCP servers</span>
+          <span className="docs-home-card-desc">Cursor & agent setup for User, Dev, Docs profiles</span>
         </Link>
       </section>
     </div>

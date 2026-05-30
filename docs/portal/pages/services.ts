@@ -1,4 +1,5 @@
 import type { DocPage } from "../types";
+import { SDK_VERSION, MCP_VERSION } from "../constants";
 
 export const reputationPage: DocPage = {
   slug: "reputation",
@@ -224,6 +225,12 @@ export const sdkReferencePage: DocPage = {
   blocks: [
     {
       type: "callout",
+      variant: "success",
+      title: `@obscura-fhe/sdk v${SDK_VERSION}`,
+      text: "Published on npm · Arbitrum Sepolia (421614) · pairs with @obscura-fhe/mcp for agent tooling.",
+    },
+    {
+      type: "callout",
       variant: "info",
       title: "Requirements by module",
       text: "activity → supabaseAnonKey (+ optional supabaseUrl). On-chain reads → rpcUrl or publicClient (chain 421614). Encrypted writes → fhe or pre-encrypted InEuint64. sendCall → walletClient.",
@@ -232,7 +239,7 @@ export const sdkReferencePage: DocPage = {
       type: "code",
       language: "bash",
       title: "Install",
-      code: "npm install @obscura-fhe/sdk viem",
+      code: `npm install @obscura-fhe/sdk@${SDK_VERSION} viem`,
     },
     {
       type: "visual",
@@ -284,10 +291,29 @@ sdk.sendCall(call, account): Promise<Hex>  // requires walletClient`,
       headers: ["Method", "Returns"],
       rows: [
         ["getMarketAddress(override?)", "Address"],
+        ["getMarketUtilization(market?)", "Promise<CreditMarketUtilization>", "Public TVL / utilization"],
+        ["getPositionHandles(wallet, opts?)", "Promise<CreditPositionHandles>", "Opaque handles; shadows optional"],
         ["buildSupplyCollateral(amount, enc?, market?)", "Promise<ContractCall>"],
         ["buildBorrow(amount, enc?, market?)", "Promise<ContractCall>"],
         ["buildRepay(amount, enc?, market?)", "Promise<ContractCall>"],
       ],
+    },
+    {
+      type: "heading",
+      level: 2,
+      text: "MCP servers",
+      id: "mcp",
+    },
+    {
+      type: "paragraph",
+      text: "@obscura-fhe/mcp exposes User, Developer, and Documentation MCP profiles for Cursor, Claude Desktop, VS Code, Windsurf, Continue, and any stdio agent. User MCP maps sdk.* to privacy-first tools. Full setup: /docs/mcp.",
+    },
+    {
+      type: "code",
+      language: "bash",
+      title: "Quick start",
+      code: `npm install @obscura-fhe/mcp@${MCP_VERSION} @obscura-fhe/sdk@${SDK_VERSION}
+node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js`,
     },
     {
       type: "heading",

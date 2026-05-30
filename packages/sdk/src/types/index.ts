@@ -103,6 +103,30 @@ export interface ProposalState {
   winningOption: bigint;
 }
 
+/** Public aggregate market metrics — safe to expose without wallet context */
+export interface CreditMarketUtilization {
+  marketAddress: Address;
+  utilizationBps: bigint;
+  totalSupplyAssets: bigint;
+  totalBorrowAssets: bigint;
+}
+
+/**
+ * Encrypted position handles (opaque ctHash). Never decrypted by the SDK.
+ * Plaintext shadows are optional testnet-only hints — not private balances.
+ */
+export interface CreditPositionHandles {
+  marketAddress: Address;
+  wallet: Address;
+  encryptedSupplySharesHandle: `0x${string}`;
+  encryptedBorrowSharesHandle: `0x${string}`;
+  encryptedCollateralHandle: `0x${string}`;
+  /** Set when includePlaintextShadows=true */
+  plaintextShadowWarning?: string;
+  plainCollateral?: bigint;
+  plainBorrow?: bigint;
+}
+
 export interface ObscuraSDKConfig {
   chainId?: number;
   rpcUrl?: string;

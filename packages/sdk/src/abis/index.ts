@@ -49,6 +49,53 @@ export const OC_USDC_PAY_ABI = [
 
 export const CREDIT_MARKET_ABI = [
   {
+    name: "utilizationBps",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    name: "totalSupplyAssets",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint128" }],
+  },
+  {
+    name: "totalBorrowAssets",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint128" }],
+  },
+  {
+    name: "getPosition",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "user", type: "address" }],
+    outputs: [
+      { name: "encSupplyShares", type: "uint256" },
+      { name: "borrowShares", type: "uint256" },
+      { name: "collateral", type: "uint256" },
+      { name: "disburseTo", type: "uint256" },
+    ],
+  },
+  {
+    name: "getPlainCollateral",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "user", type: "address" }],
+    outputs: [{ name: "", type: "uint128" }],
+  },
+  {
+    name: "getPlainBorrow",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "user", type: "address" }],
+    outputs: [{ name: "", type: "uint128" }],
+  },
+  {
     name: "supplyCollateral",
     type: "function",
     stateMutability: "nonpayable",

@@ -5,6 +5,7 @@ import { DocHeader } from "./DocHeader";
 import { DocSidebar } from "./DocSidebar";
 import { DocContent } from "./DocContent";
 import { DocsHome } from "./DocsHome";
+import { DocsMcpPageHero } from "./DocsMcpSection";
 import "./docs-portal.css";
 
 function DocBreadcrumb({ slug, title }: { slug: string; title: string }) {
@@ -42,7 +43,11 @@ export default function DeveloperPortal() {
               <DocBreadcrumb slug={page.slug} title={page.title} />
               <header className="docs-page-header">
                 <h1 className="docs-page-title">{page.title}</h1>
-                <p className="docs-portal-lead">{page.description}</p>
+                {page.slug === "mcp" ? (
+                  <DocsMcpPageHero />
+                ) : (
+                  <p className="docs-portal-lead">{page.description}</p>
+                )}
               </header>
               <DocContent blocks={page.blocks} />
               <footer className="docs-page-footer">

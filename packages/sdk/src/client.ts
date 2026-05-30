@@ -60,6 +60,7 @@ export class ObscuraSDK {
     this.credit = new CreditModule({
       chainId: this.chainId,
       addresses: this.addresses,
+      publicClient: this.publicClient,
       fhe: this.fhe,
     });
     this.vote = new VoteModule(moduleDeps);

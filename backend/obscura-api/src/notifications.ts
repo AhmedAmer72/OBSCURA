@@ -17,6 +17,7 @@ import { createHash } from "crypto";
 import webpush from "web-push";
 import { Resend } from "resend";
 import { db } from "./db";
+import { verifyWalletAuth } from "./wallet-auth";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const VAPID_PUBLIC_KEY    = process.env.VAPID_PUBLIC_KEY ?? "";
@@ -568,12 +569,26 @@ notificationsRouter.get("/vapid-public-key", (_req: Request, res: Response) => {
 
 notificationsRouter.post("/subscribe", async (req: Request, res: Response) => {
   try {
-    const { wallet, subscription } = req.body as { wallet?: string; subscription?: webpush.PushSubscription };
-    if (!wallet || !subscription?.endpoint) {
-      res.status(400).json({ error: "wallet and subscription.endpoint are required" });
+    const body = req.body as {
+      wallet?: string;
+      subscription?: webpush.PushSubscription;
+      signature?: string;
+      timestamp?: number;
+    };
+    const auth = await verifyWalletAuth({
+      wallet: body.wallet,
+      signature: body.signature,
+      timestamp: body.timestamp,
+    });
+    if (!auth.ok) {
+      res.status(401).json({ error: auth.error });
       return;
     }
-    await saveSubscription(wallet, subscription);
+    if (!body.subscription?.endpoint) {
+      res.status(400).json({ error: "subscription.endpoint is required" });
+      return;
+    }
+    await saveSubscription(auth.wallet, body.subscription);
     res.json({ ok: true });
   } catch (e) {
     console.error(`[notifications] subscribe failed: ${(e as Error).message}`);
@@ -583,9 +598,17 @@ notificationsRouter.post("/subscribe", async (req: Request, res: Response) => {
 
 notificationsRouter.delete("/subscribe", async (req: Request, res: Response) => {
   try {
-    const { wallet } = req.body as { wallet?: string };
-    if (!wallet) { res.status(400).json({ error: "wallet is required" }); return; }
-    await removeSubscription(wallet);
+    const body = req.body as { wallet?: string; signature?: string; timestamp?: number };
+    const auth = await verifyWalletAuth({
+      wallet: body.wallet,
+      signature: body.signature,
+      timestamp: body.timestamp,
+    });
+    if (!auth.ok) {
+      res.status(401).json({ error: auth.error });
+      return;
+    }
+    await removeSubscription(auth.wallet);
     res.json({ ok: true });
   } catch (e) {
     console.error(`[notifications] unsubscribe failed: ${(e as Error).message}`);
@@ -595,10 +618,21 @@ notificationsRouter.delete("/subscribe", async (req: Request, res: Response) => 
 
 notificationsRouter.post("/prefs", async (req: Request, res: Response) => {
   try {
-    const prefs = req.body as Partial<NotificationPrefs>;
-    if (!prefs.wallet) { res.status(400).json({ error: "wallet is required" }); return; }
-    await savePrefs({
+    const prefs = req.body as Partial<NotificationPrefs> & {
+      signature?: string;
+      timestamp?: number;
+    };
+    const auth = await verifyWalletAuth({
       wallet: prefs.wallet,
+      signature: prefs.signature,
+      timestamp: prefs.timestamp,
+    });
+    if (!auth.ok) {
+      res.status(401).json({ error: auth.error });
+      return;
+    }
+    await savePrefs({
+      wallet: auth.wallet,
       push_enabled: !!prefs.push_enabled,
       email_enabled: !!prefs.email_enabled,
       email: prefs.email,

@@ -1,0 +1,60 @@
+{
+  "name": "@obscura-fhe/mcp",
+  "version": "1.0.2",
+  "description": "Obscura MCP servers — User, Developer, and Documentation profiles for privacy-first Web3 agents",
+  "type": "module",
+  "bin": {
+    "obscura-mcp-user": "dist/obscura-mcp-user.js",
+    "obscura-mcp-dev": "dist/obscura-mcp-dev.js",
+    "obscura-mcp-docs": "dist/obscura-mcp-docs.js"
+  },
+  "exports": {
+    "./user": "./dist/obscura-mcp-user.js",
+    "./developer": "./dist/obscura-mcp-dev.js",
+    "./documentation": "./dist/obscura-mcp-docs.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "resources"
+  ],
+  "scripts": {
+    "bundle:docs": "tsx scripts/bundle-docs-portal.ts",
+    "prebuild": "npm run bundle:docs",
+    "build": "tsup",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "pretest": "npm run bundle:docs",
+    "test": "vitest run",
+    "prepublishOnly": "npm run bundle:docs && npm run test && npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@obscura-fhe/sdk": "^1.0.2",
+    "viem": "^2.29.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.4.0",
+    "tsx": "^4.22.3",
+    "typescript": "^5.8.0",
+    "vitest": "^3.1.0"
+  },
+  "keywords": [
+    "obscura",
+    "mcp",
+    "model-context-protocol",
+    "fhe",
+    "privacy",
+    "web3"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mohamedwael201193/OBSCURA.git",
+    "directory": "packages/obscura-mcp"
+  }
+}

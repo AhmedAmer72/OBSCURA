@@ -2548,7 +2548,9 @@ The Obscura TypeScript SDK (`@obscura-fhe/sdk`) is the **official, framework-agn
 | Resource | URL / path |
 |---|---|
 | **npm package** | `@obscura-fhe/sdk` — https://www.npmjs.com/package/@obscura-fhe/sdk |
-| **Latest version** | `1.0.1` (2026-05-29) |
+| **Latest version** | `1.0.2` (2026-05-30) |
+| **MCP package** | `@obscura-fhe/mcp` — https://www.npmjs.com/package/@obscura-fhe/mcp (`1.0.2`) |
+| **Docs — MCP setup** | `/docs/mcp` |
 | **Install** | `npm install @obscura-fhe/sdk viem` |
 | **GitHub source** | [packages/sdk/](packages/sdk/) |
 | **Architecture plan** | [packages/sdk/SDK_ARCHITECTURE.md](packages/sdk/SDK_ARCHITECTURE.md) |
@@ -2831,7 +2833,7 @@ All gates run automatically via `prepublishOnly` before every npm publish.
 | Script | Command | Purpose |
 |---|---|---|
 | Typecheck | `npm run typecheck` | `tsc --noEmit` on `src/` |
-| Unit tests | `npm run test` | vitest — 15 tests |
+| Unit tests | `npm run test` | vitest — 18 tests |
 | Build | `npm run build` | tsup → ESM + CJS + DTS |
 | Example smoke | `npm run example:basic` | Live reputation + VAPID against production API |
 | Pack | `npm pack` | Tarball integrity (~39.5 kB) |
@@ -2850,10 +2852,10 @@ File: [packages/sdk/tests/sdk.test.ts](packages/sdk/tests/sdk.test.ts)
 | `NotificationsModule` | 2 | VAPID key, 404 prefs |
 | `ActivityModule` | 3 | Supabase guard, `isConfigured()`, filter map |
 | `PayModule tx encoding` | 1 | Shield calldata matches viem |
-| `CreditModule` | 1 | Canonical market address |
-| **Total** | **15** | All passing as of v1.0.1 |
+| `CreditModule` | 3 | getMarketUtilization, getPositionHandles, canonical market |
+| **Total** | **18** | All passing as of v1.0.2 |
 
-#### 39.11.3 Release validation matrix (v1.0.1)
+#### 39.11.3 Release validation matrix (v1.0.2)
 
 | Gate | Result | Date |
 |---|---|---|
@@ -2867,7 +2869,8 @@ File: [packages/sdk/tests/sdk.test.ts](packages/sdk/tests/sdk.test.ts)
 | Fresh TypeScript project | ✅ `tsc --noEmit` with `verbatimModuleSyntax` | 2026-05-29 |
 | Fresh Vite React project | ✅ `npm run build` | 2026-05-29 |
 | Fresh Next.js project | ✅ `npm run build` | 2026-05-29 |
-| npm publish `@obscura-fhe/sdk@1.0.1` | ✅ Published | 2026-05-29 |
+| npm publish `@obscura-fhe/sdk@1.0.2` | ✅ Published | 2026-05-30 |
+| npm publish `@obscura-fhe/mcp@1.0.2` | ✅ Published | 2026-05-30 |
 | Git commit | `5da0662` on `main` | 2026-05-29 |
 
 #### 39.11.4 Known fixes in v1.0.1 (audit remediation)
@@ -2891,9 +2894,93 @@ Recommended integrator sequence (also visualized at `/docs`):
 6. **Credit flows** — supply / borrow / repay builders
 7. **Vote flows** — proposals, cast, delegate
 
-### 39.13 MCP compatibility (future)
+### 39.13 MCP servers (`@obscura-fhe/mcp` v1.0.2)
 
-The flat module surface (`sdk.pay.*`, `sdk.reputation.*`, …) is designed to map **1:1** to future MCP automation tools. MCP server is **out of scope** for SDK v1 — do not publish MCP until SDK surface is stable (see [PUBLISH_CHECKLIST.md](packages/sdk/PUBLISH_CHECKLIST.md)).
+Obscura ships **three isolated MCP profiles** on npm. Each profile has a separate binary, threat model, and tool namespace. MCP wraps `@obscura-fhe/sdk` — it does not duplicate protocol logic.
+
+| Profile | Binary | Audience | Live data |
+|---|---|---|---|
+| **User** | `obscura-mcp-user` | End-user wallet agents | Wallet-scoped reads + unsigned tx builders |
+| **Developer** | `obscura-mcp-dev` | Contributors / auditors | Local repo files only |
+| **Documentation** | `obscura-mcp-docs` | Integrators learning Obscura | Bundled docs portal (14 pages) |
+
+**Install:**
+
+```bash
+npm install @obscura-fhe/mcp @obscura-fhe/sdk
+```
+
+**Cursor configuration** (`.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "obscura-user": {
+      "command": "node",
+      "args": ["./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js"],
+      "env": {
+        "OBSCURA_SUPABASE_ANON_KEY": "<anon-key>",
+        "OBSCURA_API_URL": "https://obscura-api-n62v.onrender.com"
+      }
+    },
+    "obscura-dev": {
+      "command": "node",
+      "args": ["./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js"],
+      "env": { "OBSCURA_REPO_ROOT": "/path/to/Obscura" }
+    },
+    "obscura-docs": {
+      "command": "node",
+      "args": ["./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js"]
+    }
+  }
+}
+```
+
+Use `node` + `dist/*.js` after `npm install` (recommended on Windows). Alternative: `npx -y -p @obscura-fhe/mcp obscura-mcp-docs`.
+
+#### Privacy boundaries (User MCP)
+
+| Allowed | Never exposed |
+|---|---|
+| Public chain reads (rates, proposal metadata, market utilization) | FHE decrypt or permit tools |
+| Opaque encrypted handles (`ctHash` → `***` in UI) | ERC-4337 relay / keeper infrastructure |
+| Unsigned `ContractCall` builders with pre-encrypted `InEuint64` | Supabase service role or VAPID private keys |
+| Wallet-scoped activity (max 25 rows) | Bulk activity or stealth announcement graph scans |
+| Reputation summary for connected wallet | Server-side transaction signing |
+
+#### User MCP tool manifest (v1)
+
+| Tool | Maps to SDK |
+|---|---|
+| `user_health_api` | API liveness |
+| `user_get_chain_config` | Public endpoints |
+| `pay_get_encrypted_balance_handle` | Opaque balance handle |
+| `pay_build_shield` / `unshield` / `transfer` | PayModule tx builders |
+| `credit_get_market_utilization` | `CreditModule.getMarketUtilization()` |
+| `credit_build_supply_collateral` / `borrow` / `repay` | CreditModule tx builders |
+| `vote_get_proposal_count` / `get_proposal` | VoteModule reads |
+| `vote_build_cast_vote` / `delegate` | VoteModule tx builders |
+| `reputation_get_summary` | ReputationModule |
+| `activity_list_for_wallet` | ActivityModule (wallet-scoped) |
+| `user_encode_call` | `encodeCall()` for external signers |
+
+#### CoFHE boundary
+
+1. Browser CoFHE SDK encrypts amounts → produces `InEuint64`
+2. Pass pre-encrypted `InEuint64` to `pay_build_*` / `credit_build_*` / `vote_build_cast_vote`
+3. MCP returns unsigned `ContractCall` + `eoaFheWarning`
+4. User signs with EOA wallet — smart accounts cannot forward `InEuint64` (`InvalidSigner`)
+5. User reveals balances only in Obscura UI — never via MCP
+
+#### Developer MCP
+
+Reads local Obscura clone with denylist on `.env`, private keys, and service-role patterns. Tools: `dev_read_file`, `dev_get_deployment_registry`, `dev_get_sanitize_rules`, `dev_get_api_routes`, `dev_get_supabase_schema`, optional live health pings.
+
+#### Documentation MCP
+
+Serves docs portal as static JSON — `docs_list_pages`, `docs_get_page`, `docs_search`, `docs_get_privacy_summary`, endpoint/SDK/reputation extractors. No chain RPC or Supabase.
+
+**Developer docs:** `/docs/mcp` in the docs portal · **Package:** [npm @obscura-fhe/mcp](https://www.npmjs.com/package/@obscura-fhe/mcp)
 
 ### 39.14 SDK vs in-app CoFHE stack
 
@@ -2914,6 +3001,7 @@ The flat module surface (`sdk.pay.*`, `sdk.reputation.*`, …) is designed to ma
 | v1.0 | 2026-05-29 | Initial canonical merge of Pay (`docs/pay_wave5.md`), Credit (`credit_wave5_protocol_bible_v1.md`), Vote (`vote_wave5_protocol_bible_v1.md` v1.3) into unified ecosystem architecture reference. 36 sections, institutional terminology, mermaid diagrams, complete registries. |
 | v1.1 | 2026-05-29 | Added §37 Ecosystem Scale (verified codebase counts) and §38 Why Obscura Is Technically Difficult; updated TOC and cross-references. |
 | v1.2 | 2026-05-30 | Added §39 Official TypeScript SDK (`@obscura-fhe/sdk` v1.0.1) — links, module API, requirements matrix, examples, full test/release validation; updated §37.1 scale counts and executive vision. |
+| v1.3 | 2026-05-30 | Added §39.13 MCP servers (`@obscura-fhe/mcp` v1.0.2) — three profiles, IDE setup (Cursor/Claude/VS Code/Windsurf/Continue), animated docs portal `/docs/mcp`; SDK v1.0.2 credit reads (`getMarketUtilization`, `getPositionHandles`). |
 
 ---
 

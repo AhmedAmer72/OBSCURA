@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "obscura-user": {
+      "command": "node",
+      "args": ["packages/obscura-mcp/dist/obscura-mcp-user.js"],
+      "env": {
+        "OBSCURA_REPO_ROOT": ".",
+        "OBSCURA_SUPABASE_ANON_KEY": "${OBSCURA_SUPABASE_ANON_KEY}",
+        "OBSCURA_API_URL": "https://obscura-api-n62v.onrender.com"
+      }
+    },
+    "obscura-dev": {
+      "command": "node",
+      "args": ["packages/obscura-mcp/dist/obscura-mcp-dev.js"],
+      "env": {
+        "OBSCURA_REPO_ROOT": "."
+      }
+    },
+    "obscura-docs": {
+      "command": "node",
+      "args": ["packages/obscura-mcp/dist/obscura-mcp-docs.js"]
+    }
+  }
+}
