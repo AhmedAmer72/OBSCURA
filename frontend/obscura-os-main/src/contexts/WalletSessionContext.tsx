@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { useAccount, useSignMessage } from "wagmi";
+import { toast } from "sonner";
 import {
   type AppWalletSession,
   broadcastSessionCleared,
@@ -20,8 +21,6 @@ import {
   subscribeAppSessionSync,
   writeAppWalletSession,
 } from "@/lib/walletApiSession";
-import { WalletVerifyModal } from "@/components/wallet/WalletVerifyModal";
-import { WalletSessionRenewBanner } from "@/components/wallet/WalletSessionRenewBanner";
 
 export type WalletSessionStatus =
   | "disconnected"
@@ -52,8 +51,8 @@ export function WalletSessionProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<WalletSessionStatus>("disconnected");
   const [session, setSession] = useState<AppWalletSession | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
   const prevWalletRef = useRef<string | null>(null);
+  const prevStatusRef = useRef<WalletSessionStatus>("disconnected");
   const verifyInFlightRef = useRef(false);
 
   const loadSessionForWallet = useCallback((w: string) => {
@@ -61,25 +60,16 @@ export function WalletSessionProvider({ children }: { children: ReactNode }) {
     if (!existing) {
       setSession(null);
       setStatus("needs_verify");
-      setModalOpen(true);
       return;
     }
     setSession(existing);
-    if (sessionNeedsRefresh(existing)) {
-      setStatus("needs_refresh");
-      setModalOpen(false);
-    } else {
-      setStatus("ready");
-      setModalOpen(false);
-    }
+    setStatus(sessionNeedsRefresh(existing) ? "needs_refresh" : "ready");
   }, []);
 
-  // Wallet connect / change / disconnect
   useEffect(() => {
     if (!isConnected || !wallet) {
       setStatus("disconnected");
       setSession(null);
-      setModalOpen(false);
       setError(null);
       prevWalletRef.current = null;
       return;
@@ -95,7 +85,6 @@ export function WalletSessionProvider({ children }: { children: ReactNode }) {
     loadSessionForWallet(wallet);
   }, [isConnected, wallet, loadSessionForWallet]);
 
-  // Cross-tab sync
   useEffect(() => {
     if (!wallet) return;
     return subscribeAppSessionSync((updatedWallet) => {
@@ -103,18 +92,6 @@ export function WalletSessionProvider({ children }: { children: ReactNode }) {
       loadSessionForWallet(wallet);
     });
   }, [wallet, loadSessionForWallet]);
-
-  // Proactive refresh when tab becomes visible and session near expiry
-  useEffect(() => {
-    if (!wallet || status !== "needs_refresh") return;
-    const onVisible = () => {
-      if (document.visibilityState === "visible") {
-        setModalOpen(true);
-      }
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [wallet, status]);
 
   const verify = useCallback(async () => {
     if (!wallet || verifyInFlightRef.current) return;
@@ -129,18 +106,42 @@ export function WalletSessionProvider({ children }: { children: ReactNode }) {
       writeAppWalletSession(next);
       setSession(next);
       setStatus("ready");
-      setModalOpen(false);
+      toast.success("Wallet verified — private data unlocked for 7 days");
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Wallet verification failed";
       setError(msg);
       setStatus(session ? "needs_refresh" : "needs_verify");
-      setModalOpen(true);
+      toast.error(msg);
     } finally {
       verifyInFlightRef.current = false;
     }
   }, [wallet, signMessageAsync, session]);
 
   const clearError = useCallback(() => setError(null), []);
+
+  // Non-blocking toast when session required (returning users + fresh connect)
+  useEffect(() => {
+    const prev = prevStatusRef.current;
+    prevStatusRef.current = status;
+
+    if (!wallet) return;
+
+    if (status === "needs_verify" && prev !== "needs_verify" && prev !== "verifying") {
+      toast("Verify your wallet to unlock private data", {
+        description: "One signature · valid for 7 days · use the Sign button next to your wallet",
+        action: { label: "Sign now", onClick: () => void verify() },
+        duration: 10_000,
+      });
+    }
+
+    if (status === "needs_refresh" && prev !== "needs_refresh" && prev !== "verifying") {
+      toast("Session expiring soon", {
+        description: "Tap Renew next to your wallet to keep activity & reputation loading instantly",
+        action: { label: "Renew", onClick: () => void verify() },
+        duration: 8_000,
+      });
+    }
+  }, [status, wallet, verify]);
 
   const value = useMemo(
     (): WalletSessionContextValue => ({
@@ -155,24 +156,9 @@ export function WalletSessionProvider({ children }: { children: ReactNode }) {
     [status, session, wallet, error, verify, clearError],
   );
 
-  const showModal =
-    modalOpen &&
-    wallet !== null &&
-    (status === "needs_verify" || status === "verifying" || status === "error" ||
-      (status === "needs_refresh" && modalOpen));
-
   return (
     <WalletSessionContext.Provider value={value}>
-      <WalletSessionRenewBanner />
       {children}
-      <WalletVerifyModal
-        open={showModal}
-        status={status}
-        error={error}
-        onVerify={() => void verify()}
-        dismissible={status === "needs_refresh"}
-        onDismiss={status === "needs_refresh" ? () => setModalOpen(false) : undefined}
-      />
     </WalletSessionContext.Provider>
   );
 }
@@ -185,7 +171,6 @@ export function useWalletSession(): WalletSessionContextValue {
   return ctx;
 }
 
-/** Safe for optional usage outside provider (returns disconnected stub) */
 export function useWalletSessionOptional(): WalletSessionContextValue | null {
   return useContext(WalletSessionContext);
 }

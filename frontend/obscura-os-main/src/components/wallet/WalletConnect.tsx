@@ -1,14 +1,77 @@
 import { useState } from "react";
+import { Loader2, ShieldCheck } from "lucide-react";
 import { useConnect, useDisconnect, useAccount, useBalance, useSwitchChain } from "wagmi";
 import { arbitrumSepolia } from "wagmi/chains";
 import { formatUnits } from "viem";
 import { cn } from "@/lib/utils";
 import { ARBITRUM_SEPOLIA_CHAIN_ID, useWalletSessionChainId } from "@/hooks/useWalletSessionChainId";
+import { useWalletSessionOptional } from "@/contexts/WalletSessionContext";
 
 type WalletConnectProps = {
   /** Light nav (landing) uses forest greens for contrast on white */
   tone?: "dark" | "light";
 };
+
+function WalletSessionAction({
+  tone,
+}: {
+  tone: "dark" | "light";
+}) {
+  const session = useWalletSessionOptional();
+  if (!session || session.status === "disconnected" || session.status === "checking") return null;
+
+  const light = tone === "light";
+  const { status, verify, clearError } = session;
+  const isVerifying = status === "verifying";
+
+  if (status === "ready") {
+    return (
+      <span
+        className={cn(
+          "hidden items-center gap-1 rounded-sm border px-2 py-1 font-mono text-[10px] uppercase tracking-wider sm:inline-flex",
+          light
+            ? "border-emerald-600/35 bg-emerald-50 text-emerald-800"
+            : "border-emerald-500/35 bg-emerald-500/10 text-emerald-400",
+        )}
+        title="Private data session active"
+      >
+        <ShieldCheck className="h-3 w-3" />
+        7d
+      </span>
+    );
+  }
+
+  const isRenew = status === "needs_refresh";
+  const label = isVerifying ? "Signing…" : isRenew ? "Renew" : "Sign";
+  const pulse = status === "needs_verify";
+
+  return (
+    <button
+      type="button"
+      disabled={isVerifying}
+      title={
+        isRenew
+          ? "Renew your 7-day session"
+          : "Sign once to unlock activity, reputation & participation for 7 days"
+      }
+      onClick={() => {
+        clearError();
+        void verify();
+      }}
+      className={cn(
+        "inline-flex shrink-0 items-center gap-1.5 rounded-sm border px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-wider transition-colors disabled:opacity-60",
+        light
+          ? "border-amber-600/50 bg-amber-50 text-amber-900 hover:bg-amber-100"
+          : "border-amber-500/50 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20",
+        pulse && "animate-pulse",
+        status === "error" && (light ? "border-red-500/50 bg-red-50 text-red-800" : "border-red-500/50 bg-red-500/10 text-red-300"),
+      )}
+    >
+      {isVerifying ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+      {label}
+    </button>
+  );
+}
 
 export default function WalletConnect({ tone = "dark" }: WalletConnectProps) {
   const [open, setOpen] = useState(false);
@@ -107,6 +170,7 @@ export default function WalletConnect({ tone = "dark" }: WalletConnectProps) {
 
   return (
     <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
+      <WalletSessionAction tone={tone} />
       <div className="hidden flex-col items-end leading-tight sm:flex">
         <span className={cn("font-mono text-[10px] uppercase tracking-widest", networkLabel)}>
           Arb Sepolia

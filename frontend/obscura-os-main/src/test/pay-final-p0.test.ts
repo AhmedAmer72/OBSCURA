@@ -166,11 +166,10 @@ describe("Pay P0.4 privacy gates", () => {
     expect(source).toContain("fetchWithAppSession");
   });
 
-  it("provides proactive wallet verification modal", () => {
-    expect(readSource("contexts/WalletSessionContext.tsx")).toContain("WalletVerifyModal");
-    expect(readSource("components/wallet/WalletVerifyModal.tsx")).toContain(
-      "Verify your wallet to enable private activity",
-    );
+  it("provides inline wallet sign action in header", () => {
+    expect(readSource("components/wallet/WalletConnect.tsx")).toContain("WalletSessionAction");
+    expect(readSource("components/wallet/WalletConnect.tsx")).toContain("Sign");
+    expect(readSource("contexts/WalletSessionContext.tsx")).not.toContain("WalletVerifyModal");
   });
 
   it("wires Credit activity through the shared feed and notification preferences", () => {

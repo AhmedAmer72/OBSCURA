@@ -292,7 +292,7 @@ export function ActivityFeed({
 
       {address && awaitingSession && (
         <p className="py-8 text-center text-sm text-muted-foreground">
-          Verify your wallet to load private activity — check the prompt above.
+          Tap <span className="font-medium text-foreground">Sign</span> next to your wallet in the header to load private activity.
         </p>
       )}
 
