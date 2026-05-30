@@ -2,6 +2,13 @@
 
 All notable changes to `@obscura-fhe/sdk` are documented in this file.
 
+## [1.0.3] - 2026-05-30
+
+### Changed
+
+- **Activity module:** reads via `GET /activity/:wallet` on Obscura API — no Supabase credentials required
+- **Breaking:** `ActivityModule` constructor now takes `HttpClient` only; `supabaseUrl` / `supabaseAnonKey` config deprecated
+
 ## [1.0.2] - 2026-05-30
 
 ### Added

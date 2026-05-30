@@ -3,7 +3,6 @@ import {
   ARBITRUM_SEPOLIA_CHAIN_ID,
   DEFAULT_API_URL,
   DEFAULT_RPC_URL,
-  DEFAULT_SUPABASE_URL,
   mergeAddresses,
   type ObscuraAddresses,
 } from "./config/defaults.js";
@@ -66,10 +65,7 @@ export class ObscuraSDK {
     this.vote = new VoteModule(moduleDeps);
     this.reputation = new ReputationModule(http);
     this.notifications = new NotificationsModule(http);
-    this.activity = new ActivityModule(
-      config.supabaseUrl ?? DEFAULT_SUPABASE_URL,
-      config.supabaseAnonKey,
-    );
+    this.activity = new ActivityModule(http);
   }
 
   static create(config: ObscuraSDKConfig = {}): ObscuraSDK {

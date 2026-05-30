@@ -29,7 +29,6 @@ Add to `.cursor/mcp.json` (or project MCP settings):
       "command": "node",
       "args": ["./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js"],
       "env": {
-        "OBSCURA_SUPABASE_ANON_KEY": "your-anon-key",
         "OBSCURA_API_URL": "https://obscura-api-n62v.onrender.com"
       }
     },
@@ -92,7 +91,8 @@ Tools: `docs_list_pages`, `docs_get_page`, `docs_search`, `docs_get_privacy_summ
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `OBSCURA_SUPABASE_ANON_KEY` | For activity | Anon key only — never service role |
+| `OBSCURA_API_URL` | User | Default: production obscura-api |
+| `OBSCURA_RPC_URL` | User | Optional RPC override |
 | `OBSCURA_API_URL` | No | Default: production API |
 | `OBSCURA_RPC_URL` | No | Default: Arbitrum Sepolia |
 | `OBSCURA_PRIVACY_MODE` | No | `standard` or `strict` |

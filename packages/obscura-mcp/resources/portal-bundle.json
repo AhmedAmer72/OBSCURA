@@ -160,7 +160,7 @@
             [
               "API",
               "obscura-api-n62v.onrender.com",
-              "Reputation, notifications, UserOp relay"
+              "Reputation, activity, notifications, UserOp relay"
             ],
             [
               "Worker",
@@ -201,7 +201,7 @@
           "type": "callout",
           "variant": "info",
           "title": "What you need before starting",
-          "text": "Reputation + notifications: npm install only. Activity: Supabase anon key required (URL defaults to Obscura project). On-chain reads: Arbitrum Sepolia RPC (default provided). Encrypted writes: optional FheProvider. sendCall(): optional walletClient."
+          "text": "Reputation, activity, and notifications work with SDK defaults — no Supabase credentials. On-chain reads: Arbitrum Sepolia RPC (default provided). Encrypted writes: optional FheProvider. sendCall(): optional walletClient."
         },
         {
           "type": "heading",
@@ -224,7 +224,7 @@
           "type": "code",
           "language": "typescript",
           "title": "Minimal client",
-          "code": "import { ObscuraSDK, DEFAULT_SUPABASE_URL } from \"@obscura-fhe/sdk\";\nimport { createPublicClient, http } from \"viem\";\nimport { arbitrumSepolia } from \"viem/chains\";\n\nconst rpcUrl = process.env.ARB_SEPOLIA_RPC_URL ?? \"https://sepolia-rollup.arbitrum.io/rpc\";\n\nexport const sdk = ObscuraSDK.create({\n  rpcUrl,\n  publicClient: createPublicClient({ chain: arbitrumSepolia, transport: http(rpcUrl) }),\n  supabaseUrl: process.env.OBSCURA_SUPABASE_URL ?? DEFAULT_SUPABASE_URL,\n  supabaseAnonKey: process.env.OBSCURA_SUPABASE_ANON_KEY,\n});\n\n// Defaults: chain 421614 · production API · deployment registry"
+          "code": "import { ObscuraSDK } from \"@obscura-fhe/sdk\";\nimport { createPublicClient, http } from \"viem\";\nimport { arbitrumSepolia } from \"viem/chains\";\n\nconst rpcUrl = process.env.ARB_SEPOLIA_RPC_URL ?? \"https://sepolia-rollup.arbitrum.io/rpc\";\n\nexport const sdk = ObscuraSDK.create({\n  rpcUrl,\n  publicClient: createPublicClient({ chain: arbitrumSepolia, transport: http(rpcUrl) }),\n});\n\n// Defaults: chain 421614 · production API · deployment registry"
         },
         {
           "type": "heading",
@@ -236,7 +236,7 @@
           "type": "code",
           "language": "typescript",
           "title": "Off-chain reads (no wallet required)",
-          "code": "const wallet = \"0xYourWallet\" as const;\n\nconst rep = await sdk.reputation.getSummary(wallet);\nconsole.log(rep.tier, rep.totalCappedWeight);\n\nif (sdk.activity.isConfigured()) {\n  const { items } = await sdk.activity.listForWallet(wallet, { filter: \"credit\" });\n} else {\n  console.warn(\"Set OBSCURA_SUPABASE_ANON_KEY for activity feed\");\n}"
+          "code": "const wallet = \"0xYourWallet\" as const;\n\nconst rep = await sdk.reputation.getSummary(wallet);\nconsole.log(rep.tier, rep.totalCappedWeight);\n\nconst { items } = await sdk.activity.listForWallet(wallet, { filter: \"credit\" });"
         },
         {
           "type": "heading",
@@ -277,7 +277,7 @@
           "type": "code",
           "language": "typescript",
           "title": "Reputation + activity",
-          "code": "import { ObscuraSDK } from \"@obscura-fhe/sdk\";\nimport \"dotenv/config\";\n\nconst sdk = ObscuraSDK.create({\n  supabaseAnonKey: process.env.OBSCURA_SUPABASE_ANON_KEY,\n});\nconst wallet = process.argv[2] as `0x${string}`;\n\nconst summary = await sdk.reputation.getSummary(wallet);\nconst { items } = await sdk.activity.listForWallet(wallet, { pageSize: 10 });\n\nconsole.log(summary.tier, summary.totalCappedWeight);\nitems.forEach((r) => console.log(r.event_name, r.tx_hash.slice(0, 10)));"
+          "code": "import { ObscuraSDK } from \"@obscura-fhe/sdk\";\nimport \"dotenv/config\";\n\nconst sdk = ObscuraSDK.create({\n  apiUrl: process.env.OBSCURA_API_URL,\n});\nconst wallet = process.argv[2] as `0x${string}`;\n\nconst summary = await sdk.reputation.getSummary(wallet);\nconst { items } = await sdk.activity.listForWallet(wallet, { pageSize: 10 });\n\nconsole.log(summary.tier, summary.totalCappedWeight);\nitems.forEach((r) => console.log(r.event_name, r.tx_hash.slice(0, 10)));"
         },
         {
           "type": "code",
@@ -297,7 +297,7 @@
           "type": "callout",
           "variant": "info",
           "title": "Module requirements",
-          "text": "reputation · notifications — API only, no wallet. activity — Supabase URL + anon key. pay · credit · vote reads — RPC (421614). Encrypted writes — FheProvider. sendCall — walletClient."
+          "text": "reputation · notifications · activity — Obscura API only, no wallet. pay · credit · vote reads — RPC (421614). Encrypted writes — FheProvider. sendCall — walletClient."
         },
         {
           "type": "visual",
@@ -313,7 +313,7 @@
           "type": "code",
           "language": "typescript",
           "title": "ObscuraSDK.create()",
-          "code": "import { ObscuraSDK, DEFAULT_SUPABASE_URL } from \"@obscura-fhe/sdk\";\nimport { createPublicClient, createWalletClient, http, custom } from \"viem\";\nimport { arbitrumSepolia } from \"viem/chains\";\n\nconst rpcUrl = process.env.ARB_SEPOLIA_RPC_URL ?? \"https://sepolia-rollup.arbitrum.io/rpc\";\n\nconst publicClient = createPublicClient({\n  chain: arbitrumSepolia,\n  transport: http(rpcUrl),\n});\n\n// Browser: custom(window.ethereum) · Node: http(rpcUrl) + account\nconst walletClient = createWalletClient({\n  chain: arbitrumSepolia,\n  transport: http(rpcUrl),\n});\n\nconst sdk = ObscuraSDK.create({\n  chainId: 421614,\n  rpcUrl,\n  publicClient,\n  walletClient,              // optional — enables sendCall()\n  supabaseUrl: process.env.OBSCURA_SUPABASE_URL ?? DEFAULT_SUPABASE_URL,\n  supabaseAnonKey: process.env.OBSCURA_SUPABASE_ANON_KEY, // required for activity\n  fhe: cofheAdapter,        // optional — enables encryptUint64\n});"
+          "code": "import { ObscuraSDK } from \"@obscura-fhe/sdk\";\nimport { createPublicClient, createWalletClient, http, custom } from \"viem\";\nimport { arbitrumSepolia } from \"viem/chains\";\n\nconst rpcUrl = process.env.ARB_SEPOLIA_RPC_URL ?? \"https://sepolia-rollup.arbitrum.io/rpc\";\n\nconst publicClient = createPublicClient({\n  chain: arbitrumSepolia,\n  transport: http(rpcUrl),\n});\n\n// Browser: custom(window.ethereum) · Node: http(rpcUrl) + account\nconst walletClient = createWalletClient({\n  chain: arbitrumSepolia,\n  transport: http(rpcUrl),\n});\n\nconst sdk = ObscuraSDK.create({\n  chainId: 421614,\n  rpcUrl,\n  apiUrl: process.env.OBSCURA_API_URL,\n  publicClient,\n  walletClient,              // optional — enables sendCall()\n  fhe: cofheAdapter,        // optional — enables encryptUint64\n});"
         },
         {
           "type": "heading",
@@ -336,20 +336,20 @@
         {
           "type": "heading",
           "level": 2,
-          "text": "Supabase for activity",
-          "id": "supabase"
+          "text": "Activity via API",
+          "id": "activity-api"
         },
         {
           "type": "code",
           "language": "bash",
-          "title": "Environment",
-          "code": "OBSCURA_SUPABASE_URL=https://quoovjkjwgtdqwdofubh.supabase.co\nOBSCURA_SUPABASE_ANON_KEY=eyJ...   # Supabase → Settings → API → anon public"
+          "title": "Environment (optional)",
+          "code": "OBSCURA_API_URL=https://obscura-api-n62v.onrender.com   # default if omitted"
         },
         {
           "type": "code",
           "language": "typescript",
-          "title": "Guard before querying",
-          "code": "if (!sdk.activity.isConfigured()) {\n  throw new Error(\"Set OBSCURA_SUPABASE_ANON_KEY\");\n}\nconst feed = await sdk.activity.listForWallet(wallet);"
+          "title": "Wallet-scoped feed",
+          "code": "const feed = await sdk.activity.listForWallet(wallet, { filter: \"credit\", pageSize: 20 });"
         },
         {
           "type": "heading",
@@ -1047,6 +1047,27 @@
         {
           "type": "heading",
           "level": 2,
+          "text": "API route",
+          "id": "api"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Method",
+            "Path",
+            "Purpose"
+          ],
+          "rows": [
+            [
+              "GET",
+              "/activity/:wallet",
+              "Wallet-scoped feed (?filter=&page=&pageSize=, max 25)"
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
           "text": "SDK usage",
           "id": "sdk"
         },
@@ -1059,7 +1080,7 @@
           "type": "callout",
           "variant": "info",
           "title": "Frontend hook",
-          "text": "useActivityFeed mirrors SDK filters with Supabase Realtime primary and 30-second polling fallback. Requires VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY."
+          "text": "Wallet-scoped feed via Obscura API (`GET /activity/:wallet`). Obscura frontend also uses Supabase Realtime directly for live updates — MCP and SDK use API only."
         }
       ]
     },
@@ -1156,20 +1177,20 @@
         {
           "type": "callout",
           "variant": "success",
-          "title": "@obscura-fhe/sdk v1.0.2",
+          "title": "@obscura-fhe/sdk v1.0.3",
           "text": "Published on npm · Arbitrum Sepolia (421614) · pairs with @obscura-fhe/mcp for agent tooling."
         },
         {
           "type": "callout",
           "variant": "info",
           "title": "Requirements by module",
-          "text": "activity → supabaseAnonKey (+ optional supabaseUrl). On-chain reads → rpcUrl or publicClient (chain 421614). Encrypted writes → fhe or pre-encrypted InEuint64. sendCall → walletClient."
+          "text": "activity → Obscura API (`GET /activity/:wallet`). On-chain reads → rpcUrl or publicClient (421614). Encrypted writes → fhe or pre-encrypted InEuint64. sendCall → walletClient. No Supabase credentials required."
         },
         {
           "type": "code",
           "language": "bash",
           "title": "Install",
-          "code": "npm install @obscura-fhe/sdk@1.0.2 viem"
+          "code": "npm install @obscura-fhe/sdk@1.0.3 viem"
         },
         {
           "type": "visual",
@@ -1277,7 +1298,7 @@
           "type": "code",
           "language": "bash",
           "title": "Quick start",
-          "code": "npm install @obscura-fhe/mcp@1.0.2 @obscura-fhe/sdk@1.0.2\nnode ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js"
+          "code": "npm install @obscura-fhe/mcp@1.0.3 @obscura-fhe/sdk@1.0.3\nnode ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js"
         },
         {
           "type": "heading",
@@ -1331,7 +1352,7 @@
         {
           "type": "code",
           "language": "typescript",
-          "code": "listForWallet(wallet, options?: ActivityListOptions): Promise<ActivityListResult>\ngetEventFilters(): ActivityEventFilterMap\nisConfigured(): boolean  // true when supabaseUrl + supabaseAnonKey set"
+          "code": "listForWallet(wallet, options?: ActivityListOptions): Promise<ActivityListResult>\ngetEventFilters(): ActivityEventFilterMap\nisConfigured(): boolean  // true when apiUrl is set (default production API)"
         },
         {
           "type": "heading",
@@ -1369,7 +1390,7 @@
     {
       "slug": "mcp",
       "title": "MCP servers",
-      "description": "Official Model Context Protocol servers (@obscura-fhe/mcp v1.0.2) — User, Developer, and Documentation profiles for Cursor, Claude, VS Code, and any stdio agent.",
+      "description": "Official Model Context Protocol servers (@obscura-fhe/mcp v1.0.3) — User, Developer, and Documentation profiles for Cursor, Claude, VS Code, and any stdio agent.",
       "category": "Reference",
       "keywords": [
         "mcp",
@@ -1389,7 +1410,7 @@
         {
           "type": "callout",
           "variant": "success",
-          "title": "Published on npm · SDK v1.0.2 · MCP v1.0.2",
+          "title": "Published on npm · SDK v1.0.3 · MCP v1.0.3",
           "text": "Three isolated stdio servers wrap @obscura-fhe/sdk — no duplicate protocol logic. User MCP never decrypts FHE values or holds private keys."
         },
         {
@@ -1402,7 +1423,7 @@
           "type": "code",
           "language": "bash",
           "title": "Project setup",
-          "code": "# In your app or agent workspace\nnpm install @obscura-fhe/mcp@1.0.2 @obscura-fhe/sdk@1.0.2\n\n# Binaries (after install)\n# obscura-mcp-user   — wallet-scoped agent tools\n# obscura-mcp-dev    — local repo inspection\n# obscura-mcp-docs   — bundled docs portal (14 pages)"
+          "code": "# In your app or agent workspace\nnpm install @obscura-fhe/mcp@1.0.3 @obscura-fhe/sdk@1.0.3\n\n# Binaries (after install)\n# obscura-mcp-user   — wallet-scoped agent tools\n# obscura-mcp-dev    — local repo inspection\n# obscura-mcp-docs   — bundled docs portal (14 pages)"
         },
         {
           "type": "visual",
@@ -1440,10 +1461,6 @@
               "description": "Add .cursor/mcp.json (project) or ~/.cursor/mcp.json (global)"
             },
             {
-              "title": "Set env vars",
-              "description": "OBSCURA_SUPABASE_ANON_KEY for User MCP activity tools"
-            },
-            {
               "title": "Restart Cursor",
               "description": "Settings → MCP → verify obscura-* servers show green"
             }
@@ -1453,7 +1470,7 @@
           "type": "code",
           "language": "json",
           "title": ".cursor/mcp.json",
-          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_SUPABASE_ANON_KEY\": \"${OBSCURA_SUPABASE_ANON_KEY}\",\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
+          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
         },
         {
           "type": "heading",
@@ -1486,7 +1503,7 @@
           "type": "code",
           "language": "json",
           "title": "claude_desktop_config.json",
-          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_SUPABASE_ANON_KEY\": \"${OBSCURA_SUPABASE_ANON_KEY}\",\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
+          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
         },
         {
           "type": "heading",
@@ -1519,7 +1536,7 @@
           "type": "code",
           "language": "json",
           "title": ".vscode/mcp.json",
-          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_SUPABASE_ANON_KEY\": \"${OBSCURA_SUPABASE_ANON_KEY}\",\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
+          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
         },
         {
           "type": "heading",
@@ -1535,7 +1552,7 @@
           "type": "code",
           "language": "json",
           "title": "mcp_config.json",
-          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_SUPABASE_ANON_KEY\": \"${OBSCURA_SUPABASE_ANON_KEY}\",\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
+          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
         },
         {
           "type": "heading",
@@ -1551,7 +1568,7 @@
           "type": "code",
           "language": "json",
           "title": "~/.continue/config.json (fragment)",
-          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_SUPABASE_ANON_KEY\": \"${OBSCURA_SUPABASE_ANON_KEY}\",\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
+          "code": "{\n  \"mcpServers\": {\n    \"obscura-user\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_API_URL\": \"https://obscura-api-n62v.onrender.com\"\n      }\n    },\n    \"obscura-dev\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js\"\n      ],\n      \"env\": {\n        \"OBSCURA_REPO_ROOT\": \"${OBSCURA_REPO_ROOT}\"\n      }\n    },\n    \"obscura-docs\": {\n      \"command\": \"node\",\n      \"args\": [\n        \"./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\"\n      ]\n    }\n  }\n}"
         },
         {
           "type": "heading",
@@ -1567,13 +1584,13 @@
           "type": "code",
           "language": "bash",
           "title": "Documentation MCP (no secrets)",
-          "code": "node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\n\n# User MCP (needs anon key in env)\nOBSCURA_SUPABASE_ANON_KEY=<anon> OBSCURA_API_URL=https://obscura-api-n62v.onrender.com \\\n  node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\n\n# Developer MCP (local repo)\nOBSCURA_REPO_ROOT=/path/to/Obscura \\\n  node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js"
+          "code": "node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js\n\n# User MCP (API only — no Supabase keys)\nOBSCURA_API_URL=https://obscura-api-n62v.onrender.com \\\n  node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js\n\n# Developer MCP (local repo)\nOBSCURA_REPO_ROOT=/path/to/Obscura \\\n  node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-dev.js"
         },
         {
           "type": "callout",
-          "variant": "warning",
-          "title": "Privacy boundaries",
-          "text": "User MCP never exposes decrypt/permit tools, relay/keeper infra, service-role keys, or bulk graph scans. Encrypted balances return opaque ctHash handles only."
+          "variant": "info",
+          "title": "Trust boundary",
+          "text": "User MCP never talks to Supabase. Activity, reputation, and notification reads go through Obscura API (service role server-side). End users need only OBSCURA_API_URL."
         },
         {
           "type": "heading",
@@ -1649,19 +1666,14 @@
           ],
           "rows": [
             [
-              "OBSCURA_SUPABASE_ANON_KEY",
-              "User",
-              "For activity tools"
-            ],
-            [
               "OBSCURA_API_URL",
               "User",
-              "Default: production API"
+              "Default: production obscura-api"
             ],
             [
               "OBSCURA_RPC_URL",
               "User",
-              "Default: Arbitrum Sepolia RPC"
+              "Optional Arbitrum Sepolia RPC override"
             ],
             [
               "OBSCURA_REPO_ROOT",
@@ -1698,7 +1710,7 @@
             {
               "label": "SDK reference",
               "href": "/docs/sdk",
-              "description": "@obscura-fhe/sdk v1.0.2"
+              "description": "@obscura-fhe/sdk v1.0.3"
             },
             {
               "label": "Privacy model",
@@ -1713,12 +1725,12 @@
             {
               "label": "npm @obscura-fhe/mcp",
               "href": "https://www.npmjs.com/package/@obscura-fhe/mcp",
-              "description": "v1.0.2"
+              "description": "v1.0.3"
             },
             {
               "label": "npm @obscura-fhe/sdk",
               "href": "https://www.npmjs.com/package/@obscura-fhe/sdk",
-              "description": "v1.0.2"
+              "description": "v1.0.3"
             }
           ]
         }
@@ -1745,7 +1757,7 @@
       "title": "Quick start",
       "description": "Install the SDK and read your first on-chain and off-chain Obscura data in under five minutes.",
       "category": "Getting started",
-      "excerpt": "onboarding-path What you need before starting Reputation + notifications: npm install only. Activity: Supabase anon key required (URL defaults to Obscura project). On-chain reads: Arbitrum Sepolia RPC"
+      "excerpt": "onboarding-path What you need before starting Reputation, activity, and notifications work with SDK defaults — no Supabase credentials. On-chain reads: Arbitrum Sepolia RPC (default provided). Encrypt"
     },
     {
       "slug": "first-app",
@@ -1759,7 +1771,7 @@
       "title": "SDK onboarding",
       "description": "Configure ObscuraSDK, wire viem clients, and inject FHE for encrypted writes.",
       "category": "Getting started",
-      "excerpt": "Module requirements reputation · notifications — API only, no wallet. activity — Supabase URL + anon key. pay · credit · vote reads — RPC (421614). Encrypted writes — FheProvider. sendCall — walletCli"
+      "excerpt": "Module requirements reputation · notifications · activity — Obscura API only, no wallet. pay · credit · vote reads — RPC (421614). Encrypted writes — FheProvider. sendCall — walletClient. sdk-modules "
     },
     {
       "slug": "architecture",
@@ -1822,14 +1834,14 @@
       "title": "SDK reference",
       "description": "Complete @obscura-fhe/sdk module API, types, and constants.",
       "category": "Reference",
-      "excerpt": "@obscura-fhe/sdk v1.0.2 Published on npm · Arbitrum Sepolia (421614) · pairs with @obscura-fhe/mcp for agent tooling. Requirements by module activity → supabaseAnonKey (+ optional supabaseUrl). On-cha"
+      "excerpt": "@obscura-fhe/sdk v1.0.3 Published on npm · Arbitrum Sepolia (421614) · pairs with @obscura-fhe/mcp for agent tooling. Requirements by module activity → Obscura API (`GET /activity/:wallet`). On-chain "
     },
     {
       "slug": "mcp",
       "title": "MCP servers",
-      "description": "Official Model Context Protocol servers (@obscura-fhe/mcp v1.0.2) — User, Developer, and Documentation profiles for Cursor, Claude, VS Code, and any stdio agent.",
+      "description": "Official Model Context Protocol servers (@obscura-fhe/mcp v1.0.3) — User, Developer, and Documentation profiles for Cursor, Claude, VS Code, and any stdio agent.",
       "category": "Reference",
-      "excerpt": "mcp-profiles Published on npm · SDK v1.0.2 · MCP v1.0.2 Three isolated stdio servers wrap @obscura-fhe/sdk — no duplicate protocol logic. User MCP never decrypts FHE values or holds private keys. Inst"
+      "excerpt": "mcp-profiles Published on npm · SDK v1.0.3 · MCP v1.0.3 Three isolated stdio servers wrap @obscura-fhe/sdk — no duplicate protocol logic. User MCP never decrypts FHE values or holds private keys. Inst"
     }
   ]
 }

@@ -264,9 +264,6 @@ export function registerUserTools(server: McpServer): void {
       pageSize: z.number().int().min(1).max(MAX_ACTIVITY_PAGE_SIZE).optional(),
     },
     async ({ wallet, filter, page, pageSize }) => {
-      if (!sdk.activity.isConfigured()) {
-        throw new Error("Activity requires OBSCURA_SUPABASE_ANON_KEY in MCP server env");
-      }
       rateLimitRead(`activity:${wallet}`);
       const result = await sdk.activity.listForWallet(wallet as `0x${string}`, {
         filter,

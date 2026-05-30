@@ -1,7 +1,6 @@
 /** Shared MCP server definitions for IDE setup docs */
 
 const USER_ENV = {
-  OBSCURA_SUPABASE_ANON_KEY: "${OBSCURA_SUPABASE_ANON_KEY}",
   OBSCURA_API_URL: "https://obscura-api-n62v.onrender.com",
 } as const;
 
@@ -61,8 +60,8 @@ export function genericStdioExample(profile: "user" | "dev" | "docs"): string {
     `transport: stdio`,
   ];
   if (profile === "user") {
-    lines.push("env.OBSCURA_SUPABASE_ANON_KEY: <anon-key>");
     lines.push("env.OBSCURA_API_URL: https://obscura-api-n62v.onrender.com");
+    lines.push("env.OBSCURA_RPC_URL: (optional) Arbitrum Sepolia RPC override");
   }
   if (profile === "dev") {
     lines.push("env.OBSCURA_REPO_ROOT: /path/to/Obscura");

@@ -1,6 +1,6 @@
 {
   "name": "@obscura-fhe/sdk",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Official TypeScript SDK for Obscura Pay, Credit, and Vote on Arbitrum Sepolia",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -34,9 +34,6 @@
   },
   "peerDependencies": {
     "viem": "^2.0.0"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.49.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

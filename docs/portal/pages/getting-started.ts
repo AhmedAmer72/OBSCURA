@@ -56,7 +56,7 @@ export const ecosystemPage: DocPage = {
       rows: [
         ["Chain", "Arbitrum Sepolia + Fhenix CoFHE", "Encrypted state on EVM"],
         ["Asset", "ocUSDC_Pay", "Canonical confidential USDC (6 dec)"],
-        ["API", "obscura-api-n62v.onrender.com", "Reputation, notifications, UserOp relay"],
+        ["API", "obscura-api-n62v.onrender.com", "Reputation, activity, notifications, UserOp relay"],
         ["Worker", "obscura-worker-0ppj.onrender.com", "Indexer, reputation derive, push"],
         ["Data", "Supabase", "Activity, reputation, notification prefs"],
         ["SDK", "@obscura-fhe/sdk", "Six modules · framework-agnostic"],
@@ -80,7 +80,7 @@ export const quickStartPage: DocPage = {
       type: "callout",
       variant: "info",
       title: "What you need before starting",
-      text: "Reputation + notifications: npm install only. Activity: Supabase anon key required (URL defaults to Obscura project). On-chain reads: Arbitrum Sepolia RPC (default provided). Encrypted writes: optional FheProvider. sendCall(): optional walletClient.",
+      text: "Reputation, activity, and notifications work with SDK defaults — no Supabase credentials. On-chain reads: Arbitrum Sepolia RPC (default provided). Encrypted writes: optional FheProvider. sendCall(): optional walletClient.",
     },
     {
       type: "heading",
@@ -103,7 +103,7 @@ export const quickStartPage: DocPage = {
       type: "code",
       language: "typescript",
       title: "Minimal client",
-      code: `import { ObscuraSDK, DEFAULT_SUPABASE_URL } from "@obscura-fhe/sdk";
+      code: `import { ObscuraSDK } from "@obscura-fhe/sdk";
 import { createPublicClient, http } from "viem";
 import { arbitrumSepolia } from "viem/chains";
 
@@ -112,8 +112,6 @@ const rpcUrl = process.env.ARB_SEPOLIA_RPC_URL ?? "https://sepolia-rollup.arbitr
 export const sdk = ObscuraSDK.create({
   rpcUrl,
   publicClient: createPublicClient({ chain: arbitrumSepolia, transport: http(rpcUrl) }),
-  supabaseUrl: process.env.OBSCURA_SUPABASE_URL ?? DEFAULT_SUPABASE_URL,
-  supabaseAnonKey: process.env.OBSCURA_SUPABASE_ANON_KEY,
 });
 
 // Defaults: chain 421614 · production API · deployment registry`,
@@ -133,11 +131,7 @@ export const sdk = ObscuraSDK.create({
 const rep = await sdk.reputation.getSummary(wallet);
 console.log(rep.tier, rep.totalCappedWeight);
 
-if (sdk.activity.isConfigured()) {
-  const { items } = await sdk.activity.listForWallet(wallet, { filter: "credit" });
-} else {
-  console.warn("Set OBSCURA_SUPABASE_ANON_KEY for activity feed");
-}`,
+const { items } = await sdk.activity.listForWallet(wallet, { filter: "credit" });`,
     },
     {
       type: "heading",

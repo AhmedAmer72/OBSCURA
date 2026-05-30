@@ -25,7 +25,7 @@ npm install @obscura-fhe/sdk viem dotenv`,
 import "dotenv/config";
 
 const sdk = ObscuraSDK.create({
-  supabaseAnonKey: process.env.OBSCURA_SUPABASE_ANON_KEY,
+  apiUrl: process.env.OBSCURA_API_URL,
 });
 const wallet = process.argv[2] as \`0x\${string}\`;
 
@@ -55,7 +55,7 @@ export const sdkOnboardingPage: DocPage = {
       type: "callout",
       variant: "info",
       title: "Module requirements",
-      text: "reputation · notifications — API only, no wallet. activity — Supabase URL + anon key. pay · credit · vote reads — RPC (421614). Encrypted writes — FheProvider. sendCall — walletClient.",
+      text: "reputation · notifications · activity — Obscura API only, no wallet. pay · credit · vote reads — RPC (421614). Encrypted writes — FheProvider. sendCall — walletClient.",
     },
     {
       type: "visual",
@@ -71,7 +71,7 @@ export const sdkOnboardingPage: DocPage = {
       type: "code",
       language: "typescript",
       title: "ObscuraSDK.create()",
-      code: `import { ObscuraSDK, DEFAULT_SUPABASE_URL } from "@obscura-fhe/sdk";
+      code: `import { ObscuraSDK } from "@obscura-fhe/sdk";
 import { createPublicClient, createWalletClient, http, custom } from "viem";
 import { arbitrumSepolia } from "viem/chains";
 
@@ -91,10 +91,9 @@ const walletClient = createWalletClient({
 const sdk = ObscuraSDK.create({
   chainId: 421614,
   rpcUrl,
+  apiUrl: process.env.OBSCURA_API_URL,
   publicClient,
   walletClient,              // optional — enables sendCall()
-  supabaseUrl: process.env.OBSCURA_SUPABASE_URL ?? DEFAULT_SUPABASE_URL,
-  supabaseAnonKey: process.env.OBSCURA_SUPABASE_ANON_KEY, // required for activity
   fhe: cofheAdapter,        // optional — enables encryptUint64
 });`,
     },
@@ -128,24 +127,20 @@ const sdk = ObscuraSDK.create({
     {
       type: "heading",
       level: 2,
-      text: "Supabase for activity",
-      id: "supabase",
+      text: "Activity via API",
+      id: "activity-api",
     },
     {
       type: "code",
       language: "bash",
-      title: "Environment",
-      code: `OBSCURA_SUPABASE_URL=https://quoovjkjwgtdqwdofubh.supabase.co
-OBSCURA_SUPABASE_ANON_KEY=eyJ...   # Supabase → Settings → API → anon public`,
+      title: "Environment (optional)",
+      code: `OBSCURA_API_URL=https://obscura-api-n62v.onrender.com   # default if omitted`,
     },
     {
       type: "code",
       language: "typescript",
-      title: "Guard before querying",
-      code: `if (!sdk.activity.isConfigured()) {
-  throw new Error("Set OBSCURA_SUPABASE_ANON_KEY");
-}
-const feed = await sdk.activity.listForWallet(wallet);`,
+      title: "Wallet-scoped feed",
+      code: `const feed = await sdk.activity.listForWallet(wallet, { filter: "credit", pageSize: 20 });`,
     },
     {
       type: "heading",

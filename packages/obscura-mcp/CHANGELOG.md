@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.3] - 2026-05-30
+
+### Changed
+- **User MCP:** no longer requires `OBSCURA_SUPABASE_ANON_KEY` — activity routes through Obscura API
+- Depends on `@obscura-fhe/sdk@^1.0.3`
+
 ## [1.0.2] - 2026-05-30
 
 ### Fixed

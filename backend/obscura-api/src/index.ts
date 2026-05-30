@@ -17,6 +17,7 @@ dotenv.config();
 import { relayRouter, ENTRY_POINT, PAYMASTER_ADDR } from "./relay";
 import { notificationsRouter, startNotificationListener } from "./notifications";
 import { reputationRouter } from "./reputation";
+import { activityRouter } from "./activity";
 
 const PORT = parseInt(process.env.PORT ?? "3000");
 const DEFAULT_ALLOWED_ORIGINS = [
@@ -65,6 +66,7 @@ app.get("/health", (_req, res) => {
 app.use(relayRouter);
 app.use(notificationsRouter);
 app.use(reputationRouter);
+app.use(activityRouter);
 
 // 404 catch-all
 app.use((_req, res) => res.status(404).json({ error: "Not found" }));

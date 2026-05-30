@@ -2548,8 +2548,8 @@ The Obscura TypeScript SDK (`@obscura-fhe/sdk`) is the **official, framework-agn
 | Resource | URL / path |
 |---|---|
 | **npm package** | `@obscura-fhe/sdk` — https://www.npmjs.com/package/@obscura-fhe/sdk |
-| **Latest version** | `1.0.2` (2026-05-30) |
-| **MCP package** | `@obscura-fhe/mcp` — https://www.npmjs.com/package/@obscura-fhe/mcp (`1.0.2`) |
+| **Latest version** | `1.0.3` (2026-05-30) |
+| **MCP package** | `@obscura-fhe/mcp` — https://www.npmjs.com/package/@obscura-fhe/mcp (`1.0.3`) |
 | **Docs — MCP setup** | `/docs/mcp` |
 | **Install** | `npm install @obscura-fhe/sdk viem` |
 | **GitHub source** | [packages/sdk/](packages/sdk/) |
@@ -2603,7 +2603,7 @@ flowchart LR
 | `sdk.credit` | Canonical market (§10, §32.3) |
 | `sdk.vote` | ObscuraVote (§11, §32.4) |
 | `sdk.reputation` | Shared reputation API (§12) |
-| `sdk.activity` | Supabase activity feed (§13, §24) |
+| `sdk.activity` | Obscura API activity feed (§13, §24) |
 | `sdk.notifications` | Push prefs + VAPID (§14) |
 | `FheProvider` | CoFHE client adapter (§18) — **host-supplied** |
 
@@ -2619,7 +2619,7 @@ npm install @obscura-fhe/sdk viem
 import { ObscuraSDK } from "@obscura-fhe/sdk";
 
 const sdk = ObscuraSDK.create({
-  supabaseAnonKey: process.env.OBSCURA_SUPABASE_ANON_KEY, // activity only
+  apiUrl: process.env.OBSCURA_API_URL, // activity, reputation, notifications
 });
 
 // Off-chain — no wallet
@@ -2637,7 +2637,7 @@ const ctHash = await sdk.pay.getShieldedBalance("0xYourWallet...");
 |---|---|---|---|---|---|
 | `reputation` | No | No | No | No | obscura-api REST |
 | `notifications` | No | No | No | No | obscura-api REST |
-| `activity` | No | No | **URL + anon key** | No | Supabase direct |
+| `activity` | No | No | No | No | obscura-api REST |
 | `pay` / `credit` / `vote` reads | No | Yes (default RPC) | No | No | On-chain |
 | Encrypted writes | Optional* | Yes | No | **Yes** or pre-encrypted | On-chain |
 | `sendCall()` | **`walletClient`** | Yes | No | If write needs FHE | On-chain |
@@ -2647,21 +2647,14 @@ const ctHash = await sdk.pay.getShieldedBalance("0xYourWallet...");
 **Environment variables (integrators):**
 
 ```bash
-# Activity (required for sdk.activity)
-OBSCURA_SUPABASE_URL=https://quoovjkjwgtdqwdofubh.supabase.co   # optional — SDK default
-OBSCURA_SUPABASE_ANON_KEY=eyJ...                                 # required for activity
+# Optional API override (defaults to production obscura-api)
+OBSCURA_API_URL=https://obscura-api-n62v.onrender.com
 
-# Optional overrides
+# Optional RPC override
 ARB_SEPOLIA_RPC_URL=https://sepolia-rollup.arbitrum.io/rpc
 ```
 
-Guard before activity queries:
-
-```typescript
-if (!sdk.activity.isConfigured()) {
-  throw new Error("Set OBSCURA_SUPABASE_ANON_KEY");
-}
-```
+Activity, reputation, and notifications work out of the box with SDK defaults — no Supabase credentials.
 
 ### 39.5 Full configuration
 
@@ -2676,8 +2669,6 @@ const sdk = ObscuraSDK.create({
   chainId: 421614,
   rpcUrl,
   apiUrl: "https://obscura-api-n62v.onrender.com",
-  supabaseUrl: process.env.OBSCURA_SUPABASE_URL ?? DEFAULT_SUPABASE_URL,
-  supabaseAnonKey: process.env.OBSCURA_SUPABASE_ANON_KEY,
   publicClient: createPublicClient({ chain: arbitrumSepolia, transport: http(rpcUrl) }),
   walletClient,   // optional — enables sendCall()
   fhe: adapter,    // optional — enables encryptUint64 on write builders
@@ -2889,20 +2880,79 @@ Recommended integrator sequence (also visualized at `/docs`):
 1. **Install SDK** — `npm install @obscura-fhe/sdk viem`
 2. **Connect wallet** — inject `publicClient` / `walletClient` via viem
 3. **Read reputation** — `sdk.reputation.getSummary()` (no Supabase)
-4. **Activity feed** — set `OBSCURA_SUPABASE_ANON_KEY`, call `sdk.activity.listForWallet()`
+4. **Activity feed** — `sdk.activity.listForWallet()` via Obscura API (no Supabase credentials)
 5. **Pay flows** — shield / transfer builders + optional FHE
 6. **Credit flows** — supply / borrow / repay builders
 7. **Vote flows** — proposals, cast, delegate
 
-### 39.13 MCP servers (`@obscura-fhe/mcp` v1.0.2)
+### 39.13 MCP architecture (`@obscura-fhe/mcp` v1.0.3)
 
 Obscura ships **three isolated MCP profiles** on npm. Each profile has a separate binary, threat model, and tool namespace. MCP wraps `@obscura-fhe/sdk` — it does not duplicate protocol logic.
 
-| Profile | Binary | Audience | Live data |
+#### Production data flow (User MCP)
+
+```mermaid
+flowchart LR
+  subgraph AGENT[User Agent]
+    MCP[obscura-mcp-user]
+  end
+
+  subgraph SDK_LAYER[@obscura-fhe/sdk]
+    ACT[activity]
+    REP[reputation]
+    PAY[pay / credit / vote]
+  end
+
+  subgraph API[obscura-api]
+    A1["GET /activity/:wallet"]
+    A2["GET /reputation/:wallet"]
+    A3["GET /prefs/:wallet"]
+  end
+
+  subgraph DATA[(Supabase)]
+    T1[obscura_activity]
+    T2[obscura_reputation_events]
+  end
+
+  subgraph CHAIN[Arbitrum Sepolia]
+    C[Contracts]
+  end
+
+  MCP --> SDK_LAYER
+  ACT --> A1
+  REP --> A2
+  A1 --> T1
+  A2 --> T2
+  PAY --> C
+```
+
+**Critical trust boundary:** User MCP → Obscura API → Supabase. **Never** User MCP → Supabase directly.
+
+| Profile | Binary | Audience | Data sources |
 |---|---|---|---|
-| **User** | `obscura-mcp-user` | End-user wallet agents | Wallet-scoped reads + unsigned tx builders |
+| **User** | `obscura-mcp-user` | End-user wallet agents | Obscura API + chain RPC |
 | **Developer** | `obscura-mcp-dev` | Contributors / auditors | Local repo files only |
-| **Documentation** | `obscura-mcp-docs` | Integrators learning Obscura | Bundled docs portal (14 pages) |
+| **Documentation** | `obscura-mcp-docs` | Integrators | Bundled docs portal (14 pages) |
+
+#### User MCP security model
+
+| Requirement | Policy |
+|---|---|
+| End-user env vars | `OBSCURA_API_URL` (optional, defaults to production) · `OBSCURA_RPC_URL` (optional) |
+| Forbidden env vars | Supabase anon/service keys, VAPID private keys, keeper keys, relay secrets |
+| Activity reads | `GET /activity/:wallet` — wallet-scoped, max 25 rows per page |
+| Reputation reads | `GET /reputation/:wallet` — capped tier summary only |
+| Encrypted values | Opaque `ctHash` handles only — never decrypt |
+| Writes | Unsigned `ContractCall` builders — user signs with EOA wallet |
+| Bulk surveillance | Blocked — no graph scans, no stealth announcement enumeration |
+
+#### Developer MCP scope
+
+Local repo inspection with denylist on `.env`, private keys, and service-role patterns. Documents API routes and Supabase schema — **does not** execute production queries with secrets.
+
+#### Documentation MCP scope
+
+Static docs portal JSON. No chain RPC, no Supabase, no live user data.
 
 **Install:**
 
@@ -2919,7 +2969,6 @@ npm install @obscura-fhe/mcp @obscura-fhe/sdk
       "command": "node",
       "args": ["./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js"],
       "env": {
-        "OBSCURA_SUPABASE_ANON_KEY": "<anon-key>",
         "OBSCURA_API_URL": "https://obscura-api-n62v.onrender.com"
       }
     },
@@ -2936,7 +2985,7 @@ npm install @obscura-fhe/mcp @obscura-fhe/sdk
 }
 ```
 
-Use `node` + `dist/*.js` after `npm install` (recommended on Windows). Alternative: `npx -y -p @obscura-fhe/mcp obscura-mcp-docs`.
+Same JSON works for Claude Desktop, VS Code (`.vscode/mcp.json`), Windsurf, and Continue.dev — see `/docs/mcp`.
 
 #### Privacy boundaries (User MCP)
 
@@ -2944,25 +2993,24 @@ Use `node` + `dist/*.js` after `npm install` (recommended on Windows). Alternati
 |---|---|
 | Public chain reads (rates, proposal metadata, market utilization) | FHE decrypt or permit tools |
 | Opaque encrypted handles (`ctHash` → `***` in UI) | ERC-4337 relay / keeper infrastructure |
-| Unsigned `ContractCall` builders with pre-encrypted `InEuint64` | Supabase service role or VAPID private keys |
+| Unsigned `ContractCall` builders with pre-encrypted `InEuint64` | Supabase credentials of any kind |
 | Wallet-scoped activity (max 25 rows) | Bulk activity or stealth announcement graph scans |
 | Reputation summary for connected wallet | Server-side transaction signing |
 
-#### User MCP tool manifest (v1)
+#### User MCP tool manifest
 
-| Tool | Maps to SDK |
+| Tool | Backend |
 |---|---|
-| `user_health_api` | API liveness |
-| `user_get_chain_config` | Public endpoints |
-| `pay_get_encrypted_balance_handle` | Opaque balance handle |
-| `pay_build_shield` / `unshield` / `transfer` | PayModule tx builders |
-| `credit_get_market_utilization` | `CreditModule.getMarketUtilization()` |
-| `credit_build_supply_collateral` / `borrow` / `repay` | CreditModule tx builders |
-| `vote_get_proposal_count` / `get_proposal` | VoteModule reads |
-| `vote_build_cast_vote` / `delegate` | VoteModule tx builders |
-| `reputation_get_summary` | ReputationModule |
-| `activity_list_for_wallet` | ActivityModule (wallet-scoped) |
-| `user_encode_call` | `encodeCall()` for external signers |
+| `user_health_api` | `GET /health` |
+| `user_get_chain_config` | Public env (no secrets) |
+| `pay_get_encrypted_balance_handle` | Chain RPC — opaque handle |
+| `pay_build_shield` / `unshield` / `transfer` | Chain calldata builders |
+| `credit_get_market_utilization` | Chain RPC — public aggregates |
+| `credit_build_*` | Chain calldata builders |
+| `vote_get_proposal_*` / `vote_build_*` | Chain RPC + calldata |
+| `reputation_get_summary` | `GET /reputation/:wallet` |
+| `activity_list_for_wallet` | `GET /activity/:wallet` |
+| `user_encode_call` | Local ABI encode |
 
 #### CoFHE boundary
 
@@ -2972,15 +3020,7 @@ Use `node` + `dist/*.js` after `npm install` (recommended on Windows). Alternati
 4. User signs with EOA wallet — smart accounts cannot forward `InEuint64` (`InvalidSigner`)
 5. User reveals balances only in Obscura UI — never via MCP
 
-#### Developer MCP
-
-Reads local Obscura clone with denylist on `.env`, private keys, and service-role patterns. Tools: `dev_read_file`, `dev_get_deployment_registry`, `dev_get_sanitize_rules`, `dev_get_api_routes`, `dev_get_supabase_schema`, optional live health pings.
-
-#### Documentation MCP
-
-Serves docs portal as static JSON — `docs_list_pages`, `docs_get_page`, `docs_search`, `docs_get_privacy_summary`, endpoint/SDK/reputation extractors. No chain RPC or Supabase.
-
-**Developer docs:** `/docs/mcp` in the docs portal · **Package:** [npm @obscura-fhe/mcp](https://www.npmjs.com/package/@obscura-fhe/mcp)
+**Developer docs:** `/docs/mcp` · **Packages:** [npm @obscura-fhe/mcp](https://www.npmjs.com/package/@obscura-fhe/mcp) · [npm @obscura-fhe/sdk](https://www.npmjs.com/package/@obscura-fhe/sdk)
 
 ### 39.14 SDK vs in-app CoFHE stack
 
@@ -2990,7 +3030,7 @@ Serves docs portal as static JSON — `docs_list_pages`, `docs_get_page`, `docs_
 | CoFHE encrypt/decrypt | `FheProvider` inject | `@fhenixprotocol/cofhe-sdk` + `src/lib/fhe.ts` |
 | UI stepper / reveal UX | Not included | `useFHEStatus`, reveal-on-demand |
 | Transaction builders | ✅ `ContractCall` + `encodeCall` | Hooks call contracts directly |
-| Off-chain services | ✅ API + Supabase | Same backends |
+| Off-chain services | ✅ Obscura API (activity, reputation, notifications) | API + direct Supabase Realtime (frontend only) |
 
 ---
 
@@ -3001,7 +3041,7 @@ Serves docs portal as static JSON — `docs_list_pages`, `docs_get_page`, `docs_
 | v1.0 | 2026-05-29 | Initial canonical merge of Pay (`docs/pay_wave5.md`), Credit (`credit_wave5_protocol_bible_v1.md`), Vote (`vote_wave5_protocol_bible_v1.md` v1.3) into unified ecosystem architecture reference. 36 sections, institutional terminology, mermaid diagrams, complete registries. |
 | v1.1 | 2026-05-29 | Added §37 Ecosystem Scale (verified codebase counts) and §38 Why Obscura Is Technically Difficult; updated TOC and cross-references. |
 | v1.2 | 2026-05-30 | Added §39 Official TypeScript SDK (`@obscura-fhe/sdk` v1.0.1) — links, module API, requirements matrix, examples, full test/release validation; updated §37.1 scale counts and executive vision. |
-| v1.3 | 2026-05-30 | Added §39.13 MCP servers (`@obscura-fhe/mcp` v1.0.2) — three profiles, IDE setup (Cursor/Claude/VS Code/Windsurf/Continue), animated docs portal `/docs/mcp`; SDK v1.0.2 credit reads (`getMarketUtilization`, `getPositionHandles`). |
+| v1.4 | 2026-05-30 | MCP architecture hardening (v1.0.3): User MCP decoupled from Supabase — `GET /activity/:wallet` API route; SDK activity via API; trust boundary docs; env vars reduced to `OBSCURA_API_URL` only. |
 
 ---
 

@@ -124,6 +124,19 @@ export const activityPage: DocPage = {
     {
       type: "heading",
       level: 2,
+      text: "API route",
+      id: "api",
+    },
+    {
+      type: "table",
+      headers: ["Method", "Path", "Purpose"],
+      rows: [
+        ["GET", "/activity/:wallet", "Wallet-scoped feed (?filter=&page=&pageSize=, max 25)"],
+      ],
+    },
+    {
+      type: "heading",
+      level: 2,
       text: "SDK usage",
       id: "sdk",
     },
@@ -142,7 +155,7 @@ const filters = sdk.activity.getEventFilters();`,
       type: "callout",
       variant: "info",
       title: "Frontend hook",
-      text: "useActivityFeed mirrors SDK filters with Supabase Realtime primary and 30-second polling fallback. Requires VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.",
+      text: "Wallet-scoped feed via Obscura API (`GET /activity/:wallet`). Obscura frontend also uses Supabase Realtime directly for live updates — MCP and SDK use API only.",
     },
   ],
 };
@@ -233,7 +246,7 @@ export const sdkReferencePage: DocPage = {
       type: "callout",
       variant: "info",
       title: "Requirements by module",
-      text: "activity → supabaseAnonKey (+ optional supabaseUrl). On-chain reads → rpcUrl or publicClient (chain 421614). Encrypted writes → fhe or pre-encrypted InEuint64. sendCall → walletClient.",
+      text: "activity → Obscura API (`GET /activity/:wallet`). On-chain reads → rpcUrl or publicClient (421614). Encrypted writes → fhe or pre-encrypted InEuint64. sendCall → walletClient. No Supabase credentials required.",
     },
     {
       type: "code",
@@ -353,7 +366,7 @@ node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js`,
       language: "typescript",
       code: `listForWallet(wallet, options?: ActivityListOptions): Promise<ActivityListResult>
 getEventFilters(): ActivityEventFilterMap
-isConfigured(): boolean  // true when supabaseUrl + supabaseAnonKey set`,
+isConfigured(): boolean  // true when apiUrl is set (default production API)`,
     },
     {
       type: "heading",

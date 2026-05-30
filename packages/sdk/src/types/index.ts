@@ -130,8 +130,11 @@ export interface CreditPositionHandles {
 export interface ObscuraSDKConfig {
   chainId?: number;
   rpcUrl?: string;
+  /** Obscura API — activity, reputation, notifications (default: production) */
   apiUrl?: string;
+  /** @deprecated Activity reads use apiUrl. Supabase direct access is for Obscura frontend only. */
   supabaseUrl?: string;
+  /** @deprecated Activity reads use apiUrl. Supabase direct access is for Obscura frontend only. */
   supabaseAnonKey?: string;
   addresses?: Partial<import("../config/defaults.js").ObscuraAddresses>;
   publicClient?: import("viem").PublicClient;

@@ -66,7 +66,6 @@ npm install @obscura-fhe/mcp@${MCP_VERSION} @obscura-fhe/sdk@${SDK_VERSION}
       items: [
         { title: "Install packages", description: "npm install @obscura-fhe/mcp @obscura-fhe/sdk in your project root" },
         { title: "Create config", description: "Add .cursor/mcp.json (project) or ~/.cursor/mcp.json (global)" },
-        { title: "Set env vars", description: "OBSCURA_SUPABASE_ANON_KEY for User MCP activity tools" },
         { title: "Restart Cursor", description: "Settings → MCP → verify obscura-* servers show green" },
       ],
     },
@@ -166,8 +165,8 @@ npm install @obscura-fhe/mcp@${MCP_VERSION} @obscura-fhe/sdk@${SDK_VERSION}
       title: "Documentation MCP (no secrets)",
       code: `node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js
 
-# User MCP (needs anon key in env)
-OBSCURA_SUPABASE_ANON_KEY=<anon> OBSCURA_API_URL=https://obscura-api-n62v.onrender.com \\
+# User MCP (API only — no Supabase keys)
+OBSCURA_API_URL=https://obscura-api-n62v.onrender.com \\
   node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js
 
 # Developer MCP (local repo)
@@ -176,9 +175,9 @@ OBSCURA_REPO_ROOT=/path/to/Obscura \\
     },
     {
       type: "callout",
-      variant: "warning",
-      title: "Privacy boundaries",
-      text: "User MCP never exposes decrypt/permit tools, relay/keeper infra, service-role keys, or bulk graph scans. Encrypted balances return opaque ctHash handles only.",
+      variant: "info",
+      title: "Trust boundary",
+      text: "User MCP never talks to Supabase. Activity, reputation, and notification reads go through Obscura API (service role server-side). End users need only OBSCURA_API_URL.",
     },
     {
       type: "heading",
@@ -213,9 +212,8 @@ OBSCURA_REPO_ROOT=/path/to/Obscura \\
       type: "table",
       headers: ["Variable", "Profile", "Required"],
       rows: [
-        ["OBSCURA_SUPABASE_ANON_KEY", "User", "For activity tools"],
-        ["OBSCURA_API_URL", "User", "Default: production API"],
-        ["OBSCURA_RPC_URL", "User", "Default: Arbitrum Sepolia RPC"],
+        ["OBSCURA_API_URL", "User", "Default: production obscura-api"],
+        ["OBSCURA_RPC_URL", "User", "Optional Arbitrum Sepolia RPC override"],
         ["OBSCURA_REPO_ROOT", "Developer", "Path to Obscura clone"],
         ["OBSCURA_PRIVACY_MODE", "User", "standard | strict"],
       ],

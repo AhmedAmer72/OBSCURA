@@ -203,18 +203,41 @@ describe("NotificationsModule", () => {
 });
 
 describe("ActivityModule", () => {
-  it("throws when supabase not configured", async () => {
-    const mod = new ActivityModule(undefined, undefined);
-    await expect(mod.listForWallet(WALLET)).rejects.toThrow(/Activity module requires Supabase/);
+  const fetchMock = vi.fn();
+
+  beforeEach(() => {
+    vi.stubGlobal("fetch", fetchMock);
   });
 
-  it("reports configuration state", () => {
-    expect(new ActivityModule(undefined, undefined).isConfigured()).toBe(false);
-    expect(new ActivityModule("https://x.supabase.co", "anon-key").isConfigured()).toBe(true);
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    fetchMock.mockReset();
+  });
+
+  it("fetches activity via Obscura API", async () => {
+    const payload = {
+      items: [{ event_name: "ObscuraPay.PaymentSent", tx_hash: "0xabc" }],
+      page: 0,
+      pageSize: 20,
+      hasMore: false,
+    };
+    fetchMock.mockResolvedValue({ ok: true, json: async () => payload });
+
+    const mod = new ActivityModule(new HttpClient("https://api.test"));
+    const result = await mod.listForWallet(WALLET, { filter: "sent" });
+    expect(result.items).toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      `https://api.test/activity/${WALLET.toLowerCase()}?filter=sent`,
+      expect.objectContaining({ method: "GET" }),
+    );
+  });
+
+  it("is configured when API client is present", () => {
+    expect(new ActivityModule(new HttpClient("https://api.test")).isConfigured()).toBe(true);
   });
 
   it("exposes event filter map", () => {
-    const mod = new ActivityModule(undefined, undefined);
+    const mod = new ActivityModule(new HttpClient("https://api.test"));
     expect(mod.getEventFilters().credit).toEqual(ACTIVITY_EVENT_FILTERS.credit);
   });
 });

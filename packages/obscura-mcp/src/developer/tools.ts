@@ -32,6 +32,7 @@ const API_ROUTES = [
   { method: "POST", path: "/prefs", auth: "wallet_sig_optional", rateLimit: "none" },
   { method: "GET", path: "/prefs/:wallet", auth: "none", rateLimit: "none" },
   { method: "GET", path: "/reputation/:wallet", auth: "none", rateLimit: "none" },
+  { method: "GET", path: "/activity/:wallet", auth: "none", rateLimit: "none" },
   { method: "GET/POST", path: "/debug/push-test", auth: "none", rateLimit: "5/min/IP" },
 ];
 

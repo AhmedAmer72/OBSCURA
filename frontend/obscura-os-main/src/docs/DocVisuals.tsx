@@ -422,8 +422,9 @@ function McpIdeSetup() {
     ? `# Documentation MCP (zero secrets)
 node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-docs.js
 
-# User MCP
-OBSCURA_SUPABASE_ANON_KEY=<anon> node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js`
+# User MCP (API only)
+OBSCURA_API_URL=https://obscura-api-n62v.onrender.com \\
+  node ./node_modules/@obscura-fhe/mcp/dist/obscura-mcp-user.js`
     : mcpConfigJson();
 
   const copy = async () => {
@@ -470,8 +471,7 @@ OBSCURA_SUPABASE_ANON_KEY=<anon> node ./node_modules/@obscura-fhe/mcp/dist/obscu
         <ol className="docs-mcp-ide-steps">
           <li>Run <code>npm install @obscura-fhe/mcp@{MCP_VERSION}</code> in your project</li>
           <li>Paste config into {active.path}</li>
-          <li>Set <code>OBSCURA_SUPABASE_ANON_KEY</code> for User MCP (optional for docs/dev)</li>
-          <li>Restart your IDE / agent</li>
+          <li>Restart your IDE / agent — User MCP needs only <code>OBSCURA_API_URL</code></li>
         </ol>
       </div>
     </div>
