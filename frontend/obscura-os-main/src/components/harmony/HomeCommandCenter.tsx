@@ -28,8 +28,13 @@ import {
 import {
   PayHomeChecklistPanel,
   PayHomeMetricAction,
+  PayHomeMetricCallout,
   PayHomeMetricCard,
   PayHomeMetricEmpty,
+  PayHomeMetricHighlight,
+  PayHomeMetricProgressBlock,
+  PayHomeMetricStat,
+  PayHomeMetricStatGrid,
   PayHomeSealedValue,
   PayHomeWelcome,
   SealedCipherBars,
@@ -102,14 +107,7 @@ const FLYWHEEL = [
 ];
 
 function MetricStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <div className="min-w-0">
-      <p className="dash-eyebrow text-[9px]">{label}</p>
-      <p className={cn("mt-1 truncate text-[13px] font-medium", accent ? "text-[hsl(var(--success))]" : "text-foreground")}>
-        {value}
-      </p>
-    </div>
-  );
+  return <PayHomeMetricStat label={label} value={value} accent={accent} />;
 }
 
 function FlywheelStrip({
@@ -461,10 +459,10 @@ export function HomeCommandCenter() {
                 onToggleReveal={balanceReveal.toggle}
                 revealBusy={revealBusy}
               />
-              <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border/60 pt-3">
+              <PayHomeMetricStatGrid>
                 <MetricStat label="Last private tx" value="4h 12m ago" />
                 <MetricStat label="FHE proof" value="Verified" accent />
-              </div>
+              </PayHomeMetricStatGrid>
             </>
           ) : (
             <PayHomeMetricEmpty
@@ -512,11 +510,11 @@ export function HomeCommandCenter() {
                 value={borrowReveal.isVisible ? maxBorrowUsd : null}
                 onToggleReveal={borrowReveal.toggle}
               />
-              <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border/60 pt-3">
+              <PayHomeMetricStatGrid>
                 <MetricStat label="Line used" value={`${creditLineUtil}%`} />
                 <MetricStat label="Borrow APR" value={borrowAprLabel} />
                 <MetricStat label="Pool util." value={poolUtilLabel} />
-              </div>
+              </PayHomeMetricStatGrid>
             </>
           ) : (
             <PayHomeMetricEmpty
@@ -538,14 +536,12 @@ export function HomeCommandCenter() {
           }
         >
           <p className="text-sm font-medium text-foreground">FHE ballots · Treasury · Rewards</p>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="dash-metric-value text-4xl">3</span>
-            <span className="text-[13px] text-muted-foreground">active proposals</span>
-          </div>
-          <p className="mt-2 text-[11px] text-muted-foreground">You've voted in 4 of 12 total</p>
-          <p className="mt-3 rounded-lg border border-amber-500/25 bg-amber-500/[0.06] px-3 py-2 text-[11px] text-amber-900">
-            0.004 ETH rewards pending · claim after each finalized vote
-          </p>
+          <PayHomeMetricHighlight
+            value={3}
+            suffix="active proposals"
+            detail="You've voted in 4 of 12 total"
+          />
+          <PayHomeMetricCallout>0.004 ETH rewards pending · claim after each finalized vote</PayHomeMetricCallout>
         </PayHomeMetricCard>
 
         <PayHomeMetricCard
@@ -560,20 +556,13 @@ export function HomeCommandCenter() {
           }
         >
           <p className="text-sm font-medium text-foreground">Cross-product identity</p>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="dash-metric-value text-4xl">{repPoints}</span>
-            <span className="text-[13px] text-muted-foreground">/ 100 points</span>
-          </div>
-          <div className="mt-4 space-y-1.5">
-            <div className="flex items-center justify-between text-[9px] font-mono uppercase tracking-[0.16em] text-muted-foreground">
-              <span>Active</span>
-              <span>Steady at 65</span>
-            </div>
-            <div className="dash-progress">
-              <span style={{ width: `${repProgress}%` }} />
-            </div>
-            <p className="pt-1 text-[11px] text-muted-foreground">Reach Steady → unlock +4% LLTV on every borrow</p>
-          </div>
+          <PayHomeMetricHighlight value={repPoints} suffix="/ 100 points" />
+          <PayHomeMetricProgressBlock
+            leftLabel="Active"
+            rightLabel="Steady at 65"
+            value={repProgress}
+            caption="Reach Steady → unlock +4% LLTV on every borrow"
+          />
         </PayHomeMetricCard>
       </motion.div>
 

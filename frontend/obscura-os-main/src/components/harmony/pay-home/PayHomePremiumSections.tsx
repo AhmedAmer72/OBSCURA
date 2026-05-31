@@ -4,6 +4,12 @@ import { ArrowRight, ChevronRight, Eye, EyeOff, Lock, Shield, Sparkles, Wallet }
 import { cn } from "@/lib/utils";
 import { CipherDecryptReveal, type CipherValueTone } from "@/components/harmony/CipherDecryptReveal";
 import type { CipherMaskSize } from "@/components/harmony/CipherMask";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 
 function CipherRevealButton({
   revealed,
@@ -17,16 +23,24 @@ function CipherRevealButton({
   className?: string;
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="outline"
+      size="sm"
       onClick={onClick}
       disabled={busy}
-      className={cn("ref-ghost-action mt-2 text-xs disabled:opacity-50", className)}
+      className={cn("mt-2 h-8 w-full text-xs sm:w-auto", className)}
     >
-      {revealed ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+      {revealed ? <EyeOff /> : <Eye />}
       {revealed ? "Hide value" : "Reveal value"}
-    </button>
+    </Button>
   );
+}
+
+function metricBadgeVariant(tone: "success" | "warn" | "neutral") {
+  if (tone === "success") return "success" as const;
+  if (tone === "warn") return "warning" as const;
+  return "secondary" as const;
 }
 
 /** Vertical cipher tiles — frosted mask for sealed balances (reference-style). */
@@ -188,39 +202,120 @@ export function PayHomeMetricCard({
   progress?: number;
   progressLabel?: string;
 }) {
+  const clampedProgress = progress != null ? Math.min(100, Math.max(0, progress)) : undefined;
+
   return (
-    <article className="pay-home-metric group flex flex-col">
+    <Card className="pay-home-metric group flex h-full flex-col overflow-hidden border-0 p-0 shadow-none">
       <div className="pay-home-metric__ambient" aria-hidden />
-      <header className="pay-home-metric__header">
-        <p className="pay-home-metric__label">{label}</p>
+      <CardHeader className="pay-home-metric__header flex flex-row items-start justify-between gap-3 space-y-0 p-0">
+        <CardTitle className="pay-home-metric__label font-normal">{label}</CardTitle>
         {badge ? (
-          <span
-            className={cn(
-              "pay-home-metric__badge dash-badge shrink-0",
-              badgeTone === "success" && "dash-badge-success",
-              badgeTone === "warn" && "dash-badge-warn",
-            )}
+          <Badge
+            variant={metricBadgeVariant(badgeTone)}
+            className="pay-home-metric__badge shrink-0 rounded-full font-mono text-[10px] uppercase tracking-wider"
           >
             {badge}
-          </span>
+          </Badge>
         ) : null}
-      </header>
+      </CardHeader>
 
-      <div className="pay-home-metric__body">{children}</div>
+      <CardContent className="pay-home-metric__body flex flex-1 flex-col p-0">{children}</CardContent>
 
-      {progress != null ? (
-        <div className="pay-home-metric__progress">
-          {progressLabel ? (
-            <p className="pay-home-metric__progress-label">{progressLabel}</p>
-          ) : null}
-          <div className="dash-progress">
-            <span style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} />
-          </div>
+      {clampedProgress != null ? (
+        <div className="pay-home-metric__progress relative z-[1] px-0">
+          {progressLabel ? <p className="pay-home-metric__progress-label">{progressLabel}</p> : null}
+          <Progress value={clampedProgress} className="h-1.5 bg-secondary/80" />
         </div>
       ) : null}
 
-      {footer ? <footer className="pay-home-metric__footer">{footer}</footer> : null}
-    </article>
+      {footer ? (
+        <CardFooter className="pay-home-metric__footer mt-auto flex flex-wrap gap-2 p-0">{footer}</CardFooter>
+      ) : null}
+    </Card>
+  );
+}
+
+export function PayHomeMetricStat({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className="min-w-0">
+      <p className="truncate font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
+      <p
+        className={cn(
+          "mt-1 truncate text-[13px] font-medium",
+          accent ? "text-[hsl(var(--success))]" : "text-foreground",
+        )}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+export function PayHomeMetricStatGrid({ children }: { children: ReactNode }) {
+  return (
+    <div className="mt-auto flex flex-col gap-3 pt-4">
+      <Separator className="bg-border/60" />
+      <div className="grid grid-cols-2 gap-x-3 gap-y-3">{children}</div>
+    </div>
+  );
+}
+
+export function PayHomeMetricHighlight({
+  value,
+  suffix,
+  detail,
+}: {
+  value: string | number;
+  suffix: string;
+  detail?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <span className="dash-metric-value text-3xl sm:text-4xl">{value}</span>
+        <span className="text-[13px] text-muted-foreground">{suffix}</span>
+      </div>
+      {detail ? <p className="text-[11px] leading-relaxed text-muted-foreground">{detail}</p> : null}
+    </div>
+  );
+}
+
+export function PayHomeMetricCallout({ children }: { children: ReactNode }) {
+  return (
+    <Alert className="mt-3 border-[hsl(38_80%_50%/0.25)] bg-[hsl(38_90%_94%/0.65)] py-2.5">
+      <AlertDescription className="text-[11px] leading-relaxed text-[hsl(25_75%_38%)]">{children}</AlertDescription>
+    </Alert>
+  );
+}
+
+export function PayHomeMetricProgressBlock({
+  leftLabel,
+  rightLabel,
+  value,
+  caption,
+}: {
+  leftLabel: string;
+  rightLabel: string;
+  value: number;
+  caption?: string;
+}) {
+  return (
+    <div className="mt-4 flex flex-col gap-1.5">
+      <div className="flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
+        <span>{leftLabel}</span>
+        <span>{rightLabel}</span>
+      </div>
+      <Progress value={Math.min(100, Math.max(0, value))} className="h-1.5 bg-secondary/80" />
+      {caption ? <p className="pt-0.5 text-[11px] text-muted-foreground">{caption}</p> : null}
+    </div>
   );
 }
 
@@ -301,15 +396,17 @@ export function PayHomeMetricAction({
   icon?: LucideIcon;
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant={primary ? "default" : "outline"}
+      size="sm"
       onClick={onClick}
-      className={cn(primary ? "dash-btn-primary h-9 px-3.5 text-xs" : "dash-btn-outline h-9 px-3.5 text-xs")}
+      className="min-w-[5.5rem] flex-1"
     >
-      {Icon ? <Icon className="h-3.5 w-3.5" /> : null}
+      {Icon ? <Icon /> : null}
       {label}
-      {!primary ? <ChevronRight className="h-3 w-3 opacity-50" /> : null}
-    </button>
+      {!primary ? <ChevronRight className="opacity-50" /> : null}
+    </Button>
   );
 }
 

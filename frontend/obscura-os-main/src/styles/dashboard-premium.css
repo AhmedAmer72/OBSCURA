@@ -1135,17 +1135,26 @@
 
 .obscura-app.dash-premium .pay-home-metric-grid {
   display: grid;
-  gap: 1.25rem;
+  gap: 1rem;
   grid-template-columns: repeat(1, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  align-items: stretch;
 }
 
 @media (min-width: 640px) {
   .obscura-app.dash-premium .pay-home-metric-grid {
+    gap: 1.125rem;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (min-width: 1100px) {
+@media (min-width: 1024px) {
+  .obscura-app.dash-premium .pay-home-metric-grid {
+    gap: 1.25rem;
+  }
+}
+
+@media (min-width: 1280px) {
   .obscura-app.dash-premium .pay-home-metric-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -1156,11 +1165,15 @@
   --metric-radius: var(--dash-radius-lg);
   container-type: inline-size;
   container-name: pay-metric;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   min-height: 100%;
   min-width: 0;
   overflow: hidden;
-  padding: 1.35rem 1.25rem 1.2rem;
+  padding: 1.25rem 1.2rem 1.15rem;
   border-radius: var(--metric-radius);
+  gap: 0;
 }
 
 @container pay-metric (max-width: 300px) {
@@ -1228,11 +1241,17 @@
 }
 
 .obscura-app.dash-premium .pay-home-metric__body {
-  margin-top: 1rem;
-  flex: 1;
+  margin-top: 0.875rem;
+  flex: 1 1 auto;
   min-width: 0;
-  min-height: 7.5rem;
+  min-height: 6.75rem;
   overflow: hidden;
+}
+
+@media (min-width: 640px) {
+  .obscura-app.dash-premium .pay-home-metric__body {
+    min-height: 7.5rem;
+  }
 }
 
 .obscura-app.dash-premium .pay-home-metric__body > p,
@@ -1268,8 +1287,7 @@
   padding-bottom: 0;
 }
 
-.obscura-app.dash-premium .pay-home-metric__footer .dash-btn-primary,
-.obscura-app.dash-premium .pay-home-metric__footer .dash-btn-outline {
+.obscura-app.dash-premium .pay-home-metric__footer > button {
   flex: 1 1 calc(50% - 0.25rem);
   min-width: 5.5rem;
 }
