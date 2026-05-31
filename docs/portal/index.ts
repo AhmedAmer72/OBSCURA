@@ -2,6 +2,7 @@ import type { DocPage, DocSearchEntry } from "../types";
 import { ecosystemPage, quickStartPage } from "./pages/getting-started";
 import { firstAppPage, sdkOnboardingPage } from "./pages/onboarding";
 import { architecturePage, privacyPage } from "./pages/platform";
+import { mobilePage } from "./pages/mobile";
 import { payPage, creditPage, votePage } from "./pages/products";
 import { reputationPage, activityPage, notificationsPage, sdkReferencePage } from "./pages/services";
 import { mcpPage } from "./pages/mcp";
@@ -14,6 +15,7 @@ export const DOC_PAGES: DocPage[] = [
   sdkOnboardingPage,
   architecturePage,
   privacyPage,
+  mobilePage,
   payPage,
   creditPage,
   votePage,

@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, useInView, useScroll, useTransform, type MotionValue } from "framer-motion";
 import { Copy, Check, Sparkles } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import OrganicLayerCanvas from "./OrganicLayerCanvas";
 
 const CODE_SAMPLE = `import { ObscuraSDK } from "@obscura-fhe/sdk";
@@ -11,7 +12,7 @@ const sdk = new ObscuraSDK({
   rpcUrl: process.env.ARB_SEPOLIA_RPC,
 });
 
-// Encrypt + send — same CoFHE path as the Harmony app
+// Encrypt + send — same CoFHE path as the Obscura app
 const handle = await sdk.pay.encryptAmount("1000000");
 await sdk.pay.transfer({
   to: "0xRecipient…",
@@ -96,7 +97,7 @@ function ProtocolGlyphCard({ progress }: { progress: MotionValue<number> }) {
           </p>
           <p className="mt-2 max-w-sm text-sm leading-relaxed text-white/55">
             38 active addresses on Sepolia, 28 reputation signal types, and six SDK modules — the same
-            stack the Harmony app runs in production.
+            stack the Obscura app runs in production.
           </p>
         </div>
       </div>
@@ -106,6 +107,7 @@ function ProtocolGlyphCard({ progress }: { progress: MotionValue<number> }) {
 
 export default function DevelopersSection() {
   const sectionRef = useRef<HTMLElement>(null);
+  const isMobile = useIsMobile();
   const inView = useInView(sectionRef, { once: true, margin: "-12%" });
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -120,12 +122,12 @@ export default function DevelopersSection() {
     <section
       ref={sectionRef}
       id="developers"
-      className="border-y border-forest/8 bg-white px-4 py-16 sm:px-5 md:py-24 lg:px-8"
+      className="border-y border-forest/8 bg-white px-4 py-14 sm:px-5 sm:py-16 md:py-24 lg:px-8"
     >
       <div className="mx-auto max-w-[1200px]">
         <div className="grid gap-10 lg:grid-cols-[1fr_auto_1fr] lg:items-center lg:gap-8 xl:gap-12">
           <motion.div
-            style={{ x: leftX }}
+            style={isMobile ? undefined : { x: leftX }}
             initial={{ opacity: 0, y: 28 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
@@ -148,7 +150,7 @@ export default function DevelopersSection() {
           </motion.div>
 
           <motion.div
-            style={{ y: centerY }}
+            style={isMobile ? undefined : { y: centerY }}
             initial={{ opacity: 0, scale: 0.94 }}
             animate={inView ? { opacity: 1, scale: 1 } : {}}
             transition={{ duration: 0.9, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
@@ -158,7 +160,7 @@ export default function DevelopersSection() {
           </motion.div>
 
           <motion.div
-            style={{ x: rightX }}
+            style={isMobile ? undefined : { x: rightX }}
             initial={{ opacity: 0, y: 28 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.85, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}

@@ -25,6 +25,7 @@ import { OBSCURA_PAY_OCUSDC_ADDRESS } from "@/config/payV3";
 const OCUSDC_ADDRESS = OBSCURA_PAY_OCUSDC_ADDRESS;
 const OCUSDC_ABI = CONFIDENTIAL_TOKEN_ABI;
 import { initFHEClient, encryptAmount, decryptBalance, getOrCreatePermit } from "@/lib/fhe";
+import { formatFheLoadError } from "@/lib/chunkLoadRecovery";
 import { withRateLimitRetry } from "@/lib/rateLimit";
 import { estimateCappedFees } from "@/lib/gas";
 import { addTrackedUnits, setTrackedUnits, getTrackedFormatted } from "@/lib/trackedBalance";
@@ -139,10 +140,10 @@ export function useOcUSDCBalance() {
       }
       return plain;
     } catch (e) {
-      const msg = (e as Error).message || "Decrypt failed";
+      const msg = formatFheLoadError(e);
       console.error("[ocUSDC reveal]", e);
       setError(msg);
-      throw e;
+      throw new Error(msg);
     } finally {
       setBusy(false);
     }

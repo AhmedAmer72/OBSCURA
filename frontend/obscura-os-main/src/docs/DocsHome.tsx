@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Search, BookOpen, Terminal, Shield } from "lucide-react";
+import { ArrowRight, Search, BookOpen, Terminal, Shield, Smartphone } from "lucide-react";
 import { DocVisual } from "./DocVisuals";
 import { DocsMcpQuickAction, DocsAgentQuickAction } from "./DocsMcpSection";
 
@@ -17,12 +17,15 @@ export function DocsHome({ onOpenSearch }: DocsHomeProps) {
         </h1>
         <p className="docs-hero-lead">
           Obscura is encrypted finance on Arbitrum Sepolia — private payments (Pay), lending (Credit),
-          and governance (Vote) unified under one SDK, one asset (ocUSDC_Pay), and shared reputation,
-          activity, and notification services.
+          and voting (Vote) unified under one SDK, one asset (ocUSDC_Pay), and shared reputation,
+          activity, and notification services. Web and Android share the same FHE stack.
         </p>
         <div className="docs-hero-actions">
           <Link to="/docs/quick-start" className="docs-btn docs-btn--primary">
             Quick start <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link to="/docs/mobile" className="docs-btn docs-btn--secondary">
+            <Smartphone className="h-4 w-4" /> Mobile app
           </Link>
           <button type="button" className="docs-btn docs-btn--secondary" onClick={onOpenSearch}>
             <Search className="h-4 w-4" /> Search docs
@@ -69,6 +72,11 @@ export function DocsHome({ onOpenSearch }: DocsHomeProps) {
           <Shield className="h-5 w-5 text-[#2d8a5e]" />
           <span className="docs-home-card-title">Privacy model</span>
           <span className="docs-home-card-desc">Encrypted vs public vs reveal boundaries</span>
+        </Link>
+        <Link to="/docs/mobile" className="docs-home-card">
+          <Smartphone className="h-5 w-5 text-[#2d8a5e]" />
+          <span className="docs-home-card-title">Obscura Mobile</span>
+          <span className="docs-home-card-desc">Android APK · Pay, Vote, Credit · same FHE as web</span>
         </Link>
         <Link to="/docs/sdk" className="docs-home-card">
           <Terminal className="h-5 w-5 text-[#2d8a5e]" />

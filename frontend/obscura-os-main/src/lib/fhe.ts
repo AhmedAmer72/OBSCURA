@@ -1,6 +1,9 @@
 import { type PublicClient, type WalletClient } from 'viem';
 import { Encryptable, FheTypes } from '@cofhe/sdk';
+import { createCofheClient, createCofheConfig } from '@cofhe/sdk/web';
+import { arbSepolia } from '@cofhe/sdk/chains';
 import { getCachedPermit, invalidatePermitCache } from './permitCache';
+import { formatFheLoadError, isChunkLoadError } from './chunkLoadRecovery';
 
 let cofheClient: any = null;
 let isInitializing = false;
@@ -62,13 +65,16 @@ export async function initFHEClient(
   if (!cofheClient) {
     isInitializing = true;
     try {
-      const { createCofheClient, createCofheConfig } = await import('@cofhe/sdk/web');
-      const { arbSepolia } = await import('@cofhe/sdk/chains');
       const config = createCofheConfig({
         supportedChains: [arbSepolia],
         fheKeyStorage: createSameOriginFheKeyStorage(),
       });
       cofheClient = createCofheClient(config);
+    } catch (error) {
+      if (isChunkLoadError(error)) {
+        throw new Error(formatFheLoadError(error));
+      }
+      throw error;
     } finally {
       isInitializing = false;
     }

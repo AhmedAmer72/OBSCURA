@@ -1289,6 +1289,19 @@
 
 .landing-spade .landing-vault .scroll-story-section {
   isolation: isolate;
+  height: 160vh;
+}
+
+@media (min-width: 768px) {
+  .landing-spade .landing-vault .scroll-story-section {
+    height: 200vh;
+  }
+}
+
+@media (min-width: 1024px) {
+  .landing-spade .landing-vault .scroll-story-section {
+    height: 240vh;
+  }
 }
 
 /* ─── Light app workspace (Pay · Credit · Vote) ───────────────────────────── */

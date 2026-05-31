@@ -34,7 +34,7 @@ export default function MobileAppSection() {
     <section
       ref={sectionRef}
       id="mobile-app"
-      className={`${MOBILE_APP_FOREST_SECTION} px-4 py-20 sm:px-5 md:py-32 lg:px-8 lg:py-40 min-h-[min(88vh,920px)] flex flex-col justify-center`}
+      className={`${MOBILE_APP_FOREST_SECTION} flex min-h-0 flex-col justify-center px-4 py-16 sm:px-5 sm:py-20 md:min-h-[min(88vh,920px)] md:py-32 lg:px-8 lg:py-40`}
     >
       <div
         className="pointer-events-none absolute inset-0 opacity-50"
@@ -60,7 +60,7 @@ export default function MobileAppSection() {
           <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-lime-accent/80">
             Mobile suite
           </p>
-          <h2 className="mt-4 font-display text-3xl font-medium leading-[1.08] tracking-tight text-white md:text-4xl lg:text-[3.25rem]">
+          <h2 className="mt-4 font-display text-2xl font-medium leading-[1.08] tracking-tight text-white sm:text-3xl md:text-4xl lg:text-[3.25rem]">
             Privacy in your{" "}
             <span className="text-lime-accent">pocket</span>
           </h2>
@@ -108,7 +108,7 @@ export default function MobileAppSection() {
             </span>
           </div>
 
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-1 lg:gap-4">
             {FEATURES.map((feature, i) => {
               const Icon = feature.icon;
               return (

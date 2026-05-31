@@ -16,10 +16,28 @@ export default defineConfig(() => ({
     sourcemap: false,
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ["react", "react-dom", "react-router-dom"],
-          ui: ["framer-motion", "lucide-react"],
-          wagmi: ["wagmi", "viem"],
+        manualChunks(id) {
+          if (
+            id.includes("node_modules/@cofhe/") ||
+            id.includes("node-tfhe") ||
+            id.includes("/tfhe/") ||
+            id.includes("tfhe_bg")
+          ) {
+            return "cofhe";
+          }
+          if (
+            id.includes("node_modules/react/") ||
+            id.includes("node_modules/react-dom/") ||
+            id.includes("node_modules/react-router")
+          ) {
+            return "vendor";
+          }
+          if (id.includes("node_modules/framer-motion") || id.includes("node_modules/lucide-react")) {
+            return "ui";
+          }
+          if (id.includes("node_modules/wagmi") || id.includes("node_modules/viem")) {
+            return "wagmi";
+          }
         },
       },
     },

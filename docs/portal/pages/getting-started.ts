@@ -60,6 +60,7 @@ export const ecosystemPage: DocPage = {
         ["Worker", "obscura-worker-0ppj.onrender.com", "Indexer, reputation derive, push"],
         ["Data", "Supabase", "Activity, reputation, notification prefs"],
         ["SDK", "@obscura-fhe/sdk", "Six modules · framework-agnostic"],
+        ["Mobile", "Obscura Android APK", "Capacitor · Pay, Vote, Credit · /download"],
       ],
     },
   ],

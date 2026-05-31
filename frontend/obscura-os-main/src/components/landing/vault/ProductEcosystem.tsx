@@ -38,12 +38,12 @@ const PRODUCTS = [
 
 export function ProductEcosystem() {
   return (
-    <section className="relative bg-surface py-32 md:py-48 border-y border-border-subtle">
-      <div className="mx-auto max-w-[1400px] px-6 md:px-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-20">
+    <section className="relative bg-surface py-20 md:py-32 lg:py-48 border-y border-border-subtle">
+      <div className="mx-auto max-w-[1400px] px-4 sm:px-6 md:px-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 md:mb-20">
           <div className="max-w-2xl">
             <div className="tag-bracket mb-5">▸ The ecosystem</div>
-            <h2 className="font-display text-4xl md:text-6xl leading-[1.05] tracking-tight">
+            <h2 className="font-display text-3xl sm:text-4xl md:text-6xl leading-[1.05] tracking-tight">
               Three products,<br />
               <span className="text-brand">one privacy engine.</span>
             </h2>

@@ -2,7 +2,7 @@
 
 > **Document type:** Canonical Ecosystem Architecture Reference  
 > **Status:** CANONICAL · LIVE (Arbitrum Sepolia testnet production)  
-> **Version:** v1.11  
+> **Version:** v1.12  
 > **Network:** Arbitrum Sepolia · chainId `421614`  
 > **Cut date:** 2026-05-30  
 > **Audience:** Investors · Auditors · Engineers · Judges · Ecosystem partners  
@@ -13,6 +13,7 @@
 > - [vote_wave5_protocol_bible_v1.md](vote_wave5_protocol_bible_v1.md) — Obscura Vote Protocol Documentation (v1.3)
 > - [packages/sdk/](packages/sdk/) — Official TypeScript SDK (`@obscura-fhe/sdk`)
 > - [docs/portal/](docs/portal/) — Developer portal content (typed docs at `/docs`)
+> - [OBSCURA_MOBILE_APP_ARCHITECTURE_v1.md](OBSCURA_MOBILE_APP_ARCHITECTURE_v1.md) — Canonical Android client (Capacitor) reference
 >
 > **Deployment registry:** [contracts-hardhat/deployments/arb-sepolia.json](contracts-hardhat/deployments/arb-sepolia.json)  
 > **Production frontend:** `https://obscuraos.online`  
@@ -82,6 +83,7 @@ Cross-references use `(§N)`. Addresses are EIP-55 mixed case. Amounts use **6 d
 37. [Ecosystem Scale](#37-ecosystem-scale)
 38. [Why Obscura Is Technically Difficult](#38-why-obscura-is-technically-difficult)
 39. [Official TypeScript SDK](#39-official-typescript-sdk)
+40. [Mobile Client Architecture](#40-mobile-client-architecture)
 
 ---
 
@@ -1420,6 +1422,7 @@ flowchart TB
 | Notifications | Service worker + Sonner + Web Push |
 | Off-chain reads | Obscura API via 7-day wallet session (`WalletSessionProvider`, `fetchWithAppSession`); Supabase anon retained only for stealth scan helper |
 | Developer portal | `/docs` — typed content from [docs/portal/](docs/portal/) |
+| Mobile client | Android APK (Capacitor) — see (§40); download at `/download` |
 | External integrators | `@obscura-fhe/sdk` — see (§39) |
 
 ### 22.2 Repository layout
@@ -1466,6 +1469,23 @@ frontend/obscura-os-main/src/
 ### 22.5 Frontend environment pattern
 
 All contract addresses loaded from `VITE_*` env vars with fallbacks to `contracts-hardhat/deployments/arb-sepolia.json` values in config modules.
+
+### 22.6 Mobile client (summary)
+
+🟢 **ACTIVE** — Android APK v0.1.0 via direct sideload. Full reference: [OBSCURA_MOBILE_APP_ARCHITECTURE_v1.md](OBSCURA_MOBILE_APP_ARCHITECTURE_v1.md) · Developer portal: `/docs/mobile` · Download: `/download`.
+
+| Item | Value |
+|---|---|
+| Shell | Capacitor 8 · package `finance.obscura.mobile` |
+| Bundled products | Pay, Vote, Credit only (no landing/docs in APK) |
+| Navigation | Bottom tabs + sticky sub-nav; default route `/pay` |
+| FHE | Same `@fhenixprotocol/cofhe-sdk` + `src/lib/fhe.ts` in WebView |
+| Wallet | WalletConnect-first bottom sheet |
+| Backend | Same API, Supabase, worker as web — no mobile fork |
+| Push | Service worker skipped on native platform (v1) |
+| Release manifest | `public/downloads/mobile-releases.json` + SHA-256 |
+
+**Sync model:** Product code syncs from `frontend/obscura-os-main` into the `obscura-mobile` Capacitor fork; mobile-only files (`App.tsx`, `components/mobile/*`, `platform.ts`) are preserved on sync.
 
 ---
 
@@ -3355,10 +3375,105 @@ WALLET_AUTH_MAX_AGE_SEC=300
 
 ---
 
+## 40. Mobile Client Architecture
+
+🟢 **ACTIVE** — Obscura Mobile is the **native Android client** for the same encrypted protocol stack as Harmony web. It is a **consumer** of Pay, Vote, and Credit — not an SDK or MCP distribution channel.
+
+**Canonical mobile reference:** [OBSCURA_MOBILE_APP_ARCHITECTURE_v1.md](OBSCURA_MOBILE_APP_ARCHITECTURE_v1.md)  
+**Developer portal:** `/docs/mobile`  
+**Direct download:** `https://obscuraos.online/download` · manifest: `public/downloads/mobile-releases.json`
+
+### 40.1 Product scope on device
+
+| Module | Route | Mobile shell |
+|---|---|---|
+| **Pay** | `/pay` | Default entry; 6-tab sub-nav (Overview · Pay · Get Paid · Automations · Activity · Settings) |
+| **Vote** | `/vote` | Encrypted ballots, delegation, treasury, rewards, advanced governor |
+| **Credit** | `/credit` | Canonical ocUSDC_Pay market; encrypted positions until Reveal |
+
+**Excluded from APK v1:** Marketing landing, `/docs` portal, ecosystem pages, Identity hub as top-level route.
+
+### 40.2 Web vs mobile boundary
+
+```mermaid
+flowchart TB
+  subgraph WEB[Web deployment]
+    LAND[Landing · docs · download]
+    HARM[Harmony workspace]
+  end
+
+  subgraph MOBILE[Mobile APK]
+    TABS[Pay · Vote · Credit tabs]
+    WV[Capacitor WebView]
+  end
+
+  subgraph SHARED[Shared protocol tier]
+    CHAIN[Arbitrum Sepolia + CoFHE]
+    API[obscura-api]
+    WK[obscura-worker]
+    SB[(Supabase)]
+  end
+
+  LAND -->|APK manifest| MOBILE
+  HARM -->|sync script| MOBILE
+  WEB --> SHARED
+  MOBILE --> SHARED
+```
+
+| Concern | Harmony web | Mobile |
+|---|---|---|
+| Presentation | `HarmonyAppShell` sidebar | Bottom tab bar + `MobileSubNav` |
+| Wallet UX | Header chip + inline Sign | `MobileWalletSheet` (WalletConnect-first) |
+| FHE policy | Reveal-on-demand (§17, §18) | Identical — no mount-time decrypt |
+| Notifications | Web Push + service worker | Disabled on native (v1) |
+| Integrator SDK / MCP | Documented at `/docs` | **Not bundled** — use (§39) |
+
+### 40.3 FHE on mobile (WebView)
+
+Mobile inherits CoFHE architecture (§4, §17, §18). Sensitive values remain `euint64` handles on-chain; the WebView runs `@fhenixprotocol/cofhe-sdk`, `zkProve.worker`, and bundled `tfhe_bg.wasm`.
+
+| Control | Mobile behavior |
+|---|---|
+| Balance / position tiles | Masked until user taps **Reveal** |
+| Vote cast | Client encrypts option index; sealed success panel after cast |
+| Smart account + FHE | Encrypted writes rejected — EOA-only for `InEuint64` |
+| Boot validation | `envHealth.ts` blocks product UI if core `VITE_*` addresses missing |
+
+**Performance note:** Proof generation latency varies by Android device; UX uses the shared FHE stepper through `SETTLING` → `READY` after receipt confirmation.
+
+### 40.4 Build, release, and distribution
+
+| Artifact | Purpose |
+|---|---|
+| `app-release.apk` | Signed direct sideload (production channel) |
+| `app-release.aab` | Google Play Console (future) |
+| `mobile-releases.json` | Version, `downloadPath`, SHA-256, `minAndroid`, install steps |
+
+| Field | Current (2026-05-30) |
+|---|---|
+| `latestVersion` | `0.1.0` |
+| Package ID | `finance.obscura.mobile` |
+| Network | Arbitrum Sepolia · `421614` |
+
+**Engineering sync:** `frontend/obscura-os-main` → `obscura-mobile` via `scripts/sync-from-obscura-web.ps1`. Preserved on sync: `App.tsx`, `main.tsx`, `lib/platform.ts`, `components/mobile/*`, Capacitor config, native projects.
+
+### 40.5 Security and integrator boundary
+
+| Layer | Notes |
+|---|---|
+| On-device | Stealth keys client-generated; contact labels localStorage only; no private keys in repo |
+| Network | TLS for API, Supabase, RPC; same sanitization rules as web activity indexer |
+| SDK / MCP | External automation uses `@obscura-fhe/sdk` + MCP (§39) — not reverse-engineered from APK WebView |
+
+Operational QA checklist: mobile architecture doc §15.
+
+---
+
 ## Document Changelog
 
 | Version | Date | Changes |
 |---|---|---|
+| v1.12 | 2026-05-30 | Added §40 Mobile Client Architecture; `/docs/mobile` developer portal page; cross-links to [OBSCURA_MOBILE_APP_ARCHITECTURE_v1.md](OBSCURA_MOBILE_APP_ARCHITECTURE_v1.md) and `/download` APK manifest. |
 | v1.11 | 2026-05-31 | Audit fixes: `/debug/push-test` disabled in production; FHE ACL fixes in `ObscuraVote._subtractTally` + `ObscuraRewards.accrueReward` (source — redeploy pending); testnet messaging corrections across landing/README/docs. |
 | v1.10 | 2026-05-29 | Inline wallet Sign UX in header (`WalletSessionAction`); removed verify modal + renew banner; updated auth docs (three auth paths, env vars, API routes, no direct Supabase activity reads). |
 | v1.0 | 2026-05-29 | Initial canonical merge of Pay (`docs/pay_wave5.md`), Credit (`credit_wave5_protocol_bible_v1.md`), Vote (`vote_wave5_protocol_bible_v1.md` v1.3) into unified ecosystem architecture reference. 36 sections, institutional terminology, mermaid diagrams, complete registries. |
@@ -3388,6 +3503,7 @@ WALLET_AUTH_MAX_AGE_SEC=300
 | **`ContractCall`** | Serializable tx descriptor returned by SDK write builders |
 | **Plain shadow** | Plaintext mirror for encrypted revert guards |
 | **Harmony** | Shared Obscura institutional UI design system |
+| **Obscura Mobile** | Capacitor Android client — Pay, Vote, Credit in WebView (§40) |
 | **LLTV** | Loan-to-liquidation threshold (bps) |
 | **HF** | Health factor from collateral/debt ratio |
 
@@ -3409,6 +3525,7 @@ WALLET_AUTH_MAX_AGE_SEC=300
 | Infra | [render.yaml](render.yaml) |
 | **SDK** | [packages/sdk/](packages/sdk/), [SDK_ARCHITECTURE.md](packages/sdk/SDK_ARCHITECTURE.md), [README.md](packages/sdk/README.md) |
 | **Developer docs** | [docs/portal/](docs/portal/), live at `/docs` on production frontend |
+| **Mobile architecture** | [OBSCURA_MOBILE_APP_ARCHITECTURE_v1.md](OBSCURA_MOBILE_APP_ARCHITECTURE_v1.md), `/docs/mobile`, [public/downloads/mobile-releases.json](frontend/obscura-os-main/public/downloads/mobile-releases.json) |
 
 ---
 

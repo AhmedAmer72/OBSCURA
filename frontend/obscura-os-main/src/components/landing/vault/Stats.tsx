@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
 
 const STATS = [
-  { value: "38", label: "Active contract addresses" },
-  { value: "21", label: "FHE-enabled on-chain types" },
-  { value: "51", label: "Indexed event definitions" },
-  { value: "421614", label: "Arbitrum Sepolia · CoFHE testnet" },
+  { value: "38", label: "Active contracts · Sepolia" },
+  { value: "21", label: "FHE on-chain types" },
+  { value: "6", label: "SDK modules + MCP profiles" },
+  { value: "421614", label: "CoFHE testnet · Arbitrum" },
 ];
 
 export function Stats() {

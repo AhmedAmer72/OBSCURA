@@ -5,6 +5,7 @@ import { FHEStepStatus } from '@/lib/constants';
 import { useFHEStatus } from './useFHEStatus';
 import { initFHEClient, decryptBalance, getOrCreatePermit } from '@/lib/fhe';
 import { isCofheError, CofheErrorCode } from '@cofhe/sdk';
+import { formatFheLoadError, isChunkLoadError } from '@/lib/chunkLoadRecovery';
 
 export function useDecryptBalance() {
   const { address } = useAccount();
@@ -63,8 +64,8 @@ export function useDecryptBalance() {
       fheStatus.setStep(FHEStepStatus.READY);
       return plaintext;
     } catch (error) {
-      let message = (error as Error).message ?? 'Unknown error';
-      if (isCofheError(error)) {
+      let message = formatFheLoadError(error);
+      if (!isChunkLoadError(error) && isCofheError(error)) {
         switch (error.code) {
           case CofheErrorCode.PermitNotFound:
           case CofheErrorCode.InvalidPermitData:
@@ -136,8 +137,9 @@ export function useDecryptAggregate() {
       fheStatus.setStep(FHEStepStatus.READY);
       return plaintext;
     } catch (error) {
-      fheStatus.setStep(FHEStepStatus.ERROR, (error as Error).message);
-      throw error;
+      const message = formatFheLoadError(error);
+      fheStatus.setStep(FHEStepStatus.ERROR, message);
+      throw new Error(message);
     }
   }, [publicClient, walletClient, refetchAggregate, fheStatus]);
 

@@ -15,6 +15,7 @@ export const DOC_NAV: DocNavGroup[] = [
     items: [
       { slug: "architecture", label: "Architecture" },
       { slug: "privacy", label: "Privacy model" },
+      { slug: "mobile", label: "Obscura Mobile" },
     ],
   },
   {

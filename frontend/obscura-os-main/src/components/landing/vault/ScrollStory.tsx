@@ -47,7 +47,6 @@ export function ScrollStory() {
       id="why"
       ref={containerRef}
       className="scroll-story-section relative bg-forest"
-      style={{ height: "360vh" }}
     >
       <div className="sticky top-0 flex h-screen items-center justify-center overflow-hidden">
         <motion.div

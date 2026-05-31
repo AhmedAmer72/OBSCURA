@@ -10,8 +10,10 @@ import "@fontsource/dm-sans/600.css";
 import "@fontsource/ibm-plex-mono/400.css";
 import "@fontsource/ibm-plex-mono/500.css";
 import { logEnvHealthOnce } from "./lib/envHealth";
+import { registerChunkLoadRecovery } from "./lib/chunkLoadRecovery";
 
 logEnvHealthOnce();
+registerChunkLoadRecovery();
 
 // Register service worker for Web Push notifications
 if ("serviceWorker" in navigator) {

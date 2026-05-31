@@ -6,14 +6,14 @@ import { cn } from "@/lib/utils";
 import { PoweredByFhenix } from "@/components/brand/PoweredByFhenix";
 
 const USE_CASES = [
-  { label: "Command center", href: "/home" },
+  { label: "Obscura Home", href: "/home" },
   { label: "Private & public Pay", href: "/pay" },
   { label: "Encrypted credit", href: "/credit" },
   { label: "FHE governance", href: "/vote" },
 ];
 
 const MODULES = [
-  { label: "Harmony Home", href: "/home" },
+  { label: "Obscura Home", href: "/home" },
   { label: "Obscura Pay", href: "/pay" },
   { label: "Obscura Credit", href: "/credit" },
   { label: "Obscura Vote", href: "/vote" },
@@ -21,11 +21,11 @@ const MODULES = [
 ];
 
 const COMPANY = [
-  { label: "How it works", href: "#how" },
+  { label: "How FHE works", href: "#how-fhe" },
   { label: "Download app", href: "/download" },
   { label: "Docs", href: "/docs" },
   { label: "Privacy", href: "/privacy" },
-  { label: "Security", href: "#how" },
+  { label: "AI agents", href: "#agents" },
 ];
 
 const TICKER_ITEMS = [
@@ -36,7 +36,8 @@ const TICKER_ITEMS = [
   "OCUSDC",
   "HOMOMORPHIC",
   "ARBITRUM SEPOLIA",
-  "HARMONY",
+  "PRIVATE FINANCE OS",
+  "MCP",
   "PRIVATE MODE",
   "PUBLIC MODE",
   "PASSKEY",
@@ -151,7 +152,7 @@ export default function SpadeFooter() {
                 <li key={link.href}>
                   <Link
                     to={link.href}
-                    className="font-display text-xl text-white/90 transition-colors hover:text-lime-accent md:text-2xl"
+                    className="font-display text-lg text-white/90 transition-colors hover:text-lime-accent sm:text-xl md:text-2xl"
                   >
                     {link.label}
                   </Link>
@@ -169,7 +170,7 @@ export default function SpadeFooter() {
                 <li key={link.href}>
                   <Link
                     to={link.href}
-                    className="font-display text-xl text-white/90 transition-colors hover:text-lime-accent md:text-2xl"
+                    className="font-display text-lg text-white/90 transition-colors hover:text-lime-accent sm:text-xl md:text-2xl"
                   >
                     {link.label}
                   </Link>
@@ -188,14 +189,14 @@ export default function SpadeFooter() {
                   {link.href.startsWith("#") ? (
                     <a
                       href={link.href}
-                      className="font-display text-xl text-white/90 transition-colors hover:text-lime-accent md:text-2xl"
+                      className="font-display text-lg text-white/90 transition-colors hover:text-lime-accent sm:text-xl md:text-2xl"
                     >
                       {link.label}
                     </a>
                   ) : (
                     <Link
                       to={link.href}
-                      className="font-display text-xl text-white/90 transition-colors hover:text-lime-accent md:text-2xl"
+                      className="font-display text-lg text-white/90 transition-colors hover:text-lime-accent sm:text-xl md:text-2xl"
                     >
                       {link.label}
                     </Link>

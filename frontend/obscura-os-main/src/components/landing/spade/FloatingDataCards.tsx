@@ -104,11 +104,11 @@ function Floater({
 function WideLayout() {
   return (
     <>
-      <Floater delay={0.25} from="left" className="left-0 top-[22%] lg:left-[2%] xl:left-[4%]">
+      <Floater delay={0.25} from="left" className="left-0 top-[22%] lg:left-[2%] xl:left-[4%]" hideBelow="md">
         <ReceiptCard label="TRANSACTION ID">0x8a91…f2c4</ReceiptCard>
       </Floater>
 
-      <Floater delay={0.4} from="left" className="left-0 top-[48%] lg:left-[2%] xl:left-[4%]">
+      <Floater delay={0.4} from="left" className="left-0 top-[48%] lg:left-[2%] xl:left-[4%]" hideBelow="md">
         <ReceiptCard label="ENCRYPTED AMOUNT">
           <span className="tracking-[0.26em] text-lime-accent/80">• • • • • • •</span>
         </ReceiptCard>
@@ -127,7 +127,7 @@ function WideLayout() {
         </ReceiptCard>
       </Floater>
 
-      <Floater delay={0.3} from="right" className="right-0 top-[14%] z-30 lg:right-[2%] xl:right-[4%]">
+      <Floater delay={0.3} from="right" className="right-0 top-[14%] z-30 lg:right-[2%] xl:right-[4%]" hideBelow="md">
         <ModuleSignalCard
           featured
           module="ObscuraPay"
