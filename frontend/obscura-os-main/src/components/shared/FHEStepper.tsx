@@ -79,7 +79,7 @@ export default function FHEStepper({ status, error, className = "" }: Props) {
         <motion.div
           animate={isError ? { x: [0, -4, 4, -3, 3, 0] } : {}}
           transition={{ duration: 0.4 }}
-          className={`harmony-fhe-stepper mt-3 rounded-xl hairline p-4 ${
+          className={`harmony-fhe-stepper harmony-fhe-stepper--toast mt-3 rounded-xl hairline p-4 ${
             isError ? "border-destructive/30 bg-destructive/5" : "bg-card"
           }`}
         >
@@ -93,16 +93,16 @@ export default function FHEStepper({ status, error, className = "" }: Props) {
                   <div className="flex flex-col items-center gap-1 min-w-0 flex-1">
                     <div className={`relative flex h-7 w-7 items-center justify-center rounded-full transition-colors duration-300 ${
                       done   ? "border border-[hsl(var(--success))]/40 bg-accent/20" :
-                      active ? "border border-accent/50 bg-accent/25" :
+                      active ? "border border-[hsl(var(--dash-forest))]/40 bg-[hsl(var(--dash-mint))]" :
                                 "hairline bg-muted"
                     }`}>
                       {active && (
                         <motion.div
                           className="absolute inset-0 rounded-full"
                           animate={{ boxShadow: [
-                            "0 0 0 0 rgba(139,92,246,0)",
-                            "0 0 0 6px rgba(139,92,246,0.22)",
-                            "0 0 0 0 rgba(139,92,246,0)",
+                            "0 0 0 0 rgba(28,77,62,0)",
+                            "0 0 0 6px rgba(28,77,62,0.18)",
+                            "0 0 0 0 rgba(28,77,62,0)",
                           ] }}
                           transition={{ repeat: Infinity, duration: 1.6, ease: "easeInOut" }}
                         />
@@ -126,7 +126,7 @@ export default function FHEStepper({ status, error, className = "" }: Props) {
                       <motion.div
                         className={
                           done ? "h-full bg-[hsl(var(--success))]" :
-                          active ? "h-full bg-accent" :
+                          active ? "h-full bg-[hsl(var(--dash-forest))]" :
                           "h-full bg-transparent"
                         }
                         initial={false}

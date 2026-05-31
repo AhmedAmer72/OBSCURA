@@ -31,7 +31,7 @@ export default function ObscuraSlogan({
         transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
         className="obscura-slogan-line1 relative z-[2] block"
       >
-        Private money,
+        Private Finance.
       </motion.span>
       <motion.span
         initial={{ opacity: 0, y: 28 }}
@@ -44,11 +44,11 @@ export default function ObscuraSlogan({
       >
         {animateWord ? (
           <>
-            <EncryptedRevealWord word="computed" />
-            <span className="obscura-slogan-word-open"> in the open.</span>
+            <EncryptedRevealWord word="Computed" />
+            <span className="obscura-slogan-word-open"> in the Open.</span>
           </>
         ) : (
-          <span className="obscura-slogan-line2-text">computed in the open.</span>
+          <span className="obscura-slogan-line2-text">Computed in the Open.</span>
         )}
       </motion.span>
     </h1>

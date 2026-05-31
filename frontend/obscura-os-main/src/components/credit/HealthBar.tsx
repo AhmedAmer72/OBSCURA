@@ -1,37 +1,28 @@
 /**
- * HealthBar — color-coded health factor progress bar.
- *
- * Visual thresholds:
- *   red    < 1.15  — danger, near liquidation
- *   yellow 1.15–1.5 — caution
- *   green  ≥ 1.5  — safe
- *
- * The HF number is a PUBLIC plaintext shadow (computed from public borrow/
- * collateral mirrors) — safe to display without wallet interaction.
+ * HealthBar — color-coded health factor progress bar (premium light theme).
  */
 import { motion } from "framer-motion";
 import { AlertTriangle, CheckCircle2, Activity } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface HealthBarProps {
-  /** Raw health factor, e.g. 1.42. Null = no borrow position. */
   hf: number | null;
   loading?: boolean;
   className?: string;
 }
 
 function hfColor(hf: number): { bar: string; text: string; bg: string; icon: string } {
-  if (hf < 1.15) return { bar: "bg-red-500", text: "text-red-400", bg: "bg-red-500/10 border-red-500/25", icon: "text-red-400" };
-  if (hf < 1.5)  return { bar: "bg-amber-400", text: "text-amber-300", bg: "bg-amber-500/10 border-amber-500/25", icon: "text-amber-300" };
-  return { bar: "bg-emerald-500", text: "text-[hsl(var(--success))]", bg: "bg-emerald-500/[0.07] border-emerald-500/25", icon: "text-foreground" };
+  if (hf < 1.15) return { bar: "bg-red-500", text: "text-red-600", bg: "bg-red-500/8 border-red-500/20", icon: "text-red-500" };
+  if (hf < 1.5) return { bar: "bg-amber-500", text: "text-amber-700", bg: "bg-amber-500/8 border-amber-500/20", icon: "text-amber-600" };
+  return { bar: "bg-[hsl(var(--success))]", text: "text-[hsl(var(--success))]", bg: "bg-[hsl(var(--success)/0.08)] border-[hsl(var(--success)/0.2)]", icon: "text-[hsl(var(--success))]" };
 }
 
 function hfLabel(hf: number): { label: string; hint: string } {
   if (hf < 1.15) return { label: "Danger", hint: "Liquidation risk — repay debt or add collateral now" };
-  if (hf < 1.5)  return { label: "Caution", hint: "Add collateral to buffer against price movements" };
+  if (hf < 1.5) return { label: "Caution", hint: "Add collateral to buffer against price movements" };
   return { label: "Healthy", hint: "Your position is safely collateralised" };
 }
 
-/** Map HF to a 0–1 fill fraction. Cap at 3 for visual saturation. */
 function hfFill(hf: number): number {
   return Math.min(hf / 3, 1);
 }
@@ -39,67 +30,63 @@ function hfFill(hf: number): number {
 export default function HealthBar({ hf, loading = false, className = "" }: HealthBarProps) {
   if (loading) {
     return (
-      <div className={`rounded-xl hairline bg-card p-4 flex items-center gap-2 ${className}`}>
-        <Activity className="w-4 h-4 text-white/30 animate-pulse" />
-        <span className="text-xs text-white/30">Loading health factor…</span>
+      <div className={cn("ref-mini-card flex items-center gap-2", className)}>
+        <Activity className="h-4 w-4 animate-pulse text-muted-foreground" />
+        <span className="text-xs text-muted-foreground">Loading health factor…</span>
       </div>
     );
   }
 
   if (hf === null) {
     return (
-      <div className={`rounded-xl hairline bg-card p-4 ${className}`}>
-        <p className="text-[10px] text-white/30 font-mono">No borrow position — health factor N/A</p>
+      <div className={cn("ref-mini-card", className)}>
+        <p className="text-xs text-muted-foreground">No borrow position — health factor N/A</p>
       </div>
     );
   }
 
   const colors = hfColor(hf);
-  const info   = hfLabel(hf);
-  const fill   = hfFill(hf);
+  const info = hfLabel(hf);
+  const fill = hfFill(hf);
 
   return (
-    <div className={`rounded-xl border ${colors.bg} p-4 flex flex-col gap-3 ${className}`}>
-      {/* Header row */}
-      <div className="flex items-center justify-between">
+    <div className={cn("rounded-xl border p-4 flex flex-col gap-3", colors.bg, className)}>
+      <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           {hf < 1.5 ? (
-            <AlertTriangle className={`w-4 h-4 ${colors.icon}`} />
+            <AlertTriangle className={cn("h-4 w-4", colors.icon)} />
           ) : (
-            <CheckCircle2 className={`w-4 h-4 ${colors.icon}`} />
+            <CheckCircle2 className={cn("h-4 w-4", colors.icon)} />
           )}
-          <span className="text-xs font-medium text-white/70">Health factor</span>
+          <span className="text-xs font-medium text-foreground">Health factor</span>
         </div>
         <div className="flex items-baseline gap-1.5">
-          <span className={`text-xl font-mono font-semibold ${colors.text}`}>
+          <span className={cn("font-display text-xl tabular-nums", colors.text)}>
             {hf.toFixed(2)}
           </span>
-          <span className={`text-[9px] tracking-[0.12em] uppercase font-mono ${colors.text} opacity-70`}>
+          <span className={cn("dash-eyebrow text-[9px]", colors.text, "opacity-80")}>
             {info.label}
           </span>
         </div>
       </div>
 
-      {/* Bar track */}
-      <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
         <motion.div
-          className={`h-full rounded-full ${colors.bar}`}
+          className={cn("h-full rounded-full", colors.bar)}
           initial={{ width: 0 }}
           animate={{ width: `${fill * 100}%` }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         />
       </div>
 
-      {/* Scale labels */}
-      <div className="flex justify-between text-[8px] text-white/25 font-mono">
+      <div className="flex justify-between text-[10px] text-muted-foreground">
         <span>0</span>
-        <span className="text-red-400/60">1.15 danger</span>
-        <span className="text-amber-400/60">1.5 caution</span>
-        <span className="text-foreground/60">3+</span>
+        <span className="text-red-500/80">1.15 danger</span>
+        <span className="text-amber-600/80">1.5 caution</span>
+        <span>3+</span>
       </div>
 
-      {/* Hint text */}
-      <p className="text-[10px] text-white/40">{info.hint}</p>
+      <p className="text-[11px] leading-relaxed text-muted-foreground">{info.hint}</p>
     </div>
   );
 }

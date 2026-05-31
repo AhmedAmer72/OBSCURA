@@ -1,7 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, useLocation, Navigate } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useState } from "react";
 import { WagmiProvider } from "wagmi";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -10,6 +9,7 @@ import { config } from "@/config/wagmi";
 import GooeyNav from "@/components/elite/GooeyNav";
 import NavRightSlot from "@/components/elite/NavRightSlot";
 import Index from "./pages/Index.tsx";
+import HomePage from "./pages/HomePage.tsx";
 import PayPage from "./pages/PayPage.tsx";
 import DeveloperPortal from "./docs/DeveloperPortal.tsx";
 import PrivacyPage from "./pages/PrivacyPage.tsx";
@@ -20,21 +20,31 @@ import EcosystemPage from "./pages/EcosystemPage.tsx";
 import PMFPage from "./pages/PMFPage.tsx";
 import ContactsPage from "./pages/ContactsPage.tsx";
 import SettingsPage from "./pages/SettingsPage.tsx";
+import IdentityPage from "./pages/IdentityPage.tsx";
+import MobileDownloadPage from "./pages/MobileDownloadPage.tsx";
 import { PreferencesProvider } from "@/contexts/PreferencesContext";
 import { WalletSessionProvider } from "@/contexts/WalletSessionContext";
-import HowCoFHEModal from "@/components/shared/HowCoFHEModal";
-
-const ONBOARDING_KEY = "obscura.onboarding.cofhe.v1";
+import { ValuesRevealProvider } from "@/contexts/ValuesRevealContext";
 
 const queryClient = new QueryClient();
 
 /** App workspace routes use the integrated light shell (icon rail + sidebar + top bar). */
-const WORKSPACE_PATHS = new Set(["/pay", "/pay/contacts", "/pay/settings", "/vote", "/credit", "/ecosystem"]);
+const WORKSPACE_PATHS = new Set([
+  "/home",
+  "/pay",
+  "/pay/contacts",
+  "/pay/settings",
+  "/settings",
+  "/identity",
+  "/vote",
+  "/credit",
+  "/ecosystem",
+]);
 
 /** Marketing / docs pages ship their own nav — skip global GooeyNav. */
 const isSelfNavPath = (pathname: string) => {
   const p = normalizePath(pathname);
-  return p === "/privacy" || p === "/docs" || pathname.startsWith("/docs/");
+  return p === "/privacy" || p === "/download" || p === "/docs" || pathname.startsWith("/docs/");
 };
 
 const normalizePath = (pathname: string) => {
@@ -53,21 +63,6 @@ const AnimatedRoutes = () => {
   const isWorkspace = isWorkspacePath(location.pathname);
   const isSelfNav = isSelfNavPath(location.pathname);
   const isSageShell = isLanding || isWorkspace || isSelfNav;
-
-  const [showOnboarding, setShowOnboarding] = useState(false);
-
-  useEffect(() => {
-    if (location.pathname === "/credit" && !localStorage.getItem(ONBOARDING_KEY)) {
-      // Small delay so the page paint finishes first
-      const t = setTimeout(() => setShowOnboarding(true), 600);
-      return () => clearTimeout(t);
-    }
-  }, [location.pathname]);
-
-  const handleOnboardingClose = () => {
-    localStorage.setItem(ONBOARDING_KEY, "1");
-    setShowOnboarding(false);
-  };
 
   return (
     <>
@@ -89,16 +84,20 @@ const AnimatedRoutes = () => {
               transition={{ duration: 0.18, ease: "easeInOut" }}
             >
               <Routes location={location}>
+                <Route path="/home" element={<HomePage />} />
                 <Route path="/pay" element={<PayPage />} />
                 <Route path="/pay/contacts" element={<ContactsPage />} />
-                <Route path="/pay/settings" element={<SettingsPage />} />
+                <Route path="/pay/settings" element={<Navigate to="/settings" replace />} />
                 <Route path="/pay/settings/agent-access" element={<Navigate to="/docs/agents" replace />} />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/identity" element={<IdentityPage />} />
                 <Route path="/vote" element={<VotePage />} />
                 <Route path="/credit" element={<CreditPage />} />
                 <Route path="/ecosystem" element={<EcosystemPage />} />
                 <Route path="/docs" element={<DeveloperPortal />} />
                 <Route path="/docs/:slug" element={<DeveloperPortal />} />
                 <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/download" element={<MobileDownloadPage />} />
                 <Route path="/pmf" element={<PMFPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
@@ -107,8 +106,6 @@ const AnimatedRoutes = () => {
         )}
 
       </div>
-
-      <HowCoFHEModal open={showOnboarding} onClose={handleOnboardingClose} />
     </>
   );
 };
@@ -119,11 +116,13 @@ const App = () => (
       <TooltipProvider>
         <PreferencesProvider>
           <WalletSessionProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <AnimatedRoutes />
-            </BrowserRouter>
+            <ValuesRevealProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <AnimatedRoutes />
+              </BrowserRouter>
+            </ValuesRevealProvider>
           </WalletSessionProvider>
         </PreferencesProvider>
       </TooltipProvider>

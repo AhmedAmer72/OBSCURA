@@ -1,5 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Serif+Display&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=JetBrains+Mono:wght@300;400;500;600;700&family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 @import "./styles/harmony-workspace-forms.css";
+@import "./styles/dashboard-premium.css";
 
 @tailwind base;
 @tailwind components;
@@ -304,8 +305,12 @@
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  padding: 0.5rem 2rem 0.5rem 0.7rem;
-  background: hsl(var(--card));
+  padding: 0.5rem 2.75rem 0.5rem 0.7rem;
+  background-color: hsl(var(--card));
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23296447' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.875rem center;
+  background-size: 1rem;
   border: 1px solid hsl(var(--border));
   border-radius: 0.5rem;
   font-size: 0.8rem;
@@ -603,7 +608,7 @@
 /* Shared slogan — bold editorial display */
 .landing-spade .obscura-slogan {
   font-feature-settings: "liga" 1, "kern" 1;
-  max-width: 14ch;
+  max-width: 17ch;
 }
 
 .landing-spade .obscura-slogan--hero {

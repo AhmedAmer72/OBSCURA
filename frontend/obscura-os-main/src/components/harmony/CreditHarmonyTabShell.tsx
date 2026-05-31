@@ -39,12 +39,24 @@ export function CreditHarmonyTabShell({
   tab,
   actions,
   children,
+  hideIntro = false,
 }: {
   tab: CreditHarmonyTabKey;
   actions?: ReactNode;
   children: ReactNode;
+  hideIntro?: boolean;
 }) {
   const meta = TAB_META[tab];
+
+  if (hideIntro) {
+    return (
+      <div className="credit-tab-stack space-y-6">
+        {actions ? <div className="flex flex-wrap items-center justify-end gap-2">{actions}</div> : null}
+        {children}
+      </div>
+    );
+  }
+
   return (
     <>
       <HarmonyPageIntro eyebrow={meta.eyebrow} title={meta.title} actions={actions} />

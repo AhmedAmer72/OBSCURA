@@ -56,14 +56,14 @@ function FaucetRow({ tokenKey }: { tokenKey: "testOcUSDC" | "ocOBS" | "ocWETH" }
   return (
     <div className="flex items-center justify-between gap-3 py-2">
       <div className="min-w-0">
-        <div className="text-xs text-white/85">{meta.symbol} <span className="text-white/40">· {meta.faucetAmountLabel}</span></div>
-        <div className="text-[10.5px] text-white/40 truncate">{meta.address ?? "not configured"}</div>
-        {err && <div className="text-[10.5px] text-rose-300/80 mt-0.5">{err}</div>}
+        <div className="text-xs text-foreground">{meta.symbol} <span className="text-muted-foreground">· {meta.faucetAmountLabel}</span></div>
+        <div className="text-[10.5px] text-muted-foreground truncate">{meta.address ?? "not configured"}</div>
+        {err && <div className="text-[10.5px] text-destructive mt-0.5">{err}</div>}
       </div>
       <button
         onClick={claim}
         disabled={!address || !meta.address || !ready || busy}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-md border border-cyan-500/40 bg-cyan-500/10 text-cyan-100 hover:bg-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="dash-btn-primary h-8 px-3 text-[11px] disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Droplet className="w-3 h-3" />}
         {label}
@@ -164,11 +164,11 @@ const SettingsPanel = ({ markets, approved }: Props) => {
     <div className="grid gap-4">
       <Card>
         <CardHeader title="Legacy testnet faucets" />
-        <div className="px-5 py-3 divide-y divide-white/[0.04]">
+        <div className="px-5 py-3 divide-y divide-border/60">
           <FaucetRow tokenKey="testOcUSDC" />
           <FaucetRow tokenKey="ocOBS" />
           <FaucetRow tokenKey="ocWETH" />
-          <p className="text-[10.5px] text-white/40 pt-2">For the canonical Credit market, use Pay to shield USDC into private ocUSDC.</p>
+          <p className="text-[10.5px] text-muted-foreground pt-2">For the canonical Credit market, use Pay to shield USDC into private ocUSDC.</p>
         </div>
       </Card>
 
@@ -176,14 +176,14 @@ const SettingsPanel = ({ markets, approved }: Props) => {
         <CardHeader title="Operators" />
         <div className="px-5 py-4 text-xs grid gap-2">
           <div className="flex justify-between">
-            <span className="text-white/60">Auto-repay hook</span>
-            <span className={isOpStream ? "text-[hsl(var(--success))]" : "text-white/40"}>{isOpStream ? "approved" : "not approved"}</span>
+            <span className="text-muted-foreground">Auto-repay hook</span>
+            <span className={isOpStream ? "text-[hsl(var(--success))]" : "text-muted-foreground"}>{isOpStream ? "approved" : "not approved"}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-white/60">Insurance hook</span>
-            <span className={isOpInsurance ? "text-[hsl(var(--success))]" : "text-white/40"}>{isOpInsurance ? "approved" : "not approved"}</span>
+            <span className="text-muted-foreground">Insurance hook</span>
+            <span className={isOpInsurance ? "text-[hsl(var(--success))]" : "text-muted-foreground"}>{isOpInsurance ? "approved" : "not approved"}</span>
           </div>
-          <p className="text-[11px] text-white/45 mt-1">Approval is granted automatically on first use of each hook.</p>
+          <p className="text-[11px] text-muted-foreground mt-1">Approval is granted automatically on first use of each hook.</p>
         </div>
       </Card>
 
@@ -192,33 +192,33 @@ const SettingsPanel = ({ markets, approved }: Props) => {
         <div className="px-5 py-4 grid gap-3">
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <label className="text-[10px] uppercase tracking-wider text-white/45">Market</label>
-              <select value={marketAddr} onChange={(e) => setMarketAddr(e.target.value)} className="w-full bg-[#0d0d14] text-white border border-white/10 rounded-md px-2 py-1.5 text-xs">
-                {markets.map((m) => (<option key={m.address} value={m.address ?? ""} className="bg-[#0d0d14] text-white">{m.label}</option>))}
+              <label className="dash-eyebrow text-[10px]">Market</label>
+              <select value={marketAddr} onChange={(e) => setMarketAddr(e.target.value)} className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground">
+                {markets.map((m) => (<option key={m.address} value={m.address ?? ""}>{m.label}</option>))}
               </select>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider text-white/45">Per cycle (ocUSDC)</label>
-              <input value={perCycle} onChange={(e) => setPerCycle(e.target.value)} className="w-full border-border bg-background rounded-md px-2 py-1.5 text-xs" />
+              <label className="dash-eyebrow text-[10px]">Per cycle (ocUSDC)</label>
+              <input value={perCycle} onChange={(e) => setPerCycle(e.target.value)} className="mt-1 w-full border-border bg-background rounded-md px-2 py-1.5 text-xs" />
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider text-white/45">Period (days)</label>
-              <input value={periodDays} onChange={(e) => setPeriodDays(e.target.value)} className="w-full border-border bg-background rounded-md px-2 py-1.5 text-xs" />
+              <label className="dash-eyebrow text-[10px]">Period (days)</label>
+              <input value={periodDays} onChange={(e) => setPeriodDays(e.target.value)} className="mt-1 w-full border-border bg-background rounded-md px-2 py-1.5 text-xs" />
             </div>
           </div>
-          <button onClick={enableStream} disabled={!address || busy === "stream" || !hooksAvailable} className="self-start inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm bg-violet-500/15 border border-violet-500/40 text-violet-100 hover:bg-violet-500/25 disabled:opacity-50">
+          <button onClick={enableStream} disabled={!address || busy === "stream" || !hooksAvailable} className="dash-btn-primary self-start h-9 px-4 text-sm disabled:opacity-50">
             {busy === "stream" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Repeat className="w-4 h-4" />}
             Enable
           </button>
-          {!hooksAvailable && <p className="text-[11px] text-white/45">Canonical Pay-backed ocUSDC uses direct wallet execution for now; legacy hooks stay testnet-only.</p>}
+          {!hooksAvailable && <p className="text-[11px] text-muted-foreground">Canonical Pay-backed ocUSDC uses direct wallet execution for now; legacy hooks stay testnet-only.</p>}
         </div>
       </Card>
 
       <Card>
         <CardHeader title="Insurance top-up subscription" />
         <div className="px-5 py-4 grid gap-3">
-          <p className="text-xs text-white/55">Schedules a recurring collateral top-up against your active position to keep your HF above 1.</p>
-          <button onClick={subscribeIns} disabled={!address || busy === "ins" || !hooksAvailable} className="self-start inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm bg-emerald-500/15 border border-emerald-500/40 text-foreground hover:bg-emerald-500/25 disabled:opacity-50">
+          <p className="text-xs text-muted-foreground">Schedules a recurring collateral top-up against your active position to keep your HF above 1.</p>
+          <button onClick={subscribeIns} disabled={!address || busy === "ins" || !hooksAvailable} className="dash-btn-primary self-start h-9 px-4 text-sm disabled:opacity-50">
             {busy === "ins" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Umbrella className="w-4 h-4" />}
             Subscribe
           </button>
@@ -228,7 +228,7 @@ const SettingsPanel = ({ markets, approved }: Props) => {
       <Card>
         <CardHeader title="Governance approvals (treasury-only)" />
         <div className="px-5 py-4 grid gap-3">
-          <p className="text-xs text-white/55">Toggle which LLTV ceilings are approved for new markets. Reverts unless your wallet holds the Treasury role.</p>
+          <p className="text-xs text-muted-foreground">Toggle which LLTV ceilings are approved for new markets. Reverts unless your wallet holds the Treasury role.</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {approved.lltv.map(({ v, ok }) => (
               <button
@@ -247,7 +247,7 @@ const SettingsPanel = ({ markets, approved }: Props) => {
 
       {msg && (
         <Card>
-          <div className="px-5 py-3 text-xs text-white/70 inline-flex items-center gap-2">
+          <div className="px-5 py-3 text-xs text-muted-foreground inline-flex items-center gap-2">
             <SettingsIcon className="w-3.5 h-3.5" /> {msg}
           </div>
         </Card>

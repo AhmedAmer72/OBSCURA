@@ -1,15 +1,5 @@
 /**
  * SupplyForm — two-step FHE supply to a credit market (earn interest).
- *
- * Supply flow (two-step):
- *   Step 1: ocUSDC.confidentialTransfer(market, encAmt1)  ← user signs
- *   Step 2: market.supply(amtPlain, encAmt2)              ← user signs
- *
- * Withdraw flow (single call, market IS the holder):
- *   market.withdraw(amtPlain)
- *
- * The user's supply position is tracked via encrypted shares. The plaintext
- * shadow (_plainSupplyShares) is used to show an approximate balance in the UI.
  */
 import { useState } from "react";
 import { usePreWarmFHE } from "@/hooks/usePreWarmFHE";
@@ -22,6 +12,15 @@ import EncryptedValue from "@/components/shared/EncryptedValue";
 import FHEStepper from "@/components/shared/FHEStepper";
 import PercentChips from "@/components/shared/PercentChips";
 import { BETA_POOL_LABEL } from "@/hooks/useBetaBorrowLimit";
+import {
+  CreditFormHint,
+  CreditFormInput,
+  CreditFormLabel,
+  CreditFormSegmentTabs,
+  CreditFormSelect,
+  CreditFormStatCard,
+  CreditFormSubmit,
+} from "@/components/harmony/credit/CreditFormChrome";
 
 interface Props {
   market: CreditMarketMeta;
@@ -40,10 +39,10 @@ const SupplyForm = ({ market, markets, onSelect, onRefresh }: Props) => {
   const { decrypted: ocUSDCDecrypted } = useOcUSDCBalance();
   const cUSDCBal = market.isCanonical ? (ocUSDCDecrypted ?? 0n) : 0n;
 
-  const [tab, setTab]     = useState<Tab>("supply");
+  const [tab, setTab] = useState<Tab>("supply");
   const [amount, setAmount] = useState("");
-  const [busy, setBusy]   = useState(false);
-  const [msg, setMsg]     = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
 
   const parsedAmt = (): bigint | null => {
     const n = parseFloat(amount);
@@ -66,7 +65,7 @@ const SupplyForm = ({ market, markets, onSelect, onRefresh }: Props) => {
         setMsg(`Withdrew ${amount} ${market.loanSymbol} from market.`);
       }
       setAmount("");
-      pos.resetDecrypted(); // clear stale tile so user re-reveals fresh value
+      pos.resetDecrypted();
       await pos.refresh();
       onRefresh?.();
     } catch (e: any) {
@@ -77,115 +76,98 @@ const SupplyForm = ({ market, markets, onSelect, onRefresh }: Props) => {
   };
 
   return (
-    <div className="grid gap-3">
-      {/* Position summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-1">
+    <div className="grid gap-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <EncryptedValue
           label="Your Supply"
           value={pos.mySupply}
           loading={pos.sharesLoading}
           symbol={market.loanSymbol}
-          accent="cyan"
+          accent="emerald"
           onReveal={pos.decryptShares}
         />
-        <div className="rounded-xl hairline bg-card p-3 space-y-2">
-          <div className="text-[9px] tracking-[0.18em] uppercase text-white/35">Risk tier</div>
+        <CreditFormStatCard label="Risk tier">
           <div className={`text-sm font-semibold ${
             market.riskTier === "Conservative"
               ? "text-[hsl(var(--success))]"
               : market.riskTier === "Aggressive"
-              ? "text-rose-300"
-              : "text-amber-300"
+                ? "text-destructive"
+                : "text-amber-700"
           }`}>
             {market.riskTier}
           </div>
-        </div>
+        </CreditFormStatCard>
       </div>
 
-      {/* Supply / Withdraw tabs */}
-      <div className="flex gap-1 rounded-md bg-white/5 p-0.5 text-xs">
-        {(["supply", "withdraw"] as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => { setTab(t); setMsg(null); }}
-            className={`flex-1 rounded py-1.5 capitalize transition-colors ${
-              tab === t ? "bg-cyan-500/20 text-cyan-100" : "text-white/50 hover:text-white/80"
-            }`}
-          >
-            {t}
-          </button>
-        ))}
+      <CreditFormSegmentTabs
+        value={tab}
+        onChange={(next) => { setTab(next); setMsg(null); }}
+        items={[
+          { key: "supply", label: "supply" },
+          { key: "withdraw", label: "withdraw" },
+        ]}
+      />
+
+      <div className="space-y-2">
+        <CreditFormLabel>Market</CreditFormLabel>
+        <CreditFormSelect
+          value={market.address ?? ""}
+          onChange={(value) => {
+            const next = markets.find((m) => m.address === (value as `0x${string}`));
+            if (next) onSelect(next);
+          }}
+        >
+          {markets.map((m) => (
+            <option key={m.address} value={m.address}>
+              {m.label}
+            </option>
+          ))}
+        </CreditFormSelect>
       </div>
 
-      {/* Market selector */}
-      <label className="text-[11px] uppercase tracking-wider text-white/50">Market</label>
-      <select
-        value={market.address ?? ""}
-        onChange={(e) => {
-          const next = markets.find((m) => m.address === (e.target.value as `0x${string}`));
-          if (next) onSelect(next);
-        }}
-        className="bg-[#0d0d14] text-white border border-white/10 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-cyan-500/40"
-      >
-        {markets.map((m) => (
-          <option key={m.address} value={m.address} className="bg-[#0d0d14] text-white">
-            {m.label}
-          </option>
-        ))}
-      </select>
+      <div className="space-y-2">
+        <CreditFormLabel>Amount ({market.loanSymbol})</CreditFormLabel>
+        <CreditFormInput
+          inputMode="decimal"
+          value={amount}
+          onFocus={preWarm.onFocus}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="0.0"
+        />
+        <PercentChips
+          max={tab === "supply" ? cUSDCBal : (pos.mySupply ?? 0n)}
+          decimals={6}
+          onPick={(v) => setAmount(v === 0n ? "" : (Number(v) / 1e6).toString())}
+        />
+      </div>
 
-      {/* Amount input */}
-      <label className="text-[11px] uppercase tracking-wider text-white/50">
-        Amount ({market.loanSymbol})
-      </label>
-      <input
-        inputMode="decimal"
-        value={amount}
-        onFocus={preWarm.onFocus}
-        onChange={(e) => setAmount(e.target.value)}
-        placeholder="0.0"
-        className="border-border bg-background rounded-md px-3 py-2 text-sm focus:outline-none focus:border-cyan-500/40"
-      />
-      <PercentChips
-        max={tab === "supply" ? cUSDCBal : (pos.mySupply ?? 0n)}
-        decimals={6}
-        onPick={(v) => setAmount(v === 0n ? "" : (Number(v) / 1e6).toString())}
-        accent="cyan"
-      />
-
-      {/* Withdraw warning when no supply */}
       {tab === "withdraw" && pos.mySupply !== null && pos.mySupply === 0n && (
-        <p className="text-[11px] text-amber-300/80 flex items-center gap-1.5">
-          <AlertTriangle className="w-3 h-3 flex-shrink-0" />
+        <p className="flex items-center gap-1.5 text-[11px] text-amber-700">
+          <AlertTriangle className="h-3 w-3 shrink-0" />
           No supply position in this market.
         </p>
       )}
 
-      {/* Supply privacy note */}
       {tab === "supply" && (
-        <p className="text-[11px] text-white/40">
+        <CreditFormHint>
           Private supply adds real {market.loanSymbol} to {market.isCanonical ? BETA_POOL_LABEL : "this market"} in two wallet-confirmed steps.
           Your lender position stays private.
-        </p>
+        </CreditFormHint>
       )}
 
-      <button
+      <CreditFormSubmit
         disabled={!amtBig || busy}
         onClick={submit}
-        className="mt-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md text-sm bg-cyan-500/15 border border-cyan-500/40 text-cyan-100 hover:bg-cyan-500/25 disabled:opacity-50"
+        className="inline-flex w-full items-center justify-center gap-2 sm:w-full"
       >
-        {tab === "supply" ? (
-          <ArrowUpToLine className="w-4 h-4" />
-        ) : (
-          <ArrowDownToLine className="w-4 h-4" />
-        )}
+        {tab === "supply" ? <ArrowUpToLine className="h-4 w-4" /> : <ArrowDownToLine className="h-4 w-4" />}
         {tab === "supply" ? (market.isCanonical ? "Supply to Beta Pool" : "Supply to market") : "Withdraw from market"}
-      </button>
+      </CreditFormSubmit>
 
       <FHEStepper status={fheStatus.status} error={fheStatus.error} />
 
       {msg && (
-        <p className={`text-xs ${msg.toLowerCase().includes("fail") || msg.toLowerCase().includes("error") ? "text-red-300/70" : "text-cyan-300/70"}`}>
+        <p className={`text-xs ${msg.toLowerCase().includes("fail") || msg.toLowerCase().includes("error") ? "text-destructive" : "text-[hsl(var(--success))]"}`}>
           {msg}
         </p>
       )}

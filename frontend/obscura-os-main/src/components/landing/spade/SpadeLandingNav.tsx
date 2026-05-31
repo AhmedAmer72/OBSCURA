@@ -6,6 +6,7 @@ import ObscuraLogo from "@/components/brand/ObscuraLogo";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
+  { label: "Download", href: "/download" },
   { label: "Privacy", href: "/privacy" },
   { label: "Docs", href: "/docs" },
 ] as const;
@@ -38,7 +39,7 @@ export default function SpadeLandingNav() {
           <ObscuraLogo size="nav" tone="light" />
         </Link>
 
-        <nav className="flex items-center gap-6 sm:gap-8" aria-label="Main navigation">
+        <nav className="hidden items-center gap-6 sm:flex sm:gap-8" aria-label="Main navigation">
           {NAV_LINKS.map((link) => (
             <Link key={link.href} to={link.href} className={navLinkClass}>
               {link.label}
@@ -47,7 +48,7 @@ export default function SpadeLandingNav() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <Link to="/pay" className={launchAppClass}>
+          <Link to="/home" className={launchAppClass}>
             Launch App
           </Link>
           <NavRightSlot tone="light" />

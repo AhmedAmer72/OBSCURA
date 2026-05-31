@@ -1,9 +1,11 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import { Eye, Lock, Network, ShieldCheck, Wallet, Zap } from "lucide-react";
+import { useEffect } from "react";
+import { Lock, Network, ShieldCheck, Wallet, Zap } from "lucide-react";
 import { HarmonyFormCard, HarmonyPageIntro } from "@/components/harmony/harmony-ui";
 import UsdcIcon from "@/components/shared/UsdcIcon";
 import { usePaymentMode } from "@/contexts/PaymentModeContext";
+import { useCardCipherReveal } from "@/contexts/ValuesRevealContext";
 import { useOcUSDCBalance } from "@/hooks/useOcUSDCBalance";
 import { useUSDCBalance } from "@/hooks/useUSDCBalance";
 
@@ -99,10 +101,12 @@ export function PayHarmonyTabShell({
   tab,
   actions,
   children,
+  hideIntro = false,
 }: {
   tab: PayHarmonyTabKey;
   actions?: ReactNode;
   children: ReactNode;
+  hideIntro?: boolean;
 }) {
   const { privacyMode } = usePaymentMode();
   const meta = TAB_META[tab];
@@ -128,6 +132,10 @@ export function PayHarmonyTabShell({
                 ? { ...meta, eyebrow: "Settings · Public", description: "Passkey smart account, public USDC preferences, notifications, and local receipt controls." }
                 : { ...meta, eyebrow: "Settings · Private", description: "Privacy maintenance, stealth receiving, contacts, notifications, and local receipt controls." }
           : meta;
+  if (hideIntro) {
+    return <div className="pay-tab-stack space-y-6">{children}</div>;
+  }
+
   return (
     <>
       <HarmonyPageIntro eyebrow={modeMeta.eyebrow} title={modeMeta.title} actions={actions} />
@@ -225,8 +233,15 @@ export function PayHarmonySendBar({ onShield }: { onShield: () => void }) {
   const { privacyMode, activeToken, modeSummary, smartAccountAddress, isSmartAvailable, executionLabel } = usePaymentMode();
   const smartUsdcBalance = useUSDCBalance(smartAccountAddress as `0x${string}` | null);
   const { decrypted, reveal, busy } = useOcUSDCBalance();
+  const balanceReveal = useCardCipherReveal();
   const isRevealed = decrypted !== null && decrypted !== undefined;
   const cusdc = isRevealed ? (Number(decrypted) / 1_000_000).toFixed(2) : null;
+  const showBalance = balanceReveal.isVisible && isRevealed;
+
+  useEffect(() => {
+    if (!balanceReveal.isVisible || isRevealed || busy) return;
+    void reveal().catch(() => undefined);
+  }, [balanceReveal.isVisible, isRevealed, busy, reveal]);
 
   if (privacyMode === "public") {
     return (
@@ -264,17 +279,10 @@ export function PayHarmonySendBar({ onShield }: { onShield: () => void }) {
           </p>
           <p className="mt-1 text-sm text-foreground">
             ocUSDC{" "}
-            {isRevealed ? (
+            {showBalance ? (
               <span className="font-mono tabular-nums text-[hsl(var(--success))]">{cusdc}</span>
             ) : (
-              <button
-                type="button"
-                onClick={() => void reveal()}
-                disabled={busy}
-                className="font-mono text-muted-foreground underline underline-offset-2 hover:text-foreground disabled:opacity-50"
-              >
-                {busy ? "..." : <><Eye className="mr-1 inline h-3 w-3" /> reveal</>}
-              </button>
+              <span className="font-mono text-muted-foreground">sealed</span>
             )}
           </p>
           <p className="mt-1 text-[11px] text-muted-foreground/55">
@@ -284,7 +292,7 @@ export function PayHarmonySendBar({ onShield }: { onShield: () => void }) {
         <button
           type="button"
           onClick={onShield}
-          className="h-10 rounded-full bg-foreground px-4 text-sm font-medium text-background"
+          className="dash-btn-primary h-10 px-4 text-sm"
         >
           Shield USDC →
         </button>

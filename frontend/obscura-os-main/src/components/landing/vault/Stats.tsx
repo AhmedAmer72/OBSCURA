@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
 
 const STATS = [
-  { value: "25+", label: "Contracts on Arbitrum Sepolia" },
-  { value: "421614", label: "Testnet chain ID" },
-  { value: "FHE", label: "Every value encrypted via CoFHE" },
-  { value: "0", label: "Plaintext values on-chain" },
+  { value: "38", label: "Active contract addresses" },
+  { value: "21", label: "FHE-enabled on-chain types" },
+  { value: "51", label: "Indexed event definitions" },
+  { value: "421614", label: "Arbitrum Sepolia · CoFHE testnet" },
 ];
 
 export function Stats() {

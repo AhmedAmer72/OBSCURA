@@ -47,7 +47,7 @@ export function ScrollStory() {
       id="why"
       ref={containerRef}
       className="scroll-story-section relative bg-forest"
-      style={{ height: "320vh" }}
+      style={{ height: "360vh" }}
     >
       <div className="sticky top-0 flex h-screen items-center justify-center overflow-hidden">
         <motion.div
@@ -140,8 +140,8 @@ export function ScrollStory() {
             style={{ opacity: subOpacity, y: subY }}
             className="mx-auto mt-8 max-w-xl text-[15px] leading-relaxed text-white/55 md:text-base"
           >
-            Obscura encrypts every value at the protocol layer. Pay, lend, and govern on public
-            chains — without revealing a single number.
+            Obscura stores amounts as on-chain ciphertext — not hidden in a pool, computed with FHE.
+            Pay with ocUSDC, borrow in Credit, vote in Vote — same engine, zero forced disclosure.
           </motion.p>
         </motion.div>
 

@@ -1,0 +1,28 @@
+{
+  "channel": "direct",
+  "productName": "Obscura Mobile",
+  "latestVersion": "0.1.0",
+  "releases": [
+    {
+      "version": "0.1.0",
+      "publishedAt": "2026-05-30",
+      "label": "Android APK (debug)",
+      "fileName": "obscura-mobile-0.1.0.apk",
+      "downloadPath": "/downloads/obscura-mobile-0.1.0.apk",
+      "sizeBytes": 12001124,
+      "sha256": "ef4d4dfc64643d123a7596955c55f812c27cd32b7560130ff837e2892c65d7d2",
+      "minAndroid": "8.0",
+      "recommended": true,
+      "notes": [
+        "Pay, Vote, and Credit workspaces",
+        "WalletConnect on Arbitrum Sepolia testnet",
+        "Same FHE privacy model as the web app"
+      ]
+    }
+  ],
+  "installSteps": [
+    "Download the APK on your Android phone (Chrome or your file manager).",
+    "Open the file and allow installs from your browser or files app when prompted.",
+    "Launch Obscura, connect your wallet, and switch to Arbitrum Sepolia."
+  ]
+}

@@ -10,8 +10,8 @@ const PRODUCTS = [
   {
     to: "/pay",
     name: "Pay",
-    tagline: "Private banking, onchain.",
-    body: "Stealth sends, shielded payroll, encrypted streams. Settle in stable value, reveal only to who you choose.",
+    tagline: "Private & public payment rails.",
+    body: "Shield USDC to ocUSDC, run stealth inbox and encrypted streams, or switch to Public Mode for passkey USDC with sponsored gas.",
     accent: "from-[oklch(0.96_0.05_150)] to-[oklch(0.92_0.06_150)]",
     accentDark: "dark:from-[oklch(0.3_0.06_150)] dark:to-[oklch(0.24_0.05_150)]",
     preview: <PayPreview />,
@@ -19,8 +19,8 @@ const PRODUCTS = [
   {
     to: "/credit",
     name: "Credit",
-    tagline: "Encrypted lending terminal.",
-    body: "Supply, borrow, and manage collateral with hidden positions. Public solvency, private balance sheet.",
+    tagline: "Encrypted money markets.",
+    body: "Borrow against Pay-backed ocUSDC with sealed collateral and debt shares. Live health and borrowing power from chain — revealed when you choose.",
     accent: "from-[oklch(0.96_0.04_85)] to-[oklch(0.92_0.05_85)]",
     accentDark: "dark:from-[oklch(0.3_0.06_85)] dark:to-[oklch(0.24_0.05_85)]",
     preview: <CreditPreview />,
@@ -28,8 +28,8 @@ const PRODUCTS = [
   {
     to: "/vote",
     name: "Vote",
-    tagline: "Coercion-resistant governance.",
-    body: "Confidential ballots, weighted by encrypted stake. Aggregate tallies revealed only after finalization.",
+    tagline: "FHE governance stack.",
+    body: "Multi-option encrypted ballots, treasury, rewards, and an executable OpenZeppelin Governor track — participation feeds shared reputation.",
     accent: "from-[oklch(0.96_0.04_290)] to-[oklch(0.92_0.05_290)]",
     accentDark: "dark:from-[oklch(0.3_0.06_290)] dark:to-[oklch(0.24_0.05_290)]",
     preview: <VotePreview />,
@@ -49,8 +49,8 @@ export function ProductEcosystem() {
             </h2>
           </div>
           <p className="md:text-right max-w-md text-muted-foreground">
-            Composable encrypted modules covering the full spectrum of
-            organizational activity.
+            Production-complete on Arbitrum Sepolia — one worker, one reputation layer, and the{" "}
+            <span className="text-foreground/80">@obscura-fhe/sdk</span> for integrators.
           </p>
         </div>
 

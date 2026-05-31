@@ -9,7 +9,8 @@ import {
   WalletCards,
 } from "lucide-react";
 import { HarmonyAppShell } from "@/components/harmony/HarmonyAppShell";
-import { HarmonyPageIntro, HarmonySection } from "@/components/harmony/harmony-ui";
+import { AppWorkspaceChrome } from "@/components/harmony/AppWorkspaceChrome";
+import { HarmonySection } from "@/components/harmony/harmony-ui";
 
 const modules = [
   {
@@ -45,7 +46,6 @@ const privacyRows = [
 export default function EcosystemPage() {
   return (
     <HarmonyAppShell
-      appName="Ecosystem"
       sidebar={[
         { key: "pay", label: "Obscura Pay", href: "/pay" },
         { key: "credit", label: "Obscura Credit", href: "/credit" },
@@ -53,30 +53,29 @@ export default function EcosystemPage() {
       ]}
       searchPlaceholder="Search ecosystem…"
     >
-      <HarmonyPageIntro
-        eyebrow="Ecosystem architecture"
-        title="One privacy engine"
+      <AppWorkspaceChrome
+        eyebrow="Obscura · Ecosystem"
+        title="One privacy engine."
+        description="Pay, Credit, and Govern share encrypted balances, reputation signals, and governance — without exposing raw counterparties or amounts."
         actions={
-          <Link
-            to="/pay"
-            className="inline-flex h-10 items-center gap-2 rounded-full bg-foreground px-4 text-sm font-medium text-background"
-          >
-            Start with Pay <ArrowRight className="h-4 w-4" />
+          <Link to="/pay" className="dash-btn-primary h-9 px-3 text-xs">
+            Open Pay
+            <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         }
       />
-      <p className="mt-4 max-w-2xl text-sm text-muted-foreground">
+      <p className="mb-8 max-w-2xl text-sm text-muted-foreground">
         Obscura connects payments, credit, and governance through shared encrypted state — without exposing user data.
       </p>
 
-      <div className="mt-10 grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3">
         {modules.map((module) => {
           const Icon = module.icon;
           return (
             <Link
               key={module.name}
               to={module.href}
-              className="rounded-2xl hairline bg-card p-6 transition-colors hover:bg-muted/30"
+              className="dash-card p-6 transition-colors hover:bg-muted/30"
             >
               <Icon className="h-5 w-5 text-accent" />
               <div className="mt-6 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{module.name}</div>
@@ -92,7 +91,7 @@ export default function EcosystemPage() {
 
       <HarmonySection title="Privacy matrix" hint="Verifiability without disclosure">
         <div className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl hairline bg-card p-6">
+          <div className="dash-card p-6">
             <Lock className="h-5 w-5 text-accent" />
             <p className="mt-4 text-sm text-muted-foreground">
               The chain verifies actions while sensitive values remain sealed until you choose to reveal them.
@@ -106,7 +105,7 @@ export default function EcosystemPage() {
               ))}
             </div>
           </div>
-          <div className="rounded-2xl hairline bg-card p-6">
+          <div className="dash-card p-6">
             <h3 className="font-display text-2xl">Cross-product encrypted score</h3>
             <p className="mt-3 text-sm text-muted-foreground">
               Pay activity and Vote participation can improve Credit reputation without publishing the raw activity graph.

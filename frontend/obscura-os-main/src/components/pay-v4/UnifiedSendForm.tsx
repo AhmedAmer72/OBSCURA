@@ -49,6 +49,7 @@ import { initFHEClient, encryptAmount } from "@/lib/fhe";
 import { CONFIDENTIAL_TOKEN_ABI } from "@/config/credit";
 import { OBSCURA_PAY_OCUSDC_ADDRESS } from "@/config/payV3";
 import { withRateLimitRetry } from "@/lib/rateLimit";
+import { cn } from "@/lib/utils";
 import { payHarmony as h } from "@/components/harmony/payHarmonyClasses";
 
 function isRateLimited(e: unknown): boolean {
@@ -408,39 +409,52 @@ export default function UnifiedSendForm() {
               Step 1 / 4 · Choose how to send
             </div>
           </div>
-          <div className="grid grid-cols-1 gap-2">
+          <div className="grid grid-cols-1 gap-3">
             {MODES.map((m) => {
               const Icon = m.icon;
-              const isSelected = mode === m.key;
+              const isActive = mode === m.key;
+              const isRecommended = m.key === "stealth";
               return (
                 <button
                   key={m.key}
+                  type="button"
                   onClick={() => { setMode(m.key); setStep(2); }}
-                  className={`p-4 rounded-xl border text-left flex items-center gap-4 transition-all ${
-                    isSelected
-                      ? "border-accent/40 bg-accent/15"
-                      : "hairline bg-card hover:bg-muted/50"
-                  }`}
+                  className={cn(
+                    "group flex w-full items-center gap-4 rounded-2xl border-2 p-4 text-left transition-all sm:p-5",
+                    "shadow-[var(--dash-surface-shadow-sm)] hover:shadow-[var(--dash-shadow-hover)]",
+                    isRecommended
+                      ? "border-[hsl(var(--dash-forest)/0.4)] bg-[hsl(145_38%_95%)] hover:border-[hsl(var(--dash-forest)/0.65)] hover:bg-[hsl(145_38%_93%)]"
+                      : "border-[hsl(var(--border))] bg-white hover:border-[hsl(var(--dash-forest)/0.45)] hover:bg-[hsl(145_28%_98%)]",
+                    isActive && "ring-2 ring-[hsl(var(--dash-forest)/0.22)] border-[hsl(var(--dash-forest))]",
+                  )}
                 >
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
-                    isSelected
-                      ? "bg-accent/20 border-accent/35"
-                      : "bg-muted hairline"
-                  }`}>
-                    <Icon className={`w-4 h-4 ${isSelected ? "text-[hsl(var(--success))]" : "text-muted-foreground/60"}`} />
+                  <div
+                    className={cn(
+                      "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2",
+                      isRecommended || isActive
+                        ? "border-[hsl(var(--dash-forest))] bg-[hsl(var(--dash-forest))] text-[hsl(96_18%_97%)]"
+                        : "border-[hsl(var(--dash-mint-border))] bg-[hsl(var(--dash-mint))] text-[hsl(var(--dash-forest))]",
+                    )}
+                  >
+                    <Icon className="h-5 w-5" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[13px] font-medium text-foreground">{m.title}</span>
-                      {m.tag && (
-                        <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-muted text-foreground border border-border font-semibold">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-semibold text-foreground">{m.title}</span>
+                      {m.tag ? (
+                        <span className="rounded-full bg-[hsl(var(--dash-forest))] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-[hsl(96_18%_97%)]">
                           {m.tag}
                         </span>
-                      )}
+                      ) : null}
                     </div>
-                    <div className="text-[11px] text-muted-foreground/55 mt-0.5 leading-relaxed">{m.description}</div>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{m.description}</p>
                   </div>
-                  <ArrowRight className={`w-4 h-4 shrink-0 ${isSelected ? "text-foreground" : "text-muted-foreground/25"}`} />
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <span className="text-[10px] font-medium uppercase tracking-wide text-[hsl(var(--dash-forest))] opacity-0 transition-opacity group-hover:opacity-100 sm:opacity-100">
+                      Select
+                    </span>
+                    <ArrowRight className="h-5 w-5 text-[hsl(var(--dash-forest))] transition-transform group-hover:translate-x-0.5" />
+                  </div>
                 </button>
               );
             })}

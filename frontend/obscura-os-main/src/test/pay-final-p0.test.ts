@@ -187,7 +187,8 @@ describe("Pay P0.4 privacy gates", () => {
     expect(activityHook).toContain('"AuctionSettled"');
     expect(activityFeed).toContain('{ key: "credit",   label: "Credit" }');
     expect(creditPage).toContain('defaultFilter="credit"');
-    expect(creditPage).toContain('type CreditTab = "overview" | "borrow" | "position" | "earn" | "liquidations" | "risk"');
+    expect(creditPage).toContain("CreditWorkspaceTab");
+    expect(creditPage).toContain("CREDIT_TAB_KEYS");
     expect(creditPage).toContain("CreditReputationPanel");
     expect(creditPage).toContain("Canonical beta market");
     expect(creditPage).toContain("Legacy markets remain hidden");
@@ -263,9 +264,9 @@ describe("Pay P0.5/P1.1/P1.2 stabilization gates", () => {
   it("keeps Settings reachable in mobile Pay navigation", () => {
     const shellSource = readSource("components/harmony/HarmonyAppShell.tsx");
 
-    expect(shellSource).not.toContain("sidebar.slice(0, 5)");
-    expect(shellSource).toContain("sidebar.map");
+    expect(shellSource).toContain('to="/settings"');
     expect(shellSource).toContain("mobileLabel");
+    expect(shellSource).toContain("mobileNav.map");
     expect(shellSource).toContain("truncate");
   });
 
@@ -287,13 +288,13 @@ describe("Pay P0.5/P1.1/P1.2 stabilization gates", () => {
 
   it("keeps notification setup permission-aware and uses real browser display checks", () => {
     const hookSource = readSource("hooks/useNotificationPrefs.ts");
-    const paySource = readSource("pages/PayPage.tsx");
+    const settingsSource = readSource("components/settings/SettingsPanels.tsx");
 
     expect(hookSource).toContain("Notification.requestPermission()");
     expect(hookSource).toContain("registration.showNotification");
     expect(hookSource).toContain("serviceWorkerReady");
-    expect(paySource).toContain("Browser notification displayed");
-    expect(paySource).toContain("Browser permission");
+    expect(settingsSource).toContain("Browser notification displayed");
+    expect(settingsSource).toContain("Browser permission");
   });
 
   it("keeps stealth inbox scans behind explicit session unlock", () => {

@@ -36,7 +36,7 @@ const PILLARS = [
   },
   {
     icon: Shield,
-    title: "Computed in the open",
+    title: "Computed in the Open",
     desc: "Contracts run homomorphic ops — add, compare, select — on sealed data. The chain proves settlement without exposing numbers.",
   },
   {

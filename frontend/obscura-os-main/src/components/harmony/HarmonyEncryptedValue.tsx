@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CipherDecryptReveal } from "@/components/harmony/CipherDecryptReveal";
 import { HarmonyRevealChip } from "@/components/harmony/harmony-ui";
 
 const DEFAULT_REVEAL_SECONDS = 300; // 5 minutes
@@ -68,15 +69,19 @@ export function HarmonyEncryptedValue({
     lg: "text-5xl md:text-6xl",
   } as const;
 
+  const cipherSize = size === "lg" ? "xl" : size === "md" ? "lg" : "md";
+
   return (
-    <div className={cn("flex flex-wrap items-baseline gap-3", className)}>
-      <span className={cn("font-display tabular-nums", sizes[size])}>
-        {revealed ? (
-          value
-        ) : (
-          <span className="cipher-shimmer text-muted-foreground">••••••</span>
-        )}
-      </span>
+    <div className={cn("flex flex-wrap items-baseline gap-3 min-w-0 max-w-full", className)}>
+      <div className={cn("min-w-0 max-w-full", size === "lg" ? "flex-1" : undefined)}>
+        <CipherDecryptReveal
+          revealed={revealed}
+          value={value}
+          blocks={6}
+          size={cipherSize}
+          tone={size === "lg" ? "metric" : size === "md" ? "metric" : "compact"}
+        />
+      </div>
       <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{symbol}</span>
       <button
         type="button"

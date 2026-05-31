@@ -69,7 +69,7 @@ describe("Vote V6 production hardening gates", () => {
     expect(castVoteForm).toContain("Remove delegation to vote");
     expect(castVoteForm).toContain("onOpenDelegation");
     expect(castVoteForm).toContain("vote-delegation-block");
-    expect(votePage).toContain("openParticipationDelegation");
+    expect(votePage).toContain("openDelegation");
   });
 
   it("uses wallet session chain for Vote wrong-network detection", () => {

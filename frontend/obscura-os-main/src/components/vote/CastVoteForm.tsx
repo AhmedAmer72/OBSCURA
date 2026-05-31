@@ -212,7 +212,7 @@ export default function CastVoteForm({ initialProposalId = "", embedded = false,
           </div>
         )}
 
-        <VoteFormField label="Select proposal" hint="Open proposals appear first in the list.">
+        <VoteFormField label="Select proposal" hint="Choose a proposal from the dropdown — open proposals appear first.">
           <select
             value={selectedProposal}
             onChange={(e) => {
@@ -223,6 +223,7 @@ export default function CastVoteForm({ initialProposalId = "", embedded = false,
               setError(null);
             }}
             className="pay-select min-h-[44px]"
+            aria-label="Select proposal"
           >
             <option value="">Choose a proposal…</option>
             {Array.from({ length: proposalCount }, (_, i) => (
@@ -242,34 +243,34 @@ export default function CastVoteForm({ initialProposalId = "", embedded = false,
           />
         )}
 
-        {hasSelection && isActive && !hasDelegated && proposal?.exists && optionLabels && (optionLabels as string[]).length > 0 && (
-          <VoteFormField label="Your vote" hint="Select one option. You can change it before the deadline.">
-            <div className="vote-choice-stack space-y-2.5">
-              {(optionLabels as string[]).map((label, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setSelectedOption(i)}
-                  className={`vote-choice-option flex min-h-[52px] w-full items-center gap-3 rounded-2xl border-2 px-4 py-3.5 text-left text-sm transition-all ${
-                    selectedOption === i
-                      ? "border-[hsl(var(--accent))] bg-[hsl(var(--accent))]/14 text-foreground shadow-sm ring-2 ring-[hsl(var(--accent))]/25"
-                      : "border-border bg-card text-muted-foreground hover:border-[hsl(var(--accent))]/35 hover:bg-muted/50 hover:text-foreground"
-                  }`}
-                >
-                  <div
-                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
-                      selectedOption === i ? "border-[hsl(var(--accent))] bg-[hsl(var(--accent))]/20" : "border-muted-foreground/25"
-                    }`}
+        {hasSelection && isActive && !hasDelegated && proposal?.exists && optionLabels && (optionLabels as string[]).length > 0 && !(txHash && votedOptionIndex !== null) && (
+          <VoteFormField
+            tone="forest"
+            label="Your vote"
+            hint="Select one option. You can change it before the deadline."
+          >
+            <div className="vote-choice-stack space-y-3" role="radiogroup" aria-label="Vote options">
+              {(optionLabels as string[]).map((label, i) => {
+                const isChosen = selectedOption === i;
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    role="radio"
+                    aria-checked={isChosen}
+                    data-selected={isChosen ? "true" : "false"}
+                    onClick={() => setSelectedOption(i)}
+                    className="vote-choice-option"
                   >
-                    {selectedOption === i && <div className="h-2.5 w-2.5 rounded-full bg-[hsl(var(--accent))]" />}
-                  </div>
-                  <span className={`text-xs font-mono uppercase tracking-wider ${selectedOption === i ? "text-[hsl(var(--accent))]" : "text-muted-foreground"}`}>
-                    {i + 1}
-                  </span>
-                  <span className={`flex-1 ${selectedOption === i ? "font-semibold text-foreground" : ""}`}>{label}</span>
-                  {selectedOption === i && <CheckCircle2 className="h-5 w-5 shrink-0 text-[hsl(var(--accent))]" />}
-                </button>
-              ))}
+                    <span className="vote-choice-option__radio" aria-hidden>
+                      {isChosen ? <span className="vote-choice-option__radio-dot" /> : null}
+                    </span>
+                    <span className="vote-choice-option__index">{i + 1}</span>
+                    <span className="vote-choice-option__label">{label}</span>
+                    {isChosen ? <CheckCircle2 className="vote-choice-option__check" aria-hidden /> : null}
+                  </button>
+                );
+              })}
             </div>
           </VoteFormField>
         )}
@@ -296,64 +297,77 @@ export default function CastVoteForm({ initialProposalId = "", embedded = false,
           <motion.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            className="space-y-4"
+            className="mt-6 flex flex-col gap-5"
           >
             {/* Success banner */}
-            <div className="flex items-start gap-3 p-4 bg-green-400/5 border border-green-400/20 rounded-md">
-              <ShieldCheck className="w-5 h-5 text-green-400 shrink-0 mt-0.5" />
-              <div>
-                <div className="text-sm text-green-400 font-semibold">
-                  {wasRevote ? "Vote changed — privately." : "Vote sealed — privately."}
+            <div className="vote-sealed-panel rounded-2xl border-2 border-[hsl(var(--dash-forest)/0.35)] bg-white p-4 shadow-[var(--dash-surface-shadow-sm)] sm:p-5">
+              <div className="flex items-start gap-3">
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[hsl(var(--dash-forest))] text-[hsl(96_18%_97%)]">
+                  <ShieldCheck className="h-5 w-5" />
                 </div>
-                <div className="text-xs text-green-400/70 mt-1 leading-relaxed">
-                  Your ballot is sealed on Arbitrum Sepolia. No one can see which option you chose.
-                  Only the aggregate tally is revealed after finalization.
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowSubmittedChoice((visible) => !visible)}
-                    className="inline-flex h-8 items-center gap-1.5 rounded-full bg-green-400/10 px-3 text-xs font-medium text-green-300 hover:bg-green-400/15"
-                  >
-                    <Eye className="h-3.5 w-3.5" />
-                    {showSubmittedChoice ? "Hide my vote" : "Show my vote"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { reset(); setVotedOptionIndex(null); setSelectedOption(null); setShowSubmittedChoice(false); setError(null); }}
-                    className="inline-flex h-8 items-center gap-1.5 rounded-full border border-green-400/20 px-3 text-xs font-medium text-green-300 hover:bg-green-400/10"
-                  >
-                    Change vote
-                  </button>
-                </div>
-                {showSubmittedChoice && (
-                  <div className="mt-2 rounded-lg border border-green-400/20 bg-green-400/5 px-3 py-2 text-xs text-green-300">
-                    Shown only on this device: {(optionLabels as string[])?.[votedOptionIndex] ?? `Option ${votedOptionIndex}`}.
+                <div className="min-w-0 flex-1">
+                  <div className="font-display text-base font-semibold text-foreground">
+                    {wasRevote ? "Vote changed — privately." : "Vote sealed — privately."}
                   </div>
-                )}
-                <div className="text-xs text-muted-foreground/60 mt-2">
-                  TX:{" "}
-                  <a
-                    href={`https://sepolia.arbiscan.io/tx/${txHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-foreground hover:underline inline-flex items-center gap-1"
-                  >
-                    {txHash.slice(0, 10)}…{txHash.slice(-8)}
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
+                  <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                    Your ballot is sealed on Arbitrum Sepolia. No one can see which option you chose.
+                    Only the aggregate tally is revealed after finalization.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowSubmittedChoice((visible) => !visible)}
+                      className="inline-flex h-9 min-h-[36px] items-center gap-1.5 rounded-full border-2 border-[hsl(var(--dash-forest))] bg-[hsl(var(--dash-forest))] px-4 text-xs font-semibold text-[hsl(96_18%_97%)] transition-colors hover:bg-[hsl(var(--dash-forest-hover))] hover:border-[hsl(var(--dash-forest-hover))]"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      {showSubmittedChoice ? "Hide my vote" : "Show my vote"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { reset(); setVotedOptionIndex(null); setSelectedOption(null); setShowSubmittedChoice(false); setError(null); }}
+                      className="inline-flex h-9 min-h-[36px] items-center gap-1.5 rounded-full border-2 border-[hsl(var(--border))] bg-white px-4 text-xs font-semibold text-foreground transition-colors hover:border-[hsl(var(--dash-forest)/0.45)] hover:bg-[hsl(145_28%_98%)]"
+                    >
+                      Change vote
+                    </button>
+                  </div>
+                  {showSubmittedChoice && (
+                    <div className="mt-3 rounded-xl border border-[hsl(var(--dash-mint-border))] bg-[hsl(var(--dash-mint))] px-3 py-2.5 text-sm text-foreground">
+                      <span className="font-semibold">Shown only on this device:</span>{" "}
+                      {(optionLabels as string[])?.[votedOptionIndex] ?? `Option ${votedOptionIndex}`}.
+                    </div>
+                  )}
+                  <div className="mt-3 text-xs text-muted-foreground">
+                    TX:{" "}
+                    <a
+                      href={`https://sepolia.arbiscan.io/tx/${txHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-[hsl(var(--dash-forest))] hover:underline inline-flex items-center gap-1"
+                    >
+                      {txHash.slice(0, 10)}…{txHash.slice(-8)}
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Verify prompt */}
-            <div className="flex items-center gap-2 p-3 bg-emerald-400/5 border border-emerald-400/20 rounded-lg">
-              <Eye className="w-4 h-4 text-foreground shrink-0" />
-              <div className="text-xs text-foreground/80">
-                Want to confirm later? Use <span className="text-foreground font-semibold">Verify My Vote</span>{" "}
+            <div className="flex items-start gap-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(145_28%_98%)] p-3.5 sm:p-4">
+              <Eye className="mt-0.5 h-4 w-4 shrink-0 text-[hsl(var(--dash-forest))]" />
+              <div className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
+                Want to confirm later? Use <span className="font-semibold text-foreground">Verify My Vote</span>{" "}
                 in your ballot history. To change this vote, clear the success state and submit another option before the deadline.
               </div>
             </div>
+
+            <button
+              type="button"
+              onClick={() => { reset(); setVotedOptionIndex(null); setSelectedOption(null); setShowSubmittedChoice(false); setError(null); }}
+              className="inline-flex h-11 w-full items-center justify-center rounded-full border-2 border-[hsl(var(--border))] bg-white text-sm font-semibold text-foreground transition-colors hover:border-[hsl(var(--dash-forest)/0.45)] hover:bg-[hsl(145_28%_98%)]"
+            >
+              Change this vote or choose another proposal
+            </button>
           </motion.div>
         )}
 
@@ -423,15 +437,6 @@ export default function CastVoteForm({ initialProposalId = "", embedded = false,
           </div>
         )}
 
-        {txHash && (
-          <button
-            type="button"
-            onClick={() => { reset(); setVotedOptionIndex(null); setSelectedOption(null); setShowSubmittedChoice(false); setError(null); }}
-            className="btn-pay btn-pay-ghost w-full py-2.5"
-          >
-            Change this vote or choose another proposal
-          </button>
-        )}
       </form>
     </div>
   );

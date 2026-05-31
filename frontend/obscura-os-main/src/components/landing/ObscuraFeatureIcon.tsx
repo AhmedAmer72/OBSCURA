@@ -60,6 +60,7 @@ export const ENCRYPTION_STEP_ICONS: { icon: LucideIcon; tone: ObscuraChipTone }[
   { icon: CircuitBoard, tone: "lime" },
   { icon: FileSignature, tone: "moss" },
   { icon: GlobeLock, tone: "deep" },
+  { icon: Fingerprint, tone: "forest" },
 ];
 
 /** Security pillars */

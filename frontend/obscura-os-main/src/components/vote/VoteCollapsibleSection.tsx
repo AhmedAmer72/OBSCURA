@@ -28,7 +28,7 @@ export function VoteCollapsibleSection({
   };
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-[0_1px_3px_hsl(145_18%_12%/0.06)]">
+    <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-[var(--dash-surface-shadow)]">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}

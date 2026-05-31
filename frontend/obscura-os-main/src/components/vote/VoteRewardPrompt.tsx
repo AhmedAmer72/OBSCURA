@@ -39,7 +39,7 @@ export function VoteRewardPrompt({
       className={
         compact
           ? "rounded-xl border border-border bg-white p-4"
-          : "rounded-2xl border-2 border-foreground bg-white p-5 shadow-[0_2px_8px_hsl(145_18%_12%/0.08)]"
+          : "rounded-2xl border-2 border-foreground bg-white p-5 shadow-[var(--dash-surface-shadow)]"
       }
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -53,7 +53,7 @@ export function VoteRewardPrompt({
               Claim {REWARD_ETH} ETH
             </p>
             <p className="mt-1 text-sm leading-relaxed text-foreground/70">
-              You voted on this proposal before it finalized. Go to Participation → Rewards to claim your encrypted voter reward.
+              You voted on this proposal before it finalized. Go to Rewards to claim your encrypted voter reward.
             </p>
           </div>
         </div>

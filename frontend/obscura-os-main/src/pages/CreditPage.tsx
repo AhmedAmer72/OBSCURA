@@ -12,6 +12,7 @@
  *  - Copy never mentions "euint", "ctHash", "CoFHE", "ACL", or "permit"
  */
 import { useEffect, useCallback, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAccount, usePublicClient } from "wagmi";
 import {
@@ -38,6 +39,8 @@ import {
 
 import { HarmonyAppShell } from "@/components/harmony/HarmonyAppShell";
 import { CreditHarmonyOverview } from "@/components/harmony/CreditHarmonyOverview";
+import { CreditWorkspaceChrome, CREDIT_TABS, type CreditWorkspaceTab } from "@/components/harmony/CreditWorkspaceChrome";
+import { CreditPositionActionTabs } from "@/components/harmony/credit/CreditPositionActionTabs";
 import {
   CreditHarmonyNotConnected,
   CreditHarmonyPanelCard,
@@ -82,6 +85,7 @@ import { useCreditAlerts } from "@/hooks/useCreditAlerts";
 import { ActivityFeed } from "@/components/harmony/ActivityFeed";
 import { useNotificationPrefs } from "@/hooks/useNotificationPrefs";
 import { BETA_POOL_LABEL } from "@/hooks/useBetaBorrowLimit";
+import { useCardCipherReveal } from "@/contexts/ValuesRevealContext";
 
 const CREDIT_NOTIFICATION_TYPES = [
   "credit.borrowed",
@@ -102,7 +106,23 @@ function formatCreditUsd(value?: bigint | null) {
 }
 
 // ─── Tab types ────────────────────────────────────────────────────────────
-type CreditTab = "overview" | "borrow" | "position" | "earn" | "liquidations" | "risk";
+type CreditTab = CreditWorkspaceTab;
+
+const CREDIT_TAB_KEYS: CreditWorkspaceTab[] = [
+  "overview",
+  "borrow",
+  "position",
+  "earn",
+  "liquidations",
+  "risk",
+];
+
+function parseCreditTab(raw: string | null): CreditWorkspaceTab {
+  if (raw && CREDIT_TAB_KEYS.includes(raw as CreditWorkspaceTab)) {
+    return raw as CreditWorkspaceTab;
+  }
+  return "overview";
+}
 
 // ─── Borrow tab ───────────────────────────────────────────────────────────
 function BorrowTab({
@@ -267,7 +287,7 @@ function PositionTab({
   onRefresh: () => void;
 }) {
   const [selectedAddr, setSelectedAddr] = useState<`0x${string}` | undefined>(markets[0]?.address);
-  const [revealed, setRevealed] = useState(false);
+  const positionReveal = useCardCipherReveal();
   const [action, setAction] = useState<PosAction>(null);
   const [revealError, setRevealError] = useState<string | null>(null);
 
@@ -289,129 +309,125 @@ function PositionTab({
     setRevealError(null);
     try {
       await pos.decryptShares();
-      setRevealed(true);
     } catch (error) {
-      setRevealed(false);
       setRevealError(error instanceof Error ? error.message : "Unable to reveal encrypted position");
+      throw error;
     }
   }, [pos]);
+
+  useEffect(() => {
+    if (!positionReveal.isVisible) return;
+    void handleRevealAll().catch(() => undefined);
+  }, [positionReveal.isVisible, selectedAddr]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fmt = (v: bigint | null) =>
     v === null ? null : (Number(v) / 1e6).toLocaleString(undefined, { maximumFractionDigits: 6 });
 
+  const actionItems = [
+    { key: "borrow" as PosAction, label: "Borrow more", icon: <ArrowDownToLine className="h-3.5 w-3.5 shrink-0" /> },
+    { key: "repay" as PosAction, label: "Repay", icon: <ArrowUpFromLine className="h-3.5 w-3.5 shrink-0" /> },
+    { key: "collateral" as PosAction, label: "Add collateral", icon: <ShieldCheck className="h-3.5 w-3.5 shrink-0" /> },
+    { key: "supply" as PosAction, label: "Supply", icon: <PiggyBank className="h-3.5 w-3.5 shrink-0" /> },
+  ] as const;
+
+  const actionTitle =
+    action === "borrow"
+      ? "Borrow more"
+      : action === "repay"
+        ? "Repay"
+        : action === "collateral"
+          ? "Add collateral"
+          : action === "supply"
+            ? "Supply for yield"
+            : "";
+
   return (
     <div className="space-y-5">
       {markets.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <nav className="app-workspace-tabs app-workspace-tabs--sub w-full pb-1" aria-label="Markets">
           {markets.map((m) => (
             <button
               key={m.address ?? m.label}
-              onClick={() => { setSelectedAddr(m.address); setRevealed(false); setAction(null); setRevealError(null); }}
-              className={`shrink-0 px-3 py-1.5 rounded-lg border text-[10px] font-mono transition-all ${
-                m.address === selectedAddr
-                  ? "border-accent/40 bg-accent/15 text-foreground"
-                  : "hairline bg-card text-muted-foreground hover:text-foreground"
-              }`}
+              type="button"
+              onClick={() => { setSelectedAddr(m.address); setAction(null); setRevealError(null); }}
+              className={`app-workspace-tab min-w-0 ${m.address === selectedAddr ? "app-workspace-tab-active" : ""}`}
+              aria-current={m.address === selectedAddr ? "page" : undefined}
             >
               {m.label}
             </button>
           ))}
-        </div>
+        </nav>
       )}
 
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Your position</span>
+      <section className="dash-card space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="dash-eyebrow">Your position</h3>
           <button
-            onClick={revealed ? () => setRevealed(false) : handleRevealAll}
+            type="button"
+            onClick={positionReveal.toggle}
             disabled={pos.sharesLoading}
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
+            className="ref-ghost-action disabled:opacity-40"
           >
             {pos.sharesLoading ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
-            ) : revealed ? (
-              <><EyeOff className="w-3 h-3" /> Hide all</>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : positionReveal.isVisible ? (
+              <><EyeOff className="h-3.5 w-3.5" /> Hide all</>
             ) : (
-              <><Eye className="w-3 h-3" /> Reveal all</>
+              <><Eye className="h-3.5 w-3.5" /> Reveal all</>
             )}
           </button>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <EncryptedTile
             label="Supplied" symbol={market?.loanSymbol ?? "ocUSDC"}
-            displayValue={fmt(pos.mySupply)} revealed={revealed}
-            loading={pos.sharesLoading} onReveal={handleRevealAll}
-            onExpire={() => setRevealed(false)} accent="emerald"
+            displayValue={fmt(pos.mySupply)} revealed={positionReveal.isVisible}
+            loading={pos.sharesLoading} onReveal={positionReveal.toggle}
+            onExpire={() => positionReveal.toggle()} accent="emerald"
           />
           <EncryptedTile
             label="Borrowed" symbol={market?.loanSymbol ?? "ocUSDC"}
-            displayValue={fmt(pos.myBorrow)} revealed={revealed}
-            loading={pos.sharesLoading} onReveal={handleRevealAll}
-            onExpire={() => setRevealed(false)} accent="violet"
+            displayValue={fmt(pos.myBorrow)} revealed={positionReveal.isVisible}
+            loading={pos.sharesLoading} onReveal={positionReveal.toggle}
+            onExpire={() => positionReveal.toggle()} accent="violet"
           />
           <EncryptedTile
             label="Collateral" symbol={market?.collateralSymbol ?? "ocUSDC"}
-            displayValue={fmt(pos.myCollateral)} revealed={revealed}
-            loading={pos.sharesLoading} onReveal={handleRevealAll}
-            onExpire={() => setRevealed(false)} accent="amber"
+            displayValue={fmt(pos.myCollateral)} revealed={positionReveal.isVisible}
+            loading={pos.sharesLoading} onReveal={positionReveal.toggle}
+            onExpire={() => positionReveal.toggle()} accent="amber"
           />
         </div>
         {(revealError || pos.decryptError) && (
-          <p className="mt-3 rounded-xl border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs leading-relaxed text-destructive/80">
+          <p className="rounded-xl border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs leading-relaxed text-destructive/80">
             {revealError ?? pos.decryptError}
           </p>
         )}
-      </div>
+        <HealthBar hf={hfNum} loading={pos.loading} />
+      </section>
 
-      <HealthBar hf={hfNum} loading={pos.loading} />
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {([
-          { key: "borrow" as PosAction,     label: "Borrow more",    icon: <ArrowDownToLine className="w-3.5 h-3.5" /> },
-          { key: "repay" as PosAction,      label: "Repay",          icon: <ArrowUpFromLine className="w-3.5 h-3.5" /> },
-          { key: "collateral" as PosAction, label: "Add collateral", icon: <ShieldCheck className="w-3.5 h-3.5" /> },
-          { key: "supply" as PosAction,     label: "Supply",         icon: <PiggyBank className="w-3.5 h-3.5" /> },
-        ] as const).map((a) => (
-          <button
-            key={a.key}
-            onClick={() => setAction(action === a.key ? null : a.key)}
-            className={`py-2.5 rounded-xl border text-[11px] font-medium flex items-center justify-center gap-1.5 transition-all ${
-              action === a.key
-                ? "border-accent/40 bg-accent/15 text-foreground"
-                : "hairline bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50"
-            }`}
-          >
-            {a.icon} {a.label}
-          </button>
-        ))}
-      </div>
+      <CreditPositionActionTabs value={action} onChange={setAction} items={actionItems} />
 
       <AnimatePresence mode="wait">
         {action && market && (
           <motion.div
             key={action}
-            initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.25 }}
-            className="overflow-hidden"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
           >
-            <CreditHarmonyPanelCard
-              eyebrow="Action"
-              title={
-                action === "borrow"
-                  ? "Borrow more"
-                  : action === "repay"
-                    ? "Repay"
-                    : action === "collateral"
-                      ? "Add collateral"
-                      : "Supply for yield"
-              }
-            >
-              <div className="mb-4 flex justify-end">
-                <button type="button" onClick={() => setAction(null)} className="text-muted-foreground hover:text-foreground">
-                  <X className="w-3.5 h-3.5" />
+            <CreditHarmonyPanelCard eyebrow="Action" title={actionTitle}>
+              <div className="mb-1 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setAction(null)}
+                  className="grid h-8 w-8 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  aria-label="Close action panel"
+                >
+                  <X className="h-4 w-4" />
                 </button>
               </div>
-              <div className="harmony-form-inner">
+              <div className="harmony-form-inner credit-form-premium">
                 {action === "borrow" && <BorrowForm market={market} markets={markets} onSelect={(m) => setSelectedAddr(m.address)} onRefresh={onRefresh} />}
                 {action === "repay" && <RepayForm market={market} markets={markets} onSelect={(m) => setSelectedAddr(m.address)} onRefresh={onRefresh} />}
                 {action === "collateral" && <SupplyCollateralForm market={market} markets={markets} onSelect={(m) => setSelectedAddr(m.address)} onRefresh={onRefresh} />}
@@ -423,10 +439,11 @@ function PositionTab({
       </AnimatePresence>
 
       <button
-        onClick={() => { void pos.refresh(); onRefresh(); setRevealed(false); }}
-        className="text-[10px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+        type="button"
+        onClick={() => { void pos.refresh(); onRefresh(); }}
+        className="ref-ghost-action text-muted-foreground"
       >
-        <RefreshCcw className="w-3 h-3" /> Refresh position
+        <RefreshCcw className="h-3.5 w-3.5" /> Refresh position
       </button>
     </div>
   );
@@ -849,7 +866,23 @@ function SettingsSlideOver({
 // ─── Main page ────────────────────────────────────────────────────────────
 const CreditPage = () => {
   const { isConnected } = useAccount();
-  const [tab, setTab] = useState<CreditTab>("overview");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = parseCreditTab(searchParams.get("tab"));
+
+  const setTab = useCallback(
+    (next: CreditTab) => {
+      setSearchParams(
+        (prev) => {
+          const params = new URLSearchParams(prev);
+          if (next === "overview") params.delete("tab");
+          else params.set("tab", next);
+          return params;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [setupOpen, setSetupOpen] = useState(false);
   const [showAdvancedMarkets, setShowAdvancedMarkets] = useState(false);
@@ -893,31 +926,29 @@ const CreditPage = () => {
     setTab("earn");
   }, []);
 
-  const harmonySidebar = [
-    { key: "overview", label: "Overview", mobileLabel: "Home", icon: Landmark, active: tab === "overview", onClick: () => setTab("overview") },
-    {
-      key: "borrow",
-      label: "Borrow",
-      badge: workspaceMarkets.length ? String(workspaceMarkets.length) : undefined,
-      mobileLabel: "Borrow",
-      icon: ArrowDownToLine,
-      active: tab === "borrow",
-      onClick: () => setTab("borrow"),
-    },
-    { key: "position", label: "Position", mobileLabel: "Pos", icon: WalletCards, active: tab === "position", onClick: () => setTab("position") },
-    { key: "earn", label: "Earn", mobileLabel: "Earn", icon: Coins, active: tab === "earn", onClick: () => setTab("earn") },
-    { key: "liquidations", label: "Liquidations", mobileLabel: "Liq", icon: Gavel, active: tab === "liquidations", onClick: () => setTab("liquidations") },
-    { key: "risk", label: "Risk", mobileLabel: "Risk", icon: Gauge, active: tab === "risk", onClick: () => setTab("risk") },
-  ];
+  const harmonySidebar = CREDIT_TABS.map((item) => ({
+    key: item.key,
+    label: item.label,
+    mobileLabel: item.label,
+    icon: item.icon,
+    active: tab === item.key,
+    badge: item.key === "risk" && unreadCount > 0 ? String(unreadCount) : item.key === "borrow" && workspaceMarkets.length ? String(workspaceMarkets.length) : undefined,
+    onClick: () => setTab(item.key),
+  }));
 
   return (
-    <HarmonyAppShell appName="Credit" sidebar={harmonySidebar} searchPlaceholder="Search credit…">
+    <HarmonyAppShell
+      sidebar={harmonySidebar}
+      searchPlaceholder="Search credit…"
+    >
+      <CreditWorkspaceChrome tab={tab} onSelectTab={setTab} unreadCount={unreadCount} />
+
       <div className="relative z-20 mb-6 flex scroll-mt-20 flex-wrap items-center justify-end gap-2">
         {isConnected && (
           <button
             type="button"
             onClick={() => setSetupOpen(true)}
-            className="inline-flex h-10 scroll-mt-20 items-center gap-1.5 rounded-full hairline px-4 text-sm hover:bg-muted"
+            className="dash-btn-outline h-9 scroll-mt-20 px-3 text-xs"
           >
             <Droplet className="h-3.5 w-3.5" /> Set up credit
           </button>
@@ -926,8 +957,8 @@ const CreditPage = () => {
         <button
           type="button"
           onClick={() => setSettingsOpen(true)}
-          className="grid h-10 w-10 place-items-center rounded-full hairline hover:bg-muted"
-          aria-label="Settings"
+          className="grid h-9 w-9 place-items-center rounded-[var(--dash-radius-btn)] border border-border bg-card hover:bg-muted"
+          aria-label="Credit settings"
         >
           <SettingsIcon className="h-3.5 w-3.5" />
         </button>
@@ -980,11 +1011,12 @@ const CreditPage = () => {
           {tab === "borrow" && (
             <CreditHarmonyTabShell
               tab="borrow"
+              hideIntro
               actions={
                 <button
                   type="button"
                   onClick={refreshMarkets}
-                  className="inline-flex h-10 items-center gap-1.5 rounded-full hairline px-4 text-sm hover:bg-muted"
+                  className="dash-btn-outline h-9 px-3 text-xs"
                 >
                   <RefreshCcw className="h-3.5 w-3.5" /> Refresh
                 </button>
@@ -1002,7 +1034,7 @@ const CreditPage = () => {
             </CreditHarmonyTabShell>
           )}
           {tab === "position" && (
-            <CreditHarmonyTabShell tab="position">
+            <CreditHarmonyTabShell tab="position" hideIntro>
               {!isConnected ? (
                 <CreditHarmonyNotConnected message="Connect your wallet to view and manage your encrypted lending position." />
               ) : (
@@ -1013,11 +1045,12 @@ const CreditPage = () => {
           {tab === "earn" && (
             <CreditHarmonyTabShell
               tab="earn"
+              hideIntro
               actions={
                 <button
                   type="button"
                   onClick={refreshVaults}
-                  className="inline-flex h-10 items-center gap-1.5 rounded-full hairline px-4 text-sm hover:bg-muted"
+                  className="dash-btn-outline h-9 px-3 text-xs"
                 >
                   <RefreshCcw className="h-3.5 w-3.5" /> Refresh
                 </button>
@@ -1033,12 +1066,12 @@ const CreditPage = () => {
             </CreditHarmonyTabShell>
           )}
           {tab === "liquidations" && (
-            <CreditHarmonyTabShell tab="liquidations">
+            <CreditHarmonyTabShell tab="liquidations" hideIntro>
               <LiquidationsTab markets={workspaceMarkets} />
             </CreditHarmonyTabShell>
           )}
           {tab === "risk" && (
-            <CreditHarmonyTabShell tab="risk">
+            <CreditHarmonyTabShell tab="risk" hideIntro>
               <RiskTab markets={workspaceMarkets} />
             </CreditHarmonyTabShell>
           )}

@@ -28,10 +28,10 @@ interface Props {
 }
 
 const ACCENT: Record<EncryptedValueAccent, { ring: string; border: string; text: string; bg: string; badge: string }> = {
-  cyan:    { ring: "from-cyan-500/30 via-cyan-400/10 to-transparent",    border: "border-cyan-500/20",    text: "text-cyan-300",    bg: "bg-cyan-950/30",    badge: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"    },
-  emerald: { ring: "from-emerald-500/30 via-emerald-400/10 to-transparent", border: "border-emerald-500/20", text: "text-emerald-300", bg: "bg-emerald-950/30", badge: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
-  violet:  { ring: "from-violet-500/30 via-violet-400/10 to-transparent",  border: "border-violet-500/20",  text: "text-violet-300",  bg: "bg-violet-950/30",  badge: "bg-violet-500/10 text-violet-400 border-violet-500/20"  },
-  amber:   { ring: "from-amber-500/30 via-amber-400/10 to-transparent",    border: "border-amber-500/20",   text: "text-amber-300",   bg: "bg-amber-950/30",   badge: "bg-amber-500/10 text-amber-400 border-amber-500/20"   },
+  cyan:    { ring: "from-cyan-500/20 via-cyan-400/5 to-transparent",    border: "border-border",    text: "text-cyan-700",    bg: "bg-card",    badge: "bg-muted text-muted-foreground border-border"    },
+  emerald: { ring: "from-emerald-500/20 via-emerald-400/5 to-transparent", border: "border-border", text: "text-[hsl(var(--success))]", bg: "bg-card", badge: "bg-muted text-muted-foreground border-border" },
+  violet:  { ring: "from-violet-500/20 via-violet-400/5 to-transparent",  border: "border-border",  text: "text-violet-700",  bg: "bg-card",  badge: "bg-muted text-muted-foreground border-border"  },
+  amber:   { ring: "from-amber-500/20 via-amber-400/5 to-transparent",    border: "border-border",   text: "text-amber-700",   bg: "bg-card",   badge: "bg-muted text-muted-foreground border-border"   },
 };
 
 function fmt(value: bigint, decimals: number): string {
@@ -70,7 +70,7 @@ export default function EncryptedValue({
   };
 
   return (
-    <div className={`relative rounded-xl overflow-hidden border ${a.border} ${a.bg} p-3 space-y-2 ${className}`}>
+    <div className={`relative overflow-hidden rounded-xl border ${a.border} ${a.bg} p-3 space-y-2 ref-mini-card ${className}`}>
 
       {/* Animated shimmer ring — visible while locked */}
       <AnimatePresence>
@@ -98,10 +98,10 @@ export default function EncryptedValue({
 
       {/* Label */}
       {label && (
-        <div className="relative text-[9px] tracking-[0.18em] uppercase text-white/35 flex items-center gap-1.5">
+        <div className="relative dash-eyebrow flex items-center gap-1.5 text-[9px]">
           {revealed
-            ? <ShieldCheck className="w-2.5 h-2.5 text-emerald-400" />
-            : <Lock className={`w-2.5 h-2.5 ${a.text}`} />}
+            ? <ShieldCheck className="w-2.5 h-2.5 text-[hsl(var(--success))]" />
+            : <Lock className="w-2.5 h-2.5 text-muted-foreground" />}
           {label}
         </div>
       )}
@@ -168,7 +168,7 @@ export default function EncryptedValue({
 
       {/* Caption + Reveal / Hide button */}
       <div className="relative flex items-center justify-between gap-2">
-        <p className="text-[9px] text-white/25">
+        <p className="text-[9px] text-muted-foreground">
           {revealed
             ? "visible to you"
             : pending

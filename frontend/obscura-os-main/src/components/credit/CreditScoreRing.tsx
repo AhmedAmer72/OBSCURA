@@ -75,7 +75,7 @@ export default function CreditScoreRing() {
             type="button"
             onClick={() => (revealed ? setRevealed(false) : void reveal())}
             disabled={loading}
-            className="inline-flex items-center gap-1 rounded-full bg-foreground px-2.5 py-1 text-[10.5px] text-background hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[10.5px] text-foreground hover:bg-muted disabled:opacity-50"
           >
             {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : revealed ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
             {revealed ? "Hide" : PRIVACY_COPY.reveal}

@@ -1,6 +1,5 @@
 /**
  * RepayForm — encrypted repay using cUSDC operator approval.
- * Shows user's current borrow debt (decrypted via FHE).
  */
 import { useState } from "react";
 import { usePreWarmFHE } from "@/hooks/usePreWarmFHE";
@@ -10,6 +9,13 @@ import type { CreditMarketMeta } from "@/config/credit";
 import EncryptedValue from "@/components/shared/EncryptedValue";
 import FHEStepper from "@/components/shared/FHEStepper";
 import PercentChips from "@/components/shared/PercentChips";
+import {
+  CreditFormInput,
+  CreditFormLabel,
+  CreditFormSelect,
+  CreditFormSubmit,
+} from "@/components/harmony/credit/CreditFormChrome";
+import { cn } from "@/lib/utils";
 
 interface Props {
   market: CreditMarketMeta;
@@ -35,7 +41,7 @@ const RepayForm = ({ market, markets, onSelect, onRefresh }: Props) => {
       await repay(u);
       setMsg(`Repaid ${amount} ${market.loanSymbol}.`);
       setAmount("");
-      pos.resetDecrypted(); // clear stale tile — user re-reveals updated debt
+      pos.resetDecrypted();
       await pos.refresh();
       onRefresh?.();
     } catch (e: any) {
@@ -60,8 +66,7 @@ const RepayForm = ({ market, markets, onSelect, onRefresh }: Props) => {
   };
 
   return (
-    <div className="grid gap-3">
-      {/* Encrypted debt tile */}
+    <div className="grid gap-4">
       <EncryptedValue
         label="Outstanding borrow"
         value={pos.myBorrow}
@@ -71,45 +76,46 @@ const RepayForm = ({ market, markets, onSelect, onRefresh }: Props) => {
         onReveal={pos.decryptShares}
       />
 
-      <label className="text-[11px] uppercase tracking-wider text-white/50">Market</label>
-      <select
-        value={market.address ?? ""}
-        onChange={(e) => {
-          const next = markets.find((m) => m.address === (e.target.value as `0x${string}`));
-          if (next) onSelect(next);
-        }}
-        className="bg-[#0d0d14] text-white border border-white/10 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-emerald-500/40"
-      >
-        {markets.map((m) => (
-          <option key={m.address} value={m.address} className="bg-[#0d0d14] text-white">{m.label}</option>
-        ))}
-      </select>
+      <div className="space-y-2">
+        <CreditFormLabel>Market</CreditFormLabel>
+        <CreditFormSelect
+          value={market.address ?? ""}
+          onChange={(value) => {
+            const next = markets.find((m) => m.address === (value as `0x${string}`));
+            if (next) onSelect(next);
+          }}
+        >
+          {markets.map((m) => (
+            <option key={m.address} value={m.address}>{m.label}</option>
+          ))}
+        </CreditFormSelect>
+      </div>
 
-      <label className="text-[11px] uppercase tracking-wider text-white/50">Amount ({market.loanSymbol})</label>
-      <input
-        inputMode="decimal"
-        value={amount}
-        onFocus={preWarm.onFocus}
-        onChange={(e) => setAmount(e.target.value)}
-        placeholder="0.0"
-        className="border-border bg-background rounded-md px-3 py-2 text-sm focus:outline-none focus:border-emerald-500/40"
-      />
-      <PercentChips
-        max={pos.plainBorrow ?? 0n}
-        decimals={6}
-        onPick={(v) => setAmount(v === 0n ? "" : (Number(v) / 1e6).toString())}
-        accent="emerald"
-      />
+      <div className="space-y-2">
+        <CreditFormLabel>Amount ({market.loanSymbol})</CreditFormLabel>
+        <CreditFormInput
+          inputMode="decimal"
+          value={amount}
+          onFocus={preWarm.onFocus}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="0.0"
+        />
+        <PercentChips
+          max={pos.plainBorrow ?? 0n}
+          decimals={6}
+          onPick={(v) => setAmount(v === 0n ? "" : (Number(v) / 1e6).toString())}
+        />
+      </div>
 
-      <div className="flex flex-wrap gap-2 mt-2">
-        <button
+      <div className="flex flex-wrap gap-2">
+        <CreditFormSubmit
           disabled={!amount || !!busy}
           onClick={submit}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md text-sm bg-emerald-500/15 border border-emerald-500/40 text-foreground hover:bg-emerald-500/25 disabled:opacity-50"
+          className="inline-flex w-auto items-center gap-2"
         >
-          <ArrowUpFromLine className="w-4 h-4" />
+          <ArrowUpFromLine className="h-4 w-4" />
           Repay
-        </button>
+        </CreditFormSubmit>
         {(pos.plainBorrow ?? 0n) > 0n && (
           <button
             type="button"
@@ -121,8 +127,6 @@ const RepayForm = ({ market, markets, onSelect, onRefresh }: Props) => {
                 await accrue();
                 await pos.refresh();
                 const debt = pos.plainBorrow ?? 0n;
-                // pad +0.000001 cUSDC to cover any interest accrued between
-                // refresh() and the actual repay tx; chain will cap at debt.
                 const padded = debt + 1n;
                 setAmount((Number(padded) / 1e6).toString());
                 setMsg("Filled max repay amount. Click Repay to confirm.");
@@ -132,21 +136,22 @@ const RepayForm = ({ market, markets, onSelect, onRefresh }: Props) => {
                 setBusy(null);
               }
             }}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md text-sm bg-violet-500/10 border border-violet-500/30 text-violet-200 hover:bg-violet-500/20 disabled:opacity-50"
+            className="dash-btn-outline inline-flex h-11 items-center gap-2 px-4 text-sm"
           >
             Repay max
           </button>
         )}
         <button
+          type="button"
           disabled={!!busy}
           onClick={tickAccrue}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md text-sm border-border bg-background text-white/80 hover:bg-white/[0.06] disabled:opacity-50"
+          className="dash-btn-outline inline-flex h-11 items-center gap-2 px-4 text-sm disabled:opacity-50"
         >
           Accrue interest
         </button>
       </div>
       <FHEStepper status={fheStatus.status} error={fheStatus.error} />
-      {msg && <p className="text-xs text-white/60">{msg}</p>}
+      {msg && <p className={cn("text-xs", msg.toLowerCase().includes("fail") ? "text-destructive" : "text-muted-foreground")}>{msg}</p>}
     </div>
   );
 };

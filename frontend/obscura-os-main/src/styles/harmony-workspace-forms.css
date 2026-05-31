@@ -10,7 +10,15 @@
   border-radius: 1rem !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  box-shadow: 0 1px 2px hsl(145 18% 12% / 0.04) !important;
+  box-shadow: 0 1px 2px hsl(155 42% 28% / 0.1) !important;
+}
+
+.obscura-app.dash-premium .pay-card {
+  box-shadow: var(--dash-surface-shadow-sm) !important;
+}
+
+.obscura-app.dash-premium .pay-card::before {
+  display: block !important;
 }
 
 .obscura-app .pay-card::before {
@@ -40,13 +48,13 @@
   align-items: center !important;
   justify-content: center !important;
   gap: 0.5rem !important;
-  height: 2.5rem !important;
-  padding: 0 1rem !important;
+  height: 2.75rem !important;
+  padding: 0 1.125rem !important;
   font-size: 0.875rem !important;
   font-weight: 500 !important;
   letter-spacing: normal !important;
   text-transform: none !important;
-  border-radius: 9999px !important;
+  border-radius: 0.875rem !important;
   border: none !important;
   cursor: pointer !important;
   transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease !important;
@@ -65,16 +73,16 @@
 .obscura-app .btn-pay-cyan,
 .obscura-app .btn-pay-amber,
 .obscura-app .btn-pay-violet {
-  background: hsl(var(--foreground)) !important;
-  color: hsl(var(--primary-foreground)) !important;
+  background: hsl(155, 42%, 28%) !important;
+  color: hsl(96, 18%, 97%) !important;
 }
 
 .obscura-app .btn-pay-emerald:hover:not(:disabled),
 .obscura-app .btn-pay-cyan:hover:not(:disabled),
 .obscura-app .btn-pay-amber:hover:not(:disabled),
 .obscura-app .btn-pay-violet:hover:not(:disabled) {
-  background: hsl(145 22% 14% / 0.92) !important;
-  color: hsl(var(--primary-foreground)) !important;
+  background: hsl(155, 42%, 24%) !important;
+  color: hsl(96, 18%, 97%) !important;
 }
 
 .obscura-app .btn-pay-ghost {
@@ -105,6 +113,29 @@
   outline: none !important;
 }
 
+.obscura-app .pay-select {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  padding-right: 2.75rem !important;
+  cursor: pointer !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23296447' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.875rem center !important;
+  background-size: 1rem !important;
+}
+
+.obscura-app .pay-select:hover {
+  border-color: hsl(var(--dash-forest) / 0.35) !important;
+}
+
+/* Leading icon (search, etc.) — base pay-input padding would overlap the icon */
+.obscura-app .pay-input.pay-input--icon,
+.obscura-app .pay-input.pl-9,
+.obscura-app .pay-input.pl-10 {
+  padding-left: 2.5rem !important;
+  padding-right: 0.75rem !important;
+}
+
 .obscura-app .pay-input::placeholder {
   color: hsl(var(--muted-foreground)) !important;
   opacity: 0.65 !important;
@@ -115,6 +146,13 @@
 .obscura-app textarea.pay-input:focus {
   border-color: hsl(var(--ring)) !important;
   box-shadow: 0 0 0 2px hsl(var(--accent) / 0.35) !important;
+}
+
+.obscura-app.dash-premium .pay-input:focus,
+.obscura-app.dash-premium .pay-select:focus,
+.obscura-app.dash-premium textarea.pay-input:focus {
+  border-color: hsl(var(--dash-forest) / 0.45) !important;
+  box-shadow: var(--dash-shadow-input-focus) !important;
 }
 
 .obscura-app .pay-select option {
@@ -133,10 +171,15 @@
 
 .obscura-app main input.flex,
 .obscura-app main textarea.flex {
-  height: 2.5rem !important;
-  border-radius: 0.625rem !important;
+  height: 3rem !important;
+  border-radius: 1rem !important;
   font-size: 0.875rem !important;
-  box-shadow: 0 1px 2px hsl(145 18% 12% / 0.04) !important;
+  box-shadow: var(--dash-shadow-input, 0 1px 2px hsl(155 42% 28% / 0.1)) !important;
+}
+
+.obscura-app.dash-premium main input.flex,
+.obscura-app.dash-premium main textarea.flex {
+  box-shadow: var(--dash-shadow-input) !important;
 }
 
 .obscura-app main label {
@@ -148,12 +191,12 @@
 }
 
 .obscura-app main button.inline-flex {
-  border-radius: 9999px !important;
-  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  border-radius: 0.875rem !important;
+  font-family: "Inter", sans-serif !important;
   font-weight: 500 !important;
-  font-size: 0.75rem !important;
-  letter-spacing: 0.12em !important;
-  text-transform: uppercase !important;
+  font-size: 0.875rem !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
 }
 
 .obscura-app main button.bg-primary {
@@ -190,10 +233,20 @@
 }
 
 /* ─── Tx progress panel (light) ──────────────────────────────────────────── */
+.obscura-app.dash-premium .harmony-tx-panel {
+  background: var(--dash-surface-bg) !important;
+  border-color: var(--dash-surface-border) !important;
+  box-shadow: var(--dash-surface-shadow) !important;
+}
+
 .obscura-app .harmony-tx-panel {
   background: hsl(var(--card)) !important;
   border-color: hsl(var(--border)) !important;
-  box-shadow: 0 1px 3px hsl(145 18% 12% / 0.06) !important;
+  box-shadow: 0 1px 3px hsl(155 42% 28% / 0.14) !important;
+}
+
+.obscura-app.dash-premium .harmony-tx-panel {
+  box-shadow: var(--dash-surface-shadow) !important;
 }
 
 .obscura-app .harmony-tx-panel .bg-\[\#0a0f1a\] {
@@ -544,7 +597,14 @@
 .obscura-app .vote-harmony-panel select.pay-select:focus,
 .obscura-app .vote-harmony-panel textarea.pay-input:focus {
   border-color: hsl(var(--accent) / 0.55);
-  box-shadow: 0 0 0 3px hsl(var(--accent) / 0.12);
+  box-shadow: var(--dash-shadow-input-focus, 0 0 0 3px hsl(155 42% 28% / 0.18));
+}
+
+.obscura-app.dash-premium .vote-harmony-panel input.pay-input:focus,
+.obscura-app.dash-premium .vote-harmony-panel select.pay-select:focus,
+.obscura-app.dash-premium .vote-harmony-panel textarea.pay-input:focus {
+  border-color: hsl(var(--dash-forest) / 0.45) !important;
+  box-shadow: var(--dash-shadow-input-focus) !important;
 }
 
 @media (max-width: 639px) {
@@ -559,6 +619,130 @@
 
 .obscura-app .vote-harmony-panel .vote-choice-stack {
   margin-top: 0.25rem;
+}
+
+/* Vote choice picker — forest green selection cards */
+.obscura-app .vote-choice-field__label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: hsl(var(--dash-forest, 155 42% 28%));
+}
+
+.obscura-app .vote-choice-field__hint {
+  color: hsl(var(--dash-forest, 155 42% 28%) / 0.62) !important;
+}
+
+.obscura-app .vote-harmony-panel .vote-choice-option {
+  position: relative;
+  display: flex;
+  min-height: 3.5rem;
+  width: 100%;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 1rem;
+  border: 2px solid hsl(var(--dash-forest, 155 42% 28%) / 0.22);
+  background: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(145 28% 98.5%) 100%);
+  padding: 0.875rem 1rem;
+  text-align: left;
+  font-size: 0.875rem;
+  color: hsl(var(--foreground));
+  box-shadow:
+    0 0 0 1px hsl(0 0% 100% / 0.8) inset,
+    0 1px 2px hsl(var(--dash-forest, 155 42% 28%) / 0.08);
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.obscura-app .vote-harmony-panel .vote-choice-option:hover {
+  border-color: hsl(var(--dash-forest, 155 42% 28%) / 0.48);
+  background: hsl(var(--dash-mint, 145 38% 93%) / 0.55);
+  box-shadow:
+    0 0 0 1px hsl(0 0% 100% / 0.85) inset,
+    0 4px 12px hsl(var(--dash-forest, 155 42% 28%) / 0.12);
+}
+
+.obscura-app .vote-harmony-panel .vote-choice-option:focus-visible {
+  outline: none;
+  border-color: hsl(var(--dash-forest, 155 42% 28%) / 0.65);
+  box-shadow: var(--dash-shadow-input-focus, 0 0 0 3px hsl(155 42% 28% / 0.2));
+}
+
+.obscura-app .vote-harmony-panel .vote-choice-option[data-selected='true'] {
+  border-color: hsl(var(--dash-forest, 155 42% 28%));
+  background: linear-gradient(
+    145deg,
+    hsl(var(--dash-mint, 145 38% 93%) / 0.95) 0%,
+    hsl(145 28% 98%) 100%
+  );
+  box-shadow:
+    inset 3px 0 0 hsl(var(--dash-forest, 155 42% 28%)),
+    0 0 0 1px hsl(var(--dash-forest, 155 42% 28%) / 0.12),
+    0 4px 14px hsl(var(--dash-forest, 155 42% 28%) / 0.16);
+}
+
+.obscura-app .vote-harmony-panel .vote-choice-option__radio {
+  display: flex;
+  height: 1.5rem;
+  width: 1.5rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 2px solid hsl(var(--dash-forest, 155 42% 28%) / 0.42);
+  background: hsl(0 0% 100%);
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.obscura-app .vote-harmony-panel .vote-choice-option[data-selected='true'] .vote-choice-option__radio {
+  border-color: hsl(var(--dash-forest, 155 42% 28%));
+  background: hsl(var(--dash-forest, 155 42% 28%));
+  box-shadow: 0 0 0 3px hsl(var(--dash-forest, 155 42% 28%) / 0.18);
+}
+
+.obscura-app .vote-harmony-panel .vote-choice-option__radio-dot {
+  height: 0.625rem;
+  width: 0.625rem;
+  border-radius: 9999px;
+  background: hsl(96 18% 97%);
+}
+
+.obscura-app .vote-harmony-panel .vote-choice-option__index {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--dash-forest, 155 42% 28%) / 0.72);
+}
+
+.obscura-app .vote-harmony-panel .vote-choice-option[data-selected='true'] .vote-choice-option__index {
+  color: hsl(var(--dash-forest, 155 42% 28%));
+}
+
+.obscura-app .vote-harmony-panel .vote-choice-option__label {
+  flex: 1;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.obscura-app .vote-harmony-panel .vote-choice-option[data-selected='true'] .vote-choice-option__label {
+  color: hsl(var(--dash-forest, 155 42% 28%));
+}
+
+.obscura-app .vote-harmony-panel .vote-choice-option__check {
+  height: 1.25rem;
+  width: 1.25rem;
+  flex-shrink: 0;
+  color: hsl(var(--dash-forest, 155 42% 28%));
 }
 
 .obscura-app .vote-harmony-panel .vote-submit-zone {
@@ -585,11 +769,43 @@
 .obscura-app .vote-harmony-panel .harmony-form-inner > .pay-card {
   background: #fff !important;
   border: 1px solid hsl(var(--border)) !important;
-  box-shadow: 0 1px 3px hsl(145 18% 12% / 0.06) !important;
+  box-shadow: 0 1px 3px hsl(155 42% 28% / 0.14) !important;
+}
+
+.obscura-app.dash-premium .vote-harmony-panel .rounded-2xl.hairline.bg-card,
+.obscura-app.dash-premium .vote-harmony-panel .harmony-form-inner > .pay-card {
+  background: var(--dash-surface-bg) !important;
+  border: 1px solid var(--dash-surface-border) !important;
+  box-shadow: var(--dash-surface-shadow) !important;
 }
 
 .obscura-app .vote-harmony-panel h1,
 .obscura-app .vote-harmony-panel h2,
 .obscura-app .vote-harmony-panel h3.font-display {
   color: hsl(var(--foreground)) !important;
+}
+
+/* Credit Position action forms — premium light panel */
+.obscura-app.dash-premium .harmony-form-inner.credit-form-premium {
+  display: grid;
+  gap: 1rem;
+}
+
+.obscura-app.dash-premium .harmony-form-inner.credit-form-premium .ref-mini-card {
+  background: var(--dash-surface-bg);
+  border-color: var(--dash-surface-border);
+  box-shadow: var(--dash-surface-shadow-sm);
+}
+
+.obscura-app.dash-premium .harmony-form-inner.credit-form-premium label,
+.obscura-app.dash-premium .harmony-form-inner.credit-form-premium .text-white\/50,
+.obscura-app.dash-premium .harmony-form-inner.credit-form-premium .text-white\/40 {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.obscura-app.dash-premium .harmony-form-inner.credit-form-premium select,
+.obscura-app.dash-premium .harmony-form-inner.credit-form-premium input {
+  background: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-color: hsl(var(--border)) !important;
 }

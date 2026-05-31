@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { AlertTriangle, ArrowRight, CheckCircle2, ChevronRight, Eye, EyeOff, Inbox, Info, Lock, Send, Shield, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CipherMask } from "@/components/harmony/CipherMask";
+import { AppWorkspaceTabs } from "@/components/harmony/AppWorkspaceTabs";
 
 export function HarmonyAction({
   icon: Icon,
@@ -20,8 +22,9 @@ export function HarmonyAction({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-medium transition-colors",
-        primary ? "bg-foreground text-background" : "hairline hover:bg-muted",
+        "dash-btn-primary inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-medium transition-all",
+        !primary && "dash-btn-outline bg-transparent",
+        primary ? "" : "hover:bg-muted",
       )}
     >
       <Icon className="h-4 w-4" />
@@ -42,7 +45,9 @@ export function HarmonyStat({
   return (
     <div>
       <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{label}</p>
-      <p className={cn("mt-1 font-display text-xl", cipher && "cipher-shimmer text-muted-foreground")}>{value}</p>
+      <p className="mt-1 font-display text-xl">
+        {cipher ? <CipherMask blocks={6} size="md" /> : value}
+      </p>
     </div>
   );
 }
@@ -77,7 +82,7 @@ export function HarmonyKpiGrid({ children }: { children: ReactNode }) {
 
 export function HarmonyKpi({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="rounded-2xl hairline bg-card p-5">
+    <div className="dash-card dash-metric-card p-5">
       <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{label}</p>
       <div className="mt-3">{children}</div>
     </div>
@@ -97,7 +102,7 @@ export function HarmonyPageIntro({
     <div className="flex flex-wrap items-end justify-between gap-6">
       <div>
         <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{eyebrow}</p>
-        <h1 className="mt-2 font-display text-5xl leading-none md:text-6xl">{title}</h1>
+        <h1 className="dash-hero-title mt-2 text-4xl md:text-5xl lg:text-6xl">{title}</h1>
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
@@ -119,9 +124,9 @@ export function HarmonyFormCard({
   noPadding?: boolean;
 }) {
   return (
-    <div className={cn("overflow-hidden rounded-2xl hairline bg-card", className)}>
+    <div className={cn("dash-card overflow-hidden", className)}>
       {(title || eyebrow) && (
-        <div className="border-b border-border p-6">
+        <div className="border-b border-border bg-gradient-to-r from-[hsl(145_35%_97%/0.5)] to-transparent p-6">
           {eyebrow && (
             <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{eyebrow}</p>
           )}
@@ -145,7 +150,7 @@ export function HarmonyDarkPanel({
   children?: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl bg-foreground p-6 text-background">
+    <div className="dash-dark-panel rounded-[var(--dash-radius-lg)] p-6">
       <p className="font-mono text-[10px] uppercase tracking-[0.2em] opacity-70">{eyebrow}</p>
       <p className="mt-4 font-display text-3xl leading-tight">{title}</p>
       {description && <p className="mt-3 text-sm opacity-70">{description}</p>}
@@ -172,49 +177,14 @@ export function HarmonySubNav<T extends string>({
   className?: string;
 }) {
   return (
-    <nav
-      className={cn(
-        "-mx-2 flex items-center gap-1 overflow-x-auto px-2 pb-1",
-        "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-        className,
-      )}
-      role="tablist"
-    >
-      {items.map((item) => {
-        const active = item.key === value;
-        const Icon = item.icon;
-        return (
-          <button
-            key={item.key}
-            type="button"
-            role="tab"
-            aria-selected={active}
-            onClick={() => onChange(item.key)}
-            className={cn(
-              "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[12px] font-medium transition-colors",
-              active
-                ? "bg-foreground text-background"
-                : "hairline text-muted-foreground hover:bg-muted hover:text-foreground",
-            )}
-          >
-            {Icon && <Icon className="h-3.5 w-3.5" />}
-            <span>{item.label}</span>
-            {item.badge !== undefined && item.badge !== "" && (
-              <span
-                className={cn(
-                  "ml-0.5 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 font-mono text-[10px]",
-                  active
-                    ? "bg-background/20 text-background"
-                    : "bg-muted text-foreground/70",
-                )}
-              >
-                {item.badge}
-              </span>
-            )}
-          </button>
-        );
-      })}
-    </nav>
+    <AppWorkspaceTabs
+      value={value}
+      onChange={onChange}
+      items={items}
+      className={cn("mb-6", className)}
+      ariaLabel="Sub sections"
+      variant="sub"
+    />
   );
 }
 
@@ -459,11 +429,11 @@ export function HarmonyDrawer({
         type="button"
         aria-label="Close drawer"
         onClick={onClose}
-        className="absolute inset-0 bg-foreground/30 backdrop-blur-[2px] transition-opacity"
+        className="absolute inset-0 dash-drawer-backdrop transition-opacity"
       />
       <div
         className={cn(
-          "relative ml-auto flex h-full w-full flex-col bg-card shadow-2xl",
+          "dash-drawer-panel relative ml-auto flex h-full w-full flex-col bg-card",
           widthClass,
           "animate-in slide-in-from-right duration-200",
         )}
@@ -517,7 +487,7 @@ export function HarmonyActionTile({
     <button
       type="button"
       onClick={onClick}
-      className="group relative flex h-full flex-col items-start justify-between rounded-xl hairline bg-card p-4 text-left transition-all hover:bg-muted hover:-translate-y-0.5"
+      className="group dash-card dash-card-interactive relative flex h-full flex-col items-start justify-between rounded-xl p-4 text-left"
     >
       <div className="flex w-full items-center justify-between">
         <span className="grid h-8 w-8 place-items-center rounded-full bg-muted text-foreground">
@@ -561,13 +531,13 @@ export function HarmonyMissionHero({
 }) {
   const PrimaryIcon = primaryCta.icon ?? ArrowRight;
   return (
-    <section className="rounded-2xl hairline bg-card p-6 sm:p-8">
+    <section className="dash-card rounded-2xl p-6 sm:p-8">
       <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <div className="max-w-xl">
           <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
             {eyebrow}
           </p>
-          <h1 className="mt-3 font-display text-3xl leading-tight text-foreground sm:text-4xl">
+          <h1 className="dash-hero-title mt-3 text-3xl text-foreground sm:text-4xl">
             {headline}
           </h1>
           {description && (
@@ -610,7 +580,7 @@ export function HarmonyMissionHero({
             type="button"
             onClick={primaryCta.onClick}
             disabled={primaryCta.disabled}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-foreground px-5 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-40"
+            className="dash-btn-primary inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-medium disabled:opacity-40"
           >
             {primaryCta.label}
             <PrimaryIcon className="h-4 w-4" />
@@ -635,7 +605,7 @@ export function HarmonyMetricRow({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-baseline gap-x-8 gap-y-3 rounded-xl hairline bg-card px-5 py-4",
+        "dash-card flex flex-wrap items-baseline gap-x-8 gap-y-3 rounded-xl px-5 py-4",
         className,
       )}
     >
@@ -644,13 +614,8 @@ export function HarmonyMetricRow({
           <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             {it.label}
           </span>
-          <span
-            className={cn(
-              "mt-1 font-display text-lg text-foreground",
-              it.cipher && "cipher-shimmer text-muted-foreground",
-            )}
-          >
-            {it.value}
+          <span className="mt-1 font-display text-lg text-foreground">
+            {it.cipher ? <CipherMask blocks={6} size="md" /> : it.value}
           </span>
         </div>
       ))}
@@ -682,8 +647,8 @@ export function HarmonyActivityRow({
     <Element
       {...(onClick ? { type: "button" as const, onClick } : {})}
       className={cn(
-        "grid w-full grid-cols-12 items-center border-b border-border px-5 py-3 text-left last:border-0",
-        onClick && "transition-colors hover:bg-muted/40",
+        "dash-table-row grid w-full grid-cols-12 items-center border-b border-border px-5 py-3 text-left last:border-0",
+        onClick && "cursor-pointer",
       )}
     >
       <div className="col-span-6 flex items-center gap-3 min-w-0">

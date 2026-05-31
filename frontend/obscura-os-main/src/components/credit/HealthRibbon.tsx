@@ -23,12 +23,12 @@ interface Props {
   className?: string;
 }
 
-const STYLE: Record<HealthSeverity, { bg: string; border: string; text: string; icon: React.ElementType; label: string; pulse: boolean }> = {
-  idle:     { bg: "",                                  border: "",                            text: "",                     icon: ShieldCheck,  label: "",                            pulse: false },
-  safe:     { bg: "bg-emerald-500/5",                  border: "border-emerald-500/15",       text: "text-foreground",     icon: ShieldCheck,  label: "Position healthy",            pulse: false },
-  caution:  { bg: "bg-amber-500/10",                   border: "border-amber-500/30",         text: "text-amber-200",       icon: Activity,     label: "Caution — HF trending down",  pulse: false },
-  warning:  { bg: "bg-orange-500/12",                  border: "border-orange-500/40",        text: "text-orange-100",      icon: AlertTriangle,label: "Warning — top up collateral", pulse: false },
-  critical: { bg: "bg-red-500/15",                     border: "border-red-500/50",           text: "text-red-100",         icon: ShieldAlert,  label: "LIQUIDATION RISK",            pulse: true  },
+const STYLE: Record<HealthSeverity, { bg: string; border: string; text: string; iconBg: string; icon: React.ElementType; label: string; pulse: boolean }> = {
+  idle:     { bg: "", border: "", text: "", iconBg: "", icon: ShieldCheck, label: "", pulse: false },
+  safe:     { bg: "bg-[hsl(var(--dash-mint))]", border: "border-[hsl(var(--dash-mint-border))]", text: "text-[hsl(var(--dash-forest))]", iconBg: "bg-[hsl(var(--dash-mint))]", icon: ShieldCheck, label: "Position healthy", pulse: false },
+  caution:  { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-800", iconBg: "bg-amber-100", icon: Activity, label: "Caution — HF trending down", pulse: false },
+  warning:  { bg: "bg-orange-50", border: "border-orange-200", text: "text-orange-900", iconBg: "bg-orange-100", icon: AlertTriangle, label: "Warning — top up collateral", pulse: false },
+  critical: { bg: "bg-red-50", border: "border-red-300", text: "text-red-900", iconBg: "bg-red-100", icon: ShieldAlert, label: "LIQUIDATION RISK", pulse: true },
 };
 
 function fmt6(v: bigint): string {
@@ -69,21 +69,21 @@ export default function HealthRibbon({ onRepay, onAddCollateral, className = "" 
           )}
 
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center border ${s.border} ${showCritical ? "bg-red-500/20" : "bg-black/20"}`}>
+            <div className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center border ${s.border} ${s.iconBg}`}>
               <Icon className={`w-4 h-4 ${s.text}`} />
             </div>
             <div className="min-w-0">
               <div className={`text-[11px] tracking-[0.18em] uppercase font-mono ${s.text}`}>
                 {s.label}
               </div>
-              <div className="text-[12px] text-white/70 truncate">
+              <div className="text-[12px] text-muted-foreground truncate">
                 Health Factor <span className={`font-mono font-semibold ${s.text}`}>{hfText}</span>
                 {worstMarket && (
                   <>
-                    <span className="text-white/30 mx-1.5">·</span>
+                    <span className="text-muted-foreground/50 mx-1.5">·</span>
                     {worstMarket.market.label}
-                    <span className="text-white/30 mx-1.5">·</span>
-                    Debt <span className="font-mono">{fmt6(worstMarket.borrow)}</span> ocUSDC
+                    <span className="text-muted-foreground/50 mx-1.5">·</span>
+                    Debt <span className="font-mono text-foreground">{fmt6(worstMarket.borrow)}</span> ocUSDC
                   </>
                 )}
               </div>
@@ -94,7 +94,11 @@ export default function HealthRibbon({ onRepay, onAddCollateral, className = "" 
             {onRepay && worstMarket && (
               <button
                 onClick={() => onRepay(worstMarket)}
-                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-[12px] font-medium border ${s.border} ${showCritical ? "bg-red-500/25 hover:bg-red-500/40 text-red-50" : "bg-white/5 hover:bg-white/10 text-white/90"}`}
+                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-medium border transition-colors ${
+                  showCritical
+                    ? "border-red-300 bg-red-600 text-white hover:bg-red-700"
+                    : "border-border bg-card text-foreground hover:bg-muted"
+                }`}
               >
                 <ArrowUpFromLine className="w-3.5 h-3.5" />
                 Repay
@@ -104,7 +108,7 @@ export default function HealthRibbon({ onRepay, onAddCollateral, className = "" 
             {onAddCollateral && worstMarket && !showCritical && (
               <button
                 onClick={() => onAddCollateral(worstMarket)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-[12px] font-medium border border-white/10 bg-white/5 hover:bg-white/10 text-white/80"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-medium border border-border bg-card text-foreground hover:bg-muted transition-colors"
               >
                 Add collateral
               </button>

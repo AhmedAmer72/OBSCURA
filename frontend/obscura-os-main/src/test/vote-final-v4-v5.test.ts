@@ -16,7 +16,7 @@ describe("Vote V4/V5 participation and advanced governance", () => {
     const profile = readSource("components/vote/VoteParticipationProfile.tsx");
 
     expect(votePage).toContain("VoteParticipationProfile");
-    expect(votePage).toContain("VoteCollapsibleSection");
+    expect(votePage).toContain('tab="delegation"');
     expect(profile).toContain("useReputationSummary");
     expect(profile).toContain("useVoterParticipation");
     expect(profile).toContain("REPUTATION_CATEGORY_SIGNALS");
@@ -32,13 +32,15 @@ describe("Vote V4/V5 participation and advanced governance", () => {
     expect(profile).toContain("@/lib/reputationCategories");
   });
 
-  it("keeps participation sections collapsible with history and rewards", () => {
+  it("routes rewards, delegation, and activity to dedicated govern tabs", () => {
     const votePage = readSource("pages/VotePage.tsx");
 
-    expect(votePage).toContain('title="Ballot history"');
-    expect(votePage).toContain('title="Delegation"');
-    expect(votePage).toContain('title="Rewards"');
-    expect(votePage).toContain("ActivityFeed");
+    expect(votePage).toContain('title="Claim voter rewards"');
+    expect(votePage).toContain('case "delegation"');
+    expect(votePage).toContain("DelegationPanel");
+    expect(votePage).toContain('title="Recent governance activity"');
+    expect(votePage).not.toContain('title="Ballot history"');
+    expect(votePage).not.toContain("VoteNotificationsPanel");
   });
 
   it("quiets advanced governance behind treasury and governor sub-nav", () => {

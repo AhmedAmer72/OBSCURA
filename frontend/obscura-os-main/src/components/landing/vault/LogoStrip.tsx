@@ -114,8 +114,8 @@ export function LogoStrip() {
           One encrypted fabric · woven from the protocols you already trust
         </h3>
         <p className="mt-3 text-sm text-muted-foreground max-w-xl mx-auto">
-          Obscura unifies FHE coprocessors, audited contracts, and the wallets your team
-          already uses — into a single confidential surface for money.
+          Fhenix CoFHE on Arbitrum Sepolia, ocUSDC as the shared confidential asset, and the wallets
+          your team already uses — woven into Pay, Credit, and Vote.
         </p>
       </div>
 

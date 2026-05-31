@@ -1,9 +1,6 @@
 /**
  * ContactsPage — full-page address-book view (route: /pay/contacts).
- *
- * Lists every contact for the connected wallet, lets the user add via
- * `<AddContactModal>`, relabel inline, or remove. The on-chain record is
- * encrypted; the plaintext label cache is local-only.
+ * UI shell only; address-book logic unchanged.
  */
 import { useState } from "react";
 import { motion } from "framer-motion";
@@ -15,13 +12,13 @@ import {
   Check,
   X,
   Loader2,
-  ArrowLeft,
+  ArrowUpRight,
   BookUser,
 } from "lucide-react";
 
-import { Card, PageHeader } from "@/components/elite/Layout";
-import { ProductShell } from "@/components/design-system/ProductShell";
-import { Button } from "@/components/ui/button";
+import { HarmonyAppShell } from "@/components/harmony/HarmonyAppShell";
+import { AppWorkspaceChrome } from "@/components/harmony/AppWorkspaceChrome";
+import { HarmonyFormCard } from "@/components/harmony/harmony-ui";
 import { Input } from "@/components/ui/input";
 import AddContactModal from "@/components/pay-v4/AddContactModal";
 import { useAddressBook } from "@/hooks/useAddressBook";
@@ -48,131 +45,140 @@ export default function ContactsPage() {
   };
 
   return (
-    <ProductShell module="pay" searchPlaceholder="Search pay…" maxWidth="max-w-4xl">
-        <Link
-          to="/pay"
-          className="inline-flex items-center gap-1.5 text-[12px] text-forest/50 hover:text-forest mb-4"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to Pay
-        </Link>
+    <HarmonyAppShell
+      searchPlaceholder="Search contacts…"
+    >
+      <AppWorkspaceChrome
+        eyebrow="Obscura · Pay"
+        title="Private contacts."
+        description="Encrypted on-chain address book. Labels are kept locally; only hashes and FHE-encrypted targets live on-chain."
+        actions={
+          <Link to="/settings?section=contacts" className="dash-btn-outline h-9 px-3 text-xs">
+            Pay settings
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </Link>
+        }
+      />
 
-        <PageHeader
-          breadcrumb={["Pay", "Address Book", "Contacts"]}
-          title="Contacts"
-          lede="Encrypted on-chain contact list. Labels are kept locally; only their hashes and FHE-encrypted target addresses live on-chain."
-        />
-
-        <div className="flex items-center justify-between my-6">
-          <div className="text-[12px] text-muted-foreground/70 font-mono">
-            {contacts.length} contact{contacts.length === 1 ? "" : "s"}
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => void refresh()} disabled={isLoading}>
-              {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Refresh"}
-            </Button>
-            <Button onClick={() => setOpen(true)}>
-              <Plus className="w-3.5 h-3.5 mr-1.5" /> Add contact
-            </Button>
-          </div>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <p className="font-mono text-xs text-muted-foreground">
+          {contacts.length} contact{contacts.length === 1 ? "" : "s"}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            disabled={isLoading}
+            className="dash-btn-outline h-9 px-3 text-xs"
+          >
+            {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Refresh"}
+          </button>
+          <button type="button" onClick={() => setOpen(true)} className="dash-btn-primary h-9 px-3 text-xs">
+            <Plus className="h-3.5 w-3.5" />
+            Add contact
+          </button>
         </div>
+      </div>
 
-        {error && (
-          <Card className="p-4 border-red-500/30 bg-red-500/[0.05] text-[12px] text-red-300 mb-4">
-            {error}
-          </Card>
-        )}
+      {error && (
+        <div className="mb-4 rounded-[var(--dash-radius-lg)] border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
-        {contacts.length === 0 && !isLoading ? (
-          <Card className="p-12 text-center">
-            <BookUser className="w-8 h-8 mx-auto mb-3 text-muted-foreground/40" />
-            <div className="font-display text-foreground mb-1">No contacts yet</div>
-            <p className="text-[12px] text-muted-foreground/65 max-w-sm mx-auto mb-4">
+      {contacts.length === 0 && !isLoading ? (
+        <HarmonyFormCard title="No contacts yet" eyebrow="Address book">
+          <div className="py-8 text-center">
+            <BookUser className="mx-auto h-8 w-8 text-muted-foreground/40" />
+            <p className="mx-auto mt-4 max-w-sm text-sm text-muted-foreground">
               Add a contact to send encrypted payments without retyping addresses.
             </p>
-            <Button onClick={() => setOpen(true)}>
-              <Plus className="w-3.5 h-3.5 mr-1.5" /> Add your first contact
-            </Button>
-          </Card>
-        ) : (
-          <div className="space-y-2">
-            {contacts.map((c) => {
-              const idStr = c.contactId.toString();
-              const isEditing = editingId === idStr;
-              return (
-                <motion.div
-                  key={idStr}
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-3 p-3 rounded-md border border-white/[0.06] bg-white/[0.02]"
-                >
-                  <div className="w-8 h-8 rounded-full bg-emerald-500/[0.1] border border-emerald-500/30 flex items-center justify-center text-[11px] text-emerald-300 font-mono">
-                    {idStr}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    {isEditing ? (
-                      <Input
-                        value={draftLabel}
-                        onChange={(e) => setDraftLabel(e.target.value)}
-                        autoFocus
-                        className="text-[12px]"
-                      />
-                    ) : (
-                      <div className="text-[13px] text-foreground truncate">
-                        {c.label ?? <span className="text-muted-foreground/50">Contact #{idStr}</span>}
-                      </div>
-                    )}
-                    <div className="text-[10px] text-muted-foreground/45 font-mono truncate">
-                      {c.labelHash} · created {new Date(Number(c.createdAt) * 1000).toLocaleString()}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {isEditing ? (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => void saveEdit(idStr)}
-                          disabled={isPending}
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setEditingId(null)}
-                          disabled={isPending}
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => startEdit(idStr, c.label)}
-                          disabled={isPending}
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => void removeContact(c.contactId)}
-                          disabled={isPending}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </motion.div>
-              );
-            })}
+            <button type="button" onClick={() => setOpen(true)} className="dash-btn-primary mt-6 h-9 px-4 text-xs">
+              <Plus className="h-3.5 w-3.5" />
+              Add your first contact
+            </button>
           </div>
-        )}
+        </HarmonyFormCard>
+      ) : (
+        <div className="space-y-2">
+          {contacts.map((c) => {
+            const idStr = c.contactId.toString();
+            const isEditing = editingId === idStr;
+            return (
+              <motion.div
+                key={idStr}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="dash-list-row"
+              >
+                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[hsl(var(--success)/0.25)] bg-[hsl(var(--success)/0.08)] font-mono text-[11px] text-[hsl(var(--success))]">
+                  {idStr}
+                </div>
+                <div className="min-w-0 flex-1">
+                  {isEditing ? (
+                    <Input
+                      value={draftLabel}
+                      onChange={(e) => setDraftLabel(e.target.value)}
+                      autoFocus
+                      className="h-9 text-xs"
+                    />
+                  ) : (
+                    <div className="truncate text-sm text-foreground">
+                      {c.label ?? <span className="text-muted-foreground/50">Contact #{idStr}</span>}
+                    </div>
+                  )}
+                  <div className="truncate font-mono text-[10px] text-muted-foreground/60">
+                    {c.labelHash} · created {new Date(Number(c.createdAt) * 1000).toLocaleString()}
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  {isEditing ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => void saveEdit(idStr)}
+                        disabled={isPending}
+                        className="dash-btn-outline grid h-8 w-8 place-items-center p-0"
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(null)}
+                        disabled={isPending}
+                        className="dash-btn-outline grid h-8 w-8 place-items-center p-0"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => startEdit(idStr, c.label)}
+                        disabled={isPending}
+                        className="dash-btn-outline grid h-8 w-8 place-items-center p-0"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void removeContact(c.contactId)}
+                        disabled={isPending}
+                        className="dash-btn-outline grid h-8 w-8 place-items-center p-0"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
 
-        <AddContactModal open={open} onClose={() => setOpen(false)} />
-    </ProductShell>
+      <AddContactModal open={open} onClose={() => setOpen(false)} />
+    </HarmonyAppShell>
   );
 }

@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { FileText, Clock, CheckCircle2, RefreshCw, Search, Users, Timer, ArrowRight } from "lucide-react";
+import { FileText, CheckCircle2, RefreshCw, Users, Timer, ArrowRight } from "lucide-react";
 import { useWatchContractEvent } from "wagmi";
 import { useProposalCount, useProposal, CATEGORY_LABELS } from "@/hooks/useProposals";
 import { OBSCURA_VOTE_ABI, OBSCURA_VOTE_ADDRESS } from "@/config/contracts";
 import { useChainTime } from "@/hooks/useChainTime";
+import { cn } from "@/lib/utils";
 import { VoteStatusPill, type VoteProposalStatus } from "@/components/harmony/voteHarmonyUi";
 
 type ProposalStatus = VoteProposalStatus;
@@ -18,31 +19,21 @@ function getStatus(deadline: bigint, isFinalized: boolean, isCancelled: boolean,
 
 function ProposalRowSkeleton() {
   return (
-    <div className="rounded-xl hairline bg-card p-4 space-y-2 animate-pulse">
-      <div className="flex items-start gap-3">
-        <div className="w-8 h-4 bg-muted rounded mt-0.5" />
-        <div className="flex-1 space-y-2">
-          <div className="h-4 bg-muted rounded w-3/4" />
-          <div className="h-3 bg-muted rounded w-1/2" />
-          <div className="flex gap-2">
-            <div className="h-5 bg-muted rounded w-16" />
-            <div className="h-5 bg-muted rounded w-16" />
-            <div className="h-5 bg-muted rounded w-12" />
-          </div>
-        </div>
-        <div className="h-5 bg-muted rounded w-16 shrink-0" />
+    <div className="vote-proposal-card animate-pulse space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="h-5 w-10 rounded bg-muted" />
+        <div className="h-6 w-24 rounded-full bg-muted" />
       </div>
-      <div className="pl-11 h-3 bg-muted rounded w-40" />
+      <div className="h-6 rounded bg-muted w-[88%]" />
+      <div className="h-4 rounded bg-muted w-full" />
+      <div className="flex gap-2">
+        <div className="h-5 w-16 rounded-full bg-muted" />
+        <div className="h-5 w-20 rounded-full bg-muted" />
+      </div>
+      <div className="h-10 rounded-lg bg-muted w-full" />
     </div>
   );
 }
-
-const statusRail: Record<ProposalStatus, string> = {
-  active: "border-l-[hsl(var(--success))]",
-  ended: "border-l-amber-500",
-  finalized: "border-l-sky-600",
-  cancelled: "border-l-destructive",
-};
 
 function Countdown({ deadline }: { deadline: bigint }) {
   const [remaining, setRemaining] = useState("");
@@ -81,83 +72,88 @@ function ProposalRow({ proposalId, searchQuery, statusFilter, onVote, now }: { p
   // Filter by search
   if (searchQuery && !proposal.title.toLowerCase().includes(searchQuery.toLowerCase())) return null;
 
-  const cfg = statusRail[status];
   const deadlineDate = new Date(Number(proposal.deadline) * 1000);
   const catLabel = CATEGORY_LABELS[proposal.category] ?? "General";
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 5 }}
+    <motion.article
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`rounded-2xl border border-border border-l-4 bg-white p-5 shadow-[0_1px_2px_hsl(145_18%_12%/0.04)] ${cfg} transition-colors hover:border-foreground/20`}
+      className={cn("vote-proposal-card", `vote-proposal-card--${status}`)}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-start gap-3">
-          <span className="mt-0.5 w-8 shrink-0 font-mono text-xs text-muted-foreground">
-            #{proposal.id.toString()}
-          </span>
-          <div className="min-w-0">
-            <div className="text-sm font-semibold text-foreground">{proposal.title}</div>
-            {proposal.description && (
-              <div className="text-xs text-muted-foreground/60 mt-0.5 truncate">{proposal.description}</div>
-            )}
-            <div className="flex flex-wrap gap-2 mt-1.5">
-              <span className="text-[11px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-md">
-                {catLabel}
+      <header className="vote-proposal-card__header">
+        <span className="vote-proposal-card__id">#{proposal.id.toString()}</span>
+        <VoteStatusPill status={status} />
+      </header>
+
+      <h3 className="vote-proposal-card__title">{proposal.title}</h3>
+
+      {proposal.description ? (
+        <p className="vote-proposal-card__desc">{proposal.description}</p>
+      ) : null}
+
+      <div className="vote-proposal-card__tags">
+        <span className="vote-proposal-card__tag">{catLabel}</span>
+        <span className="vote-proposal-card__tag">{proposal.numOptions} options</span>
+        <span className="vote-proposal-card__tag">
+          <Users className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
+          {proposal.totalVoters.toString()}
+          {proposal.quorum > 0n ? ` / ${proposal.quorum.toString()}` : " voters"}
+        </span>
+      </div>
+
+      {proposal.quorum > 0n && (
+        <div className="vote-proposal-card__quorum space-y-1.5">
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+            <span>
+              {proposal.totalVoters.toString()} / {proposal.quorum.toString()} voters
+            </span>
+            {proposal.totalVoters >= proposal.quorum ? (
+              <span className="inline-flex items-center gap-1 font-medium text-[hsl(var(--success))]">
+                <CheckCircle2 className="h-3 w-3" aria-hidden />
+                Quorum met
               </span>
-              <span className="text-[11px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-md">
-                {proposal.numOptions} options
-              </span>
-              <span className="text-[11px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-md flex items-center gap-1">
-                <Users className="w-2.5 h-2.5" /> {proposal.totalVoters.toString()}
-                {proposal.quorum > 0n && ` / ${proposal.quorum.toString()}`}
-              </span>
-            </div>
-            {proposal.quorum > 0n && (
-              <div className="mt-2 space-y-1">
-                <div className="flex items-center justify-between text-[10px] text-muted-foreground/50">
-                  <span>{proposal.totalVoters.toString()} / {proposal.quorum.toString()} voters</span>
-                  {proposal.totalVoters >= proposal.quorum
-                    ? <span className="text-foreground flex items-center gap-0.5"><CheckCircle2 className="w-2.5 h-2.5" /> Quorum met</span>
-                    : <span className="text-amber-400/70">Quorum needed</span>
-                  }
-                </div>
-                <div className="h-1 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{
-                      width: `${Math.min(Number((proposal.totalVoters * 100n) / proposal.quorum), 100)}%`,
-                      background: proposal.totalVoters >= proposal.quorum ? '#10b981' : '#f59e0b',
-                    }}
-                  />
-                </div>
-              </div>
+            ) : (
+              <span className="font-medium text-amber-700/90">Quorum needed</span>
             )}
           </div>
+          <div className="dash-progress h-1.5">
+            <span
+              style={{
+                width: `${Math.min(Number((proposal.totalVoters * 100n) / proposal.quorum), 100)}%`,
+                background:
+                  proposal.totalVoters >= proposal.quorum
+                    ? "linear-gradient(90deg, hsl(var(--success)), hsl(145 55% 55%))"
+                    : "linear-gradient(90deg, hsl(38 80% 50%), hsl(38 90% 60%))",
+              }}
+            />
+          </div>
         </div>
-        <VoteStatusPill status={status} />
-      </div>
-      <div className="mt-3 flex flex-col gap-2 pl-11 sm:flex-row sm:items-center sm:justify-between">
-        <span className="text-xs text-muted-foreground">Deadline: {deadlineDate.toLocaleString()}</span>
+      )}
+
+      <div className="vote-proposal-card__meta">
+        <span className="vote-proposal-card__deadline">
+          Deadline · {deadlineDate.toLocaleString()}
+        </span>
         {status === "active" && (
-          <span className="flex items-center gap-1 text-xs text-[hsl(var(--success))]">
-            <Timer className="h-3 w-3" />
+          <span className="vote-proposal-card__countdown">
+            <Timer className="h-3.5 w-3.5 shrink-0" aria-hidden />
             <Countdown deadline={proposal.deadline} />
           </span>
         )}
       </div>
+
       {status === "active" && onVote && (
-        <div className="mt-3 pl-11">
-          <button
-            type="button"
-            onClick={() => onVote(Number(proposalId))}
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-foreground px-5 text-sm font-semibold text-background shadow-sm"
-          >
-            Vote privately <ArrowRight className="h-3.5 w-3.5" />
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => onVote(Number(proposalId))}
+          className="vote-proposal-card__cta dash-btn-primary min-h-[44px] gap-2 text-sm font-semibold"
+        >
+          Vote privately
+          <ArrowRight className="h-4 w-4" />
+        </button>
       )}
-    </motion.div>
+    </motion.article>
   );
 }
 
@@ -227,16 +223,14 @@ export default function ProposalList({
 
       {/* Search + Filters */}
       <div className="space-y-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search proposals..."
-            className="pay-input pl-9"
-          />
-        </div>
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search proposals..."
+          className="pay-input"
+          aria-label="Search proposals"
+        />
         <div className="flex flex-wrap gap-2">
           {filters.map((f) => (
             <button
@@ -266,11 +260,11 @@ export default function ProposalList({
             <div className="text-[11px] text-muted-foreground/40">Create a private proposal when you are ready for voters.</div>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="vote-proposal-list">
           {statusFilter !== "all" && (
-            <div className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+            <p className="vote-proposal-filter-hint" role="status">
               Showing {statusFilter} proposals first. If nothing is listed, no {statusFilter} proposal is available for this wallet right now. Use All to review closed history and revealable results.
-            </div>
+            </p>
           )}
           {Array.from({ length: proposalCount }, (_, i) => (
             <ProposalRow key={i} proposalId={BigInt(i)} searchQuery={searchQuery} statusFilter={statusFilter} onVote={onVote} now={now} />

@@ -43,8 +43,8 @@ export function Hero() {
         <div className="relative z-10 max-w-3xl mt-6">
           <div className="tag-bracket mb-5">▸ The encrypted operating system</div>
           <h1 className="font-display text-5xl md:text-7xl lg:text-[92px] leading-[0.95] tracking-tight text-foreground">
-            Private money,<br />
-            <span className="text-brand">computed in the open.</span>
+            Private Finance.<br />
+            <span className="text-brand">Computed in the Open.</span>
           </h1>
           <p className="mt-8 max-w-xl text-lg text-muted-foreground leading-relaxed">
             Obscura is one privacy engine for payments, credit, and governance —

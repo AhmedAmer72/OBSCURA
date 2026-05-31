@@ -9,23 +9,23 @@ export const vh = {
   emphasis: "font-semibold text-foreground",
   kpiGrid: "grid gap-4 sm:grid-cols-2 lg:grid-cols-4",
   kpiGrid2: "grid grid-cols-2 gap-4",
-  kpi: "rounded-2xl border border-border bg-white p-5 shadow-[0_1px_3px_hsl(145_18%_12%/0.06)]",
+  kpi: "dash-card p-5",
   kpiRow: "flex items-center gap-2 text-muted-foreground",
-  kpiValue: "font-display text-3xl mt-2 text-foreground tabular-nums",
+  kpiValue: "dash-metric-value text-3xl mt-2 text-foreground tabular-nums",
   kpiSub: "mt-1 text-sm text-foreground/65",
-  notice: "rounded-xl border border-border bg-white p-4 flex gap-3 text-sm leading-relaxed text-foreground/75 shadow-[0_1px_2px_hsl(145_18%_12%/0.04)]",
+  notice: "dash-card p-4 flex gap-3 text-sm leading-relaxed text-foreground/75",
   noticeWarn:
     "rounded-xl border border-amber-500/30 bg-amber-50 p-4 flex gap-3 text-sm leading-relaxed text-amber-950",
   tabRow: "flex gap-1 rounded-full border border-border bg-muted/50 p-1",
   tabBtn: "flex-1 rounded-full px-4 py-2.5 text-sm font-medium transition-colors",
-  tabActive: "bg-white text-foreground shadow-sm border border-border",
+  tabActive: "bg-[hsl(var(--dash-mint))] text-foreground border border-[hsl(var(--dash-mint-border))]",
   tabIdle: "text-muted-foreground hover:text-foreground",
-  listCard: "rounded-2xl border border-border bg-white p-5 shadow-[0_1px_2px_hsl(145_18%_12%/0.04)]",
-  section: "overflow-hidden rounded-2xl border border-border bg-white shadow-[0_1px_3px_hsl(145_18%_12%/0.06)]",
+  listCard: "rounded-2xl border border-border bg-white p-5 shadow-[var(--dash-surface-shadow-sm)]",
+  section: "overflow-hidden rounded-2xl border border-border bg-white shadow-[var(--dash-surface-shadow)]",
   sectionHead: "border-b border-border bg-muted/20 px-5 py-4",
   row: "border-b border-border py-3 last:border-0",
   link: "font-mono text-sm text-foreground underline-offset-2 hover:underline inline-flex items-center gap-1",
-  empty: "rounded-2xl border border-border bg-white p-12 text-center shadow-[0_1px_2px_hsl(145_18%_12%/0.04)]",
+  empty: "rounded-2xl border border-border bg-white p-12 text-center shadow-[var(--dash-surface-shadow-sm)]",
   badgeOk: "rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground",
   badgeMuted: "rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground",
   badgeAccent: "rounded-full border border-[hsl(var(--success))]/30 bg-[hsl(var(--success))]/10 px-2.5 py-0.5 text-xs font-semibold text-[hsl(var(--success))]",
@@ -150,8 +150,8 @@ const STATUS_STYLES: Record<
 > = {
   active: {
     label: "Open for voting",
-    pill: "bg-white text-foreground border-foreground/20",
-    rail: "border-l-foreground",
+    pill: "border-[hsl(var(--success))]/35 bg-[hsl(var(--success))]/12 text-[hsl(var(--success))] shadow-[0_1px_2px_hsl(var(--dash-forest)/0.14)]",
+    rail: "border-l-[hsl(var(--success))]",
   },
   ended: {
     label: "Awaiting finalization",
@@ -160,8 +160,8 @@ const STATUS_STYLES: Record<
   },
   finalized: {
     label: "Results available",
-    pill: "bg-foreground text-background border-foreground",
-    rail: "border-l-foreground",
+    pill: "bg-[hsl(var(--dash-mint))] text-foreground border-[hsl(var(--dash-mint-border))]",
+    rail: "border-l-[hsl(var(--success))]",
   },
   cancelled: {
     label: "Cancelled",
@@ -173,7 +173,15 @@ const STATUS_STYLES: Record<
 export function VoteStatusPill({ status }: { status: VoteProposalStatus }) {
   const cfg = STATUS_STYLES[status];
   return (
-    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${cfg.pill}`}>
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold leading-none",
+        cfg.pill,
+      )}
+    >
+      {status === "active" ? (
+        <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-[hsl(var(--success))]" aria-hidden />
+      ) : null}
       {cfg.label}
     </span>
   );
@@ -183,16 +191,31 @@ export function VoteFormField({
   label,
   hint,
   children,
+  tone = "default",
 }: {
   label: string;
   hint?: string;
   children: ReactNode;
+  tone?: "default" | "forest";
 }) {
+  const isForest = tone === "forest";
+
   return (
-    <div className="space-y-2">
+    <div className={cn("space-y-2", isForest && "vote-choice-field")}>
       <div>
-        <label className="text-sm font-semibold text-foreground">{label}</label>
-        {hint && <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{hint}</p>}
+        <label className={cn(isForest ? "vote-choice-field__label" : "text-sm font-semibold text-foreground")}>
+          {label}
+        </label>
+        {hint && (
+          <p
+            className={cn(
+              "mt-0.5 text-xs leading-relaxed",
+              isForest ? "vote-choice-field__hint" : "text-muted-foreground",
+            )}
+          >
+            {hint}
+          </p>
+        )}
       </div>
       {children}
     </div>
@@ -217,8 +240,8 @@ export function VoteWizardSteps({
               <div
                 className={cn(
                   "grid h-8 w-8 shrink-0 place-items-center rounded-full text-xs font-semibold",
-                  done && "bg-foreground text-background",
-                  active && !done && "bg-foreground text-background",
+                  done && "bg-[hsl(var(--dash-forest))] text-[hsl(96_18%_97%)]",
+                  active && !done && "bg-[hsl(var(--dash-forest))] text-[hsl(96_18%_97%)]",
                   !done && !active && "border border-border bg-white text-muted-foreground",
                 )}
               >
@@ -238,7 +261,7 @@ export function VoteWizardSteps({
       </div>
       <div className="mt-4 h-1 overflow-hidden rounded-full bg-muted">
         <div
-          className="h-full rounded-full bg-foreground transition-all duration-300"
+          className="h-full rounded-full bg-[hsl(var(--dash-forest))] transition-all duration-300"
           style={{ width: `${((current + 1) / steps.length) * 100}%` }}
         />
       </div>
