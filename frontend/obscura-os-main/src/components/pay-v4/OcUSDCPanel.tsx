@@ -1,37 +1,50 @@
 import { Coins, Eye, ArrowDownToLine, ArrowUpFromLine, ShieldCheck, Loader2, Timer } from "lucide-react";
 import UsdcIcon from "@/components/shared/UsdcIcon";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useOcUSDCBalance } from "@/hooks/useOcUSDCBalance";
 import { toast } from "sonner";
 import { HarmonyPrivacyBadge } from "@/components/harmony/harmony-ui";
 import { SealedCipherBars } from "@/components/harmony/pay-home/PayHomePremiumSections";
-
-const RATE_LIMIT_COOLDOWN_S = 35;
-
-function isRateLimited(e: unknown): boolean {
-  const msg = (e instanceof Error ? e.message : String(e)).toLowerCase();
-  return msg.includes("rate limit") || msg.includes("rate-limit");
-}
+import { isRateLimitError } from "@/lib/rateLimit";
+import { shieldPhaseLabel } from "@/lib/shieldFlow";
 
 export default function OcUSDCPanel() {
-  const { handle, decrypted, usdcBalance, trackedCusdc, reveal, wrap, unwrap, approveStream, busy, error } = useOcUSDCBalance();
+  const {
+    handle,
+    decrypted,
+    usdcBalance,
+    trackedCusdc,
+    reveal,
+    wrap,
+    unwrap,
+    approveStream,
+    busy,
+    wrapPhase,
+    wrapCooldownSec,
+    error,
+  } = useOcUSDCBalance();
   const [wrapAmount, setWrapAmount] = useState("");
   const [unwrapAmount, setUnwrapAmount] = useState("");
   const [maxApprove, setMaxApprove] = useState("30");
-  const [shieldCooldown, setShieldCooldown] = useState(0);
-  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const toastRef = useRef<string | number | null>(null);
 
-  const startCooldown = useCallback(() => {
-    setShieldCooldown(RATE_LIMIT_COOLDOWN_S);
-    cooldownRef.current = setInterval(() => {
-      setShieldCooldown((s) => {
-        if (s <= 1) { clearInterval(cooldownRef.current!); return 0; }
-        return s - 1;
-      });
-    }, 1000);
-  }, []);
+  useEffect(() => {
+    if (wrapPhase === "idle") {
+      if (toastRef.current) toast.dismiss(toastRef.current);
+      toastRef.current = null;
+      return;
+    }
 
-  useEffect(() => () => { if (cooldownRef.current) clearInterval(cooldownRef.current); }, []);
+    const message = shieldPhaseLabel(wrapPhase, {
+      cooldownSec: wrapCooldownSec || undefined,
+    });
+
+    if (toastRef.current) {
+      toast.loading(message, { id: toastRef.current });
+    } else {
+      toastRef.current = toast.loading(message);
+    }
+  }, [wrapPhase, wrapCooldownSec]);
 
   const isRevealed = decrypted !== null;
   const displayBalance = isRevealed
@@ -44,9 +57,15 @@ export default function OcUSDCPanel() {
       ? "Tracked estimate — reveal for exact"
       : "Sealed on-chain — reveal for exact";
 
+  const wrapBusy = busy && wrapPhase !== "idle";
+  const wrapButtonLabel = wrapBusy
+    ? wrapCooldownSec > 0
+      ? `${wrapCooldownSec}s`
+      : shieldPhaseLabel(wrapPhase).replace(/^Step \d\/\d — /, "")
+    : "Make private";
+
   return (
     <div className="space-y-5">
-      {/* ── Header ── */}
       <div className="flex items-center gap-3">
         <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-muted hairline">
           <Coins className="w-4 h-4 text-foreground" />
@@ -60,9 +79,7 @@ export default function OcUSDCPanel() {
         <HarmonyPrivacyBadge state="private" label="Private" />
       </div>
 
-      {/* ── Balance row ── */}
       <div className="grid grid-cols-2 gap-3">
-        {/* Plain USDC */}
         <div className="rounded-xl border border-border bg-card p-3">
           <div className="flex items-center gap-1.5 text-[10.5px] text-muted-foreground mb-1.5">
             <UsdcIcon className="w-3.5 h-3.5" /> Plain USDC
@@ -71,7 +88,6 @@ export default function OcUSDCPanel() {
             {usdcBalance !== null ? usdcBalance : "—"}
           </div>
         </div>
-        {/* Private USDC — cipher mask until wallet decrypt */}
         <div className="rounded-xl border border-border bg-muted/40 p-3 min-w-0">
           <p className="mb-2 text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground/70">
             Private USDC
@@ -86,7 +102,6 @@ export default function OcUSDCPanel() {
         </div>
       </div>
 
-      {/* Reveal — small right-aligned button, not full-width */}
       <div className="flex items-center justify-between gap-3">
         <p className="text-[11px] text-muted-foreground/70 leading-snug max-w-[28ch]">
           Your private balance is hidden on-chain. Only you can decrypt it.
@@ -105,7 +120,7 @@ export default function OcUSDCPanel() {
           disabled={busy || !handle}
           className="btn-pay btn-pay-ghost btn-pay-sm shrink-0"
         >
-          {busy
+          {busy && wrapPhase === "idle"
             ? <><Loader2 className="w-3 h-3 animate-spin" /> Revealing…</>
             : <><Eye className="w-3 h-3" /> Reveal</>
           }
@@ -118,9 +133,7 @@ export default function OcUSDCPanel() {
         </div>
       )}
 
-      {/* ── Actions ── */}
       <div className="space-y-4 border-t border-border pt-4">
-        {/* Make private */}
         <div className="space-y-1.5">
           <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <ArrowDownToLine className="w-3 h-3 text-foreground/55" />
@@ -133,36 +146,42 @@ export default function OcUSDCPanel() {
               value={wrapAmount}
               onChange={(e) => setWrapAmount(e.target.value)}
               className="pay-input flex-1"
+              disabled={wrapBusy}
             />
             <button
               type="button"
               onClick={async () => {
-                if (shieldCooldown > 0) return;
+                if (!wrapAmount || wrapBusy) return;
                 try {
-                  toast.info("Step 1: Approving USDC spend…");
-                  const toastId = toast.loading("Making private…");
                   await wrap(wrapAmount);
-                  toast.dismiss(toastId);
+                  if (toastRef.current) toast.dismiss(toastRef.current);
                   toast.success("Done — your USDC is now private.");
                   setWrapAmount("");
                 } catch (e) {
-                  if (isRateLimited(e)) {
-                    toast.error("CoFHE rate limited — wait ~30 s then retry.", { duration: 8000 });
-                    startCooldown();
+                  if (toastRef.current) toast.dismiss(toastRef.current);
+                  if (isRateLimitError(e)) {
+                    toast.error(
+                      "Network still busy after automatic retries. Wait ~30 s and tap Make private again — approval is already saved.",
+                      { duration: 10_000 },
+                    );
                   } else {
                     toast.error((e as Error).message || "Shield failed");
                   }
                 }
               }}
-              disabled={busy || shieldCooldown > 0}
-              className="btn-pay btn-pay-primary shrink-0"
+              disabled={wrapBusy || !wrapAmount}
+              className="btn-pay btn-pay-primary shrink-0 min-w-[7.5rem]"
             >
-              {shieldCooldown > 0
-                ? <><Timer className="w-3 h-3" /> {shieldCooldown}s</>
+              {wrapBusy
+                ? <><Timer className="w-3 h-3" /> {wrapButtonLabel}</>
                 : "Make private"
               }
             </button>
           </div>
+          <p className="text-[10.5px] text-muted-foreground/60 leading-relaxed">
+            First time? You&apos;ll sign approve, then we wait ~12 s for the network before shielding
+            automatically — no second click needed.
+          </p>
           <p className="text-[10.5px] text-muted-foreground/60">
             Need testnet USDC?{" "}
             <a href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer"
@@ -172,7 +191,6 @@ export default function OcUSDCPanel() {
           </p>
         </div>
 
-        {/* Convert back */}
         <div className="space-y-1.5">
           <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <ArrowUpFromLine className="w-3 h-3 text-foreground/55" />
@@ -219,7 +237,6 @@ export default function OcUSDCPanel() {
           )}
         </div>
 
-        {/* Authorize */}
         <div className="space-y-1.5 pt-3 border-t border-border">
           <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <ShieldCheck className="w-3 h-3 text-foreground/55" />

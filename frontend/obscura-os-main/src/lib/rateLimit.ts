@@ -18,7 +18,13 @@ const RATE_LIMIT_PATTERNS = [
   "exceeded",
 ];
 
-function isRateLimitError(err: unknown): boolean {
+/** After an on-chain tx, wait before the next RPC-heavy call (fee estimate / submit). */
+export const POST_RECEIPT_RPC_COOLDOWN_MS = 2_500;
+
+/** Extra cooldown when approve + shield run back-to-back (new users). */
+export const POST_APPROVE_SHIELD_COOLDOWN_MS = 12_000;
+
+export function isRateLimitError(err: unknown): boolean {
   const msg = (err as { message?: string; shortMessage?: string })?.message
     ?? (err as { shortMessage?: string })?.shortMessage
     ?? String(err);
@@ -55,4 +61,23 @@ export async function withRateLimitRetry<T>(
     }
   }
   throw lastErr;
+}
+
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Sleep in 1s ticks — use for visible countdown UX during RPC / CoFHE cooldowns. */
+export async function sleepWithProgress(
+  ms: number,
+  onTick?: (remainingSec: number) => void,
+): Promise<void> {
+  const step = 1_000;
+  let remaining = ms;
+  while (remaining > 0) {
+    onTick?.(Math.ceil(remaining / 1_000));
+    const chunk = Math.min(step, remaining);
+    await sleep(chunk);
+    remaining -= chunk;
+  }
 }

@@ -26,14 +26,19 @@ const OCUSDC_ADDRESS = OBSCURA_PAY_OCUSDC_ADDRESS;
 const OCUSDC_ABI = CONFIDENTIAL_TOKEN_ABI;
 import { initFHEClient, encryptAmount, decryptBalance, getOrCreatePermit } from "@/lib/fhe";
 import { formatFheLoadError } from "@/lib/chunkLoadRecovery";
-import { withRateLimitRetry } from "@/lib/rateLimit";
+import { withRateLimitRetry, isRateLimitError, sleep, sleepWithProgress, POST_RECEIPT_RPC_COOLDOWN_MS, POST_APPROVE_SHIELD_COOLDOWN_MS } from "@/lib/rateLimit";
 import { estimateCappedFees } from "@/lib/gas";
 import { addTrackedUnits, setTrackedUnits, getTrackedFormatted } from "@/lib/trackedBalance";
 import { parseUSDC, USDC_DECIMALS } from "@/lib/usdc";
+import {
+  type ShieldWrapPhase,
+  SHIELD_RATE_LIMIT_RETRIES,
+  SHIELD_RETRY_BASE_MS,
+} from "@/lib/shieldFlow";
 
-/** Fetch gas fees with retry � safe because no wallet popup is involved. */
+/** Fetch gas fees with retry — safe because no wallet popup is involved. */
 async function estimateFeesWithRetry(publicClient: ReturnType<typeof usePublicClient>) {
-  return withRateLimitRetry(() => publicClient!.estimateFeesPerGas());
+  return withRateLimitRetry(() => estimateCappedFees(publicClient!));
 }
 
 const USDC_BALANCE_ABI = [
@@ -54,6 +59,8 @@ export function useOcUSDCBalance() {
   const [decrypted, setDecrypted] = useState<bigint | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [wrapPhase, setWrapPhase] = useState<ShieldWrapPhase>("idle");
+  const [wrapCooldownSec, setWrapCooldownSec] = useState(0);
   const [usdcBalance, setUsdcBalance] = useState<string | null>(null);
   const [trackedCusdc, setTrackedCusdc] = useState<string | null>(null);
 
@@ -202,77 +209,107 @@ export function useOcUSDCBalance() {
         throw new Error("Wallet not configured");
       }
       const amount = parseUnits(amountUSDC, USDC_DECIMALS);
+      if (amount === 0n) throw new Error("Enter an amount greater than zero");
 
-      // Step 1: Check allowance — approve ocUSDC to pull plain USDC if needed
-      const currentAllowance = await publicClient.readContract({
-        address: USDC_ARB_SEPOLIA,
-        abi: [{
-          type: "function",
-          name: "allowance",
-          stateMutability: "view",
-          inputs: [{ name: "owner", type: "address" }, { name: "spender", type: "address" }],
-          outputs: [{ name: "", type: "uint256" }],
-        }] as const,
-        functionName: "allowance",
-        args: [address, OCUSDC_ADDRESS],
-      }) as bigint;
+      setBusy(true);
+      setWrapPhase("checking");
+      setWrapCooldownSec(0);
 
-      if (currentAllowance < amount) {
-        const feeData = await publicClient.estimateFeesPerGas();
-        const approveMaxFee = feeData.maxFeePerGas
-          ? (feeData.maxFeePerGas * 130n) / 100n
-          : undefined;
-        const approveTx = await writeContractAsync({
-          address: USDC_ARB_SEPOLIA,
-          abi: ERC20_APPROVE_ABI,
-          functionName: "approve",
-          args: [OCUSDC_ADDRESS, amount],
+      const submitShield = async (): Promise<`0x${string}`> => {
+        const fees = await estimateFeesWithRetry(publicClient);
+        const hash = await writeContractAsync({
+          address: OCUSDC_ADDRESS,
+          abi: OCUSDC_ABI,
+          functionName: "shield",
+          args: [amount],
           account: address,
           chain: arbitrumSepolia,
-          maxFeePerGas: approveMaxFee,
-          gas: 100_000n,
+          maxFeePerGas: fees.maxFeePerGas,
+          maxPriorityFeePerGas: fees.maxPriorityFeePerGas,
+          gas: 600_000n,
         });
-        await publicClient.waitForTransactionReceipt({ hash: approveTx });
-        // Wait 5s to avoid RPC rate-limit between approve and wrap
-        await new Promise((r) => setTimeout(r, 5000));
+        await publicClient.waitForTransactionReceipt({ hash });
+        return hash;
+      };
+
+      try {
+        const currentAllowance = await publicClient.readContract({
+          address: USDC_ARB_SEPOLIA,
+          abi: [{
+            type: "function",
+            name: "allowance",
+            stateMutability: "view",
+            inputs: [{ name: "owner", type: "address" }, { name: "spender", type: "address" }],
+            outputs: [{ name: "", type: "uint256" }],
+          }] as const,
+          functionName: "allowance",
+          args: [address, OCUSDC_ADDRESS],
+        }) as bigint;
+
+        if (currentAllowance < amount) {
+          setWrapPhase("approving");
+          const approveFees = await estimateFeesWithRetry(publicClient);
+          const approveTx = await writeContractAsync({
+            address: USDC_ARB_SEPOLIA,
+            abi: ERC20_APPROVE_ABI,
+            functionName: "approve",
+            args: [OCUSDC_ADDRESS, amount],
+            account: address,
+            chain: arbitrumSepolia,
+            maxFeePerGas: approveFees.maxFeePerGas,
+            maxPriorityFeePerGas: approveFees.maxPriorityFeePerGas,
+            gas: 100_000n,
+          });
+          const approveReceipt = await publicClient.waitForTransactionReceipt({ hash: approveTx });
+          if (approveReceipt.status !== "success") {
+            throw new Error("USDC approval failed on-chain");
+          }
+
+          // Let RPC recover from receipt polling before shield estimate/submit.
+          setWrapPhase("cooldown");
+          await sleep(POST_RECEIPT_RPC_COOLDOWN_MS);
+          await sleepWithProgress(POST_APPROVE_SHIELD_COOLDOWN_MS, (sec) => {
+            setWrapCooldownSec(sec);
+          });
+          setWrapCooldownSec(0);
+        }
+
+        let lastErr: unknown;
+        for (let attempt = 0; attempt <= SHIELD_RATE_LIMIT_RETRIES; attempt++) {
+          try {
+            setWrapPhase(attempt === 0 ? "shielding" : "retry-shield");
+            const hash = await submitShield();
+            setWrapPhase("done");
+            await refetch();
+
+            const updated = addTrackedUnits(address, amount);
+            setTrackedCusdc(formatUnits(updated, USDC_DECIMALS));
+
+            publicClient.readContract({
+              address: USDC_ARB_SEPOLIA,
+              abi: USDC_BALANCE_ABI,
+              functionName: "balanceOf",
+              args: [address],
+            }).then((bal) => {
+              setUsdcBalance(formatUnits(bal as bigint, USDC_DECIMALS));
+            }).catch(() => {});
+
+            return hash;
+          } catch (err) {
+            lastErr = err;
+            if (!isRateLimitError(err) || attempt === SHIELD_RATE_LIMIT_RETRIES) throw err;
+            setWrapPhase("retry-shield");
+            const delay = SHIELD_RETRY_BASE_MS * Math.pow(2, attempt);
+            await sleepWithProgress(delay, (sec) => setWrapCooldownSec(sec));
+            setWrapCooldownSec(0);
+          }
+        }
+        throw lastErr;
+      } finally {
+        setBusy(false);
+        setWrapPhase("idle");
+        setWrapCooldownSec(0);
       }
-
-      // Step 2: Fetch gas (with retry) then shield USDC → ocUSDC exactly ONCE
-      // Do NOT wrap writeContractAsync in retry — each retry would open a new MetaMask popup
-      const feeData2 = await estimateFeesWithRetry(publicClient);
-      const wrapMaxFee = feeData2.maxFeePerGas
-        ? (feeData2.maxFeePerGas * 130n) / 100n
-        : undefined;
-      const hash = await writeContractAsync({
-        address: OCUSDC_ADDRESS,
-        abi: OCUSDC_ABI,
-        functionName: "shield",
-        args: [amount],
-        account: address,
-        chain: arbitrumSepolia,
-        maxFeePerGas: wrapMaxFee,
-        gas: 600_000n,
-      });
-      await publicClient.waitForTransactionReceipt({ hash });
-      await refetch();
-
-      // Track shielded ocUSDC balance locally.
-      // Centralized writer (lib/trackedBalance) keeps the format consistent
-      // across all writers (sweep, escrow redeem, wrap, unwrap).
-      const updated = addTrackedUnits(address, amount);
-      setTrackedCusdc(formatUnits(updated, USDC_DECIMALS));
-
-      // Refresh USDC balance
-      publicClient.readContract({
-        address: USDC_ARB_SEPOLIA,
-        abi: USDC_BALANCE_ABI,
-        functionName: "balanceOf",
-        args: [address],
-      }).then((bal) => {
-        setUsdcBalance(formatUnits(bal as bigint, USDC_DECIMALS));
-      }).catch(() => {});
-
-      return hash;
     },
     [publicClient, address, writeContractAsync, refetch]
   );
@@ -347,6 +384,8 @@ export function useOcUSDCBalance() {
     approveStream,
     refetch,
     busy,
+    wrapPhase,
+    wrapCooldownSec,
     error,
   };
 }
