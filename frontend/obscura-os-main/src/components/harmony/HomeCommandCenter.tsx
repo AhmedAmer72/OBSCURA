@@ -97,7 +97,7 @@ function creditLineUtilPercent(borrow: bigint, maxBorrowable: bigint): number {
 const FLYWHEEL = [
   { layer: 1, title: "Private Payments", hint: "Shielded USDC", to: "/pay", doneKey: "pay" as const },
   { layer: 2, title: "Private Credit", hint: "Position opened", to: "/credit", doneKey: "credit" as const },
-  { layer: 3, title: "Governance", hint: "Cast first vote", to: "/vote", doneKey: "govern" as const },
+  { layer: 3, title: "Vote", hint: "Cast first vote", to: "/vote", doneKey: "govern" as const },
   { layer: 4, title: "Elite Reputation", hint: "Reach Steady tier", to: "/vote", doneKey: "reputation" as const },
 ];
 
@@ -124,7 +124,7 @@ function FlywheelStrip({
         <div>
           <p className="dash-eyebrow">The Obscura flywheel</p>
           <h2 className="mt-1 font-display text-xl tracking-tight text-foreground">
-            Pay fuels Credit. Credit fuels Govern. Govern fuels Reputation.
+            Pay fuels Credit. Credit unlocks voting. Voting fuels Reputation.
           </h2>
         </div>
         <div className="text-right">
@@ -398,7 +398,7 @@ export function HomeCommandCenter() {
         id: "send",
         icon: Shield,
         title: "Try a private payment",
-        description: "Send sealed USDC or explore Credit and Govern — use Reveal only when you need exact numbers.",
+        description: "Send sealed USDC or explore Credit and Vote — use Reveal only when you need exact numbers.",
         done: hasPrivateUsdc && (onboarding.isStealthRegistered ?? false),
         actionLabel: "Open Pay",
         onAction: () => navigate("/pay?tab=pay&sub=send"),
@@ -422,9 +422,9 @@ export function HomeCommandCenter() {
 
       <motion.div custom={0} variants={fadeUp} initial="hidden" animate="visible">
         <PayHomeWelcome
-        eyebrow={`Sealed · ${greeting}`}
+        eyebrow={`Private · ${greeting}`}
         title={isConnected && shortAddress ? `Welcome back, ${shortAddress}` : "Welcome to Obscura"}
-        subtitle="Your privacy engine is active. Governance proposals, credit positions, and rewards — all in one sealed ledger. Reveal values only when you need them."
+        subtitle="Your privacy engine is active. Proposals, credit positions, and rewards — all encrypted by default. Reveal values only when you need them."
         badges={[
           { label: "Private mode", tone: "success" },
           { label: "Reveal-on-demand", tone: "neutral" },
@@ -527,7 +527,7 @@ export function HomeCommandCenter() {
         </PayHomeMetricCard>
 
         <PayHomeMetricCard
-          label="Governance"
+          label="Vote"
           badge="2 ending"
           badgeTone="warn"
           footer={

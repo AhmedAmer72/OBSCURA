@@ -79,7 +79,7 @@ const IdentityPage = () => {
               filters={["all", "pay", "credit", "vote"]}
               title="Cross-product activity"
               eyebrow="Indexed from chain · amounts sealed"
-              emptyMessage="No indexed activity for this wallet yet. Pay, Credit, and Govern events will appear here without exposing encrypted amounts."
+              emptyMessage="No indexed activity for this wallet yet. Pay, Credit, and Vote events will appear here without exposing encrypted amounts."
             />
           )}
 

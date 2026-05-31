@@ -20,7 +20,7 @@ export function IdentityWorkspaceChrome({
     <AppWorkspaceChrome
       eyebrow="Obscura · Identity"
       title="Your sealed identity."
-      description="One profile across Pay, Credit, and Govern. Reputation, history, and private contacts."
+      description="One profile across Pay, Credit, and Vote. Reputation, history, and private contacts."
       tabs={IDENTITY_TABS}
       tab={tab}
       onSelectTab={onSelectTab}

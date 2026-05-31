@@ -39,7 +39,7 @@ const OS_APPS = [
   { to: "/home", label: "Home", icon: Home, match: (p: string) => p === "/home" || p === "/" },
   { to: "/pay", label: "Pay", icon: Banknote, match: (p: string) => p.startsWith("/pay") },
   { to: "/credit", label: "Credit", icon: Coins, match: (p: string) => p.startsWith("/credit") },
-  { to: "/vote", label: "Govern", icon: Landmark, match: (p: string) => p.startsWith("/vote") },
+  { to: "/vote", label: "Vote", icon: Landmark, match: (p: string) => p.startsWith("/vote") },
   { to: "/identity", label: "Identity", icon: Fingerprint, match: (p: string) => p.startsWith("/identity") },
 ] as const;
 
@@ -149,7 +149,7 @@ export function HarmonyAppShell({
             <ObscuraLogo size="sm" tone="light" showWordmark={!sidebarCollapsed} />
           </Link>
           {!sidebarCollapsed ? (
-            <span className="dash-sidebar-tagline">Sealed ledger</span>
+            <span className="dash-sidebar-tagline">Private finance OS</span>
           ) : null}
         </div>
 

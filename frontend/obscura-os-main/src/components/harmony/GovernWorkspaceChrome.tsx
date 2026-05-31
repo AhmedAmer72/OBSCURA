@@ -21,8 +21,8 @@ export function GovernWorkspaceChrome({
 }) {
   return (
     <AppWorkspaceChrome
-      eyebrow="Obscura · Govern"
-      title="Encrypted governance."
+      eyebrow="Obscura · Vote"
+      title="Private voting."
       description="Vote privately on proposals. Direct the treasury. Earn 0.001 ETH for every encrypted ballot you cast."
       tabs={GOVERN_TABS}
       tab={tab}

@@ -56,7 +56,7 @@ export default function EcosystemPage() {
       <AppWorkspaceChrome
         eyebrow="Obscura · Ecosystem"
         title="One privacy engine."
-        description="Pay, Credit, and Govern share encrypted balances, reputation signals, and governance — without exposing raw counterparties or amounts."
+        description="Pay, Credit, and Vote share encrypted balances, reputation signals, and voting — without exposing raw counterparties or amounts."
         actions={
           <Link to="/pay" className="dash-btn-primary h-9 px-3 text-xs">
             Open Pay
@@ -65,7 +65,7 @@ export default function EcosystemPage() {
         }
       />
       <p className="mb-8 max-w-2xl text-sm text-muted-foreground">
-        Obscura connects payments, credit, and governance through shared encrypted state — without exposing user data.
+        Obscura connects payments, credit, and voting through shared encrypted state — without exposing user data.
       </p>
 
       <div className="grid gap-4 lg:grid-cols-3">

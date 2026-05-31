@@ -146,7 +146,7 @@ export default function MobileDownloadPage() {
             </h1>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-white/55 md:text-[17px]">
               Grab the latest build below and sideload it on your Android device. One install gives
-              you Pay, Govern, and Credit — connect with WalletConnect and pick up where you left
+              you Pay, Vote, and Credit — connect with WalletConnect and pick up where you left
               off on the web.
             </p>
 
@@ -173,7 +173,7 @@ export default function MobileDownloadPage() {
             ) : null}
 
             <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
-              <span>Pay · Govern · Credit</span>
+              <span>Pay · Vote · Credit</span>
               <span>FHE encrypted</span>
               <span>Arbitrum Sepolia</span>
             </div>

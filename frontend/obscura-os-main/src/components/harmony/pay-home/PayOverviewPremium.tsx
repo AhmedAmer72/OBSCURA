@@ -19,8 +19,7 @@ import { useUSDCBalance } from "@/hooks/useUSDCBalance";
 import { useReceipts } from "@/hooks/useReceipts";
 import { filterReceiptsByPrivacyMode } from "@/lib/payModeFilters";
 import { usePaymentMode } from "@/contexts/PaymentModeContext";
-import { PrivacyContextBanner } from "@/components/harmony/PrivacyContextBanner";
-import { useValuesReveal, useCardCipherReveal } from "@/contexts/ValuesRevealContext";
+import { useCardCipherReveal } from "@/contexts/ValuesRevealContext";
 
 type PayTab = "home" | "pay" | "getpaid" | "automations" | "activity" | "settings";
 
@@ -60,7 +59,6 @@ export function PayOverviewPremium({ onNavigate }: { onNavigate: (tab: PayTab) =
   const { isConnected } = useAccount();
   const { privacyMode } = usePaymentMode();
   const { decrypted, reveal, busy: revealBusy } = useOcUSDCBalance();
-  const { setRevealed: setMasterRevealed } = useValuesReveal();
   const balanceReveal = useCardCipherReveal();
 
   useEffect(() => {
@@ -89,9 +87,6 @@ export function PayOverviewPremium({ onNavigate }: { onNavigate: (tab: PayTab) =
 
   return (
     <div className="pay-overview-grid space-y-4">
-      <PrivacyContextBanner
-        onDecryptAll={() => setMasterRevealed(true)}
-      />
       <motion.div custom={0} variants={fadeUp} initial="hidden" animate="visible" className="space-y-6">
         <section className="dash-card p-5 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">

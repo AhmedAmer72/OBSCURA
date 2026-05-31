@@ -3,7 +3,7 @@ export const MOBILE_FRAME_ASPECT = 9 / 19.5;
 export type MobileAppScreenshot = {
   src: string;
   alt: string;
-  label: "Splash" | "Pay" | "Govern" | "Credit";
+  label: "Splash" | "Pay" | "Vote" | "Credit";
 };
 
 export const MOBILE_APP_SCREENSHOTS: MobileAppScreenshot[] = [
@@ -19,8 +19,8 @@ export const MOBILE_APP_SCREENSHOTS: MobileAppScreenshot[] = [
   },
   {
     src: "/images/mobile-app-govern.png",
-    alt: "Obscura Govern — encrypted governance, proposals, and treasury",
-    label: "Govern",
+    alt: "Obscura Vote — private ballots, proposals, and treasury",
+    label: "Vote",
   },
   {
     src: "/images/mobile-app-credit.png",

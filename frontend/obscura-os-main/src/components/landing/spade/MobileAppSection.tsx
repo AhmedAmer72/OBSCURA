@@ -15,8 +15,8 @@ const FEATURES = [
   {
     icon: Landmark,
     tone: "text-violet-300",
-    title: "Govern on the go",
-    body: "Vote privately on proposals, track treasury activity, and earn ballot rewards — full Govern workspace in your pocket.",
+    title: "Vote on the go",
+    body: "Vote privately on proposals, track treasury activity, and earn ballot rewards — full Vote workspace in your pocket.",
   },
   {
     icon: Coins,
@@ -65,7 +65,7 @@ export default function MobileAppSection() {
             <span className="text-lime-accent">pocket</span>
           </h2>
           <p className="mt-5 max-w-lg text-base leading-relaxed text-white/55 md:text-[17px]">
-            Pay, Govern, and Credit — three encrypted workspaces in one Android app. Balances,
+            Pay, Vote, and Credit — three encrypted workspaces in one Android app. Balances,
             ballots, and borrowing stay FHE-protected on Arbitrum Sepolia, tuned for thumb-sized
             flows and WalletConnect on real devices.
           </p>
@@ -100,7 +100,7 @@ export default function MobileAppSection() {
           <div className="mt-6 flex flex-wrap gap-x-8 gap-y-2 font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
             <span className="inline-flex items-center gap-2">
               <Smartphone className="size-3.5 text-lime-accent/80" />
-              Pay · Govern · Credit
+              Pay · Vote · Credit
             </span>
             <span className="inline-flex items-center gap-2">
               <Banknote className="size-3.5 text-lime-accent/80" />
