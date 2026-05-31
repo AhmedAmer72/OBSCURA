@@ -8,7 +8,7 @@
 
 <p align="center">
   Five encrypted modules — Payments · Governance · DeFi Vaults · Compliance · AI Inference<br/>
-  All powered by Fully Homomorphic Encryption on Arbitrum
+  All powered by Fully Homomorphic Encryption on Arbitrum Sepolia (Fhenix CoFHE testnet)
 </p>
 
 <p align="center">
@@ -680,7 +680,7 @@ npx hardhat test
 
 ## What OBSCURA Proves
 
-- **FHE on EVM is production-ready.** 25 smart contracts deployed across three waves, processing real encrypted transactions with zero plaintext leakage across payments and governance.
+- **FHE on EVM works on testnet today.** 25+ smart contracts deployed on Arbitrum Sepolia with Fhenix CoFHE testnet, processing real encrypted transactions with zero plaintext leakage across payments and governance. Mainnet requires CoFHE GA.
 - **Complex business logic works on ciphertext.** Payroll accumulation, conditional escrows, stealth payments, coercion-resistant voting, insurance underwriting, DAO treasury execution, voter reward accrual — all on encrypted data.
 - **UX can abstract FHE complexity.** 8-tab PayPage + 5-tab VotePage with animated real-time TxProgressPanel, async stepper, permit-gated decryption, and "What's Private?" panels. Zero user exposure to ciphertext internals.
 - **Invoice privacy matches Monero/Zcash.** Payer never sees recipient's real wallet address — ERC-5564 stealth routing on every invoice, `InEaddress` on every stream, per-cycle salts, jitter, and rotation logs make timing and linking attacks impractical.

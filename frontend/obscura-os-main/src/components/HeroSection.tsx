@@ -53,7 +53,7 @@ const HeroSection = () => {
             </span>
             <span className="text-muted-foreground/30">|</span>
             <span className="text-xs tracking-[0.2em] uppercase text-muted-foreground">
-              Live on Arbitrum
+              Live on Arbitrum Sepolia
             </span>
             <span className="text-muted-foreground/30">|</span>
             <div className="flex items-center gap-1.5">

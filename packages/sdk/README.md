@@ -27,6 +27,8 @@ npm install @obscura-fhe/sdk viem
 
 **Network:** Arbitrum Sepolia (`chainId` **421614**) by default.
 
+**FHE environment:** Fhenix CoFHE is **testnet-only** as of this release. Encrypted writes and decrypts require the CoFHE testnet coprocessor — not Arbitrum One mainnet.
+
 ## Quick start
 
 ```typescript

@@ -23,7 +23,7 @@ export function PayProductSection() {
               <span className="text-brand">built for public chains.</span>
             </h2>
             <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
-              Obscura Pay is a privacy-first payment layer on Arbitrum. Amounts and balances can stay
+              Obscura Pay is a privacy-first payment layer on Arbitrum Sepolia. Amounts and balances can stay
               encrypted with FHE while you still settle in stable value — with a second path for
               everyday USDC when you want speed and familiarity.
             </p>

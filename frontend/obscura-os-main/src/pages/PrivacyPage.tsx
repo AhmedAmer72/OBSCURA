@@ -32,7 +32,7 @@ const PILLARS = [
   {
     icon: Lock,
     title: "Encrypted by default",
-    desc: "Balances, transfers, ballots, and payroll amounts are stored as FHE ciphertexts on Arbitrum. Arbiscan never shows plaintext values.",
+    desc: "Balances, transfers, ballots, and payroll amounts are stored as FHE ciphertexts on Arbitrum Sepolia. Arbiscan never shows plaintext values.",
   },
   {
     icon: Shield,

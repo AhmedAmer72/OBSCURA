@@ -10,7 +10,7 @@ export function Footer() {
             <ObscuraLogo size="lg" tone="light" />
             <p className="mt-4 max-w-sm text-sm text-muted-foreground leading-relaxed">
               The encrypted operating system for onchain privacy. Pay, Credit,
-              and Vote — unified by one FHE engine, settled on Arbitrum.
+              and Vote — unified by one FHE engine, settled on Arbitrum Sepolia (CoFHE testnet).
             </p>
             <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-border-subtle bg-surface-elevated px-3 py-1.5 text-xs text-muted-foreground">
               <span className="size-1.5 rounded-full bg-brand" />

@@ -705,5 +705,9 @@ async function handleDebugPushTest(req: Request, res: Response): Promise<void> {
   }
 }
 
-notificationsRouter.get("/debug/push-test", handleDebugPushTest);
-notificationsRouter.post("/debug/push-test", handleDebugPushTest);
+// Debug push is dev-only — unauthenticated production access was a security finding (audit v1.10).
+const DEBUG_PUSH_ENABLED = process.env.NODE_ENV !== "production";
+if (DEBUG_PUSH_ENABLED) {
+  notificationsRouter.get("/debug/push-test", handleDebugPushTest);
+  notificationsRouter.post("/debug/push-test", handleDebugPushTest);
+}

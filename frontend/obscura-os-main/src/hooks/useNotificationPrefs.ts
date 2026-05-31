@@ -224,6 +224,11 @@ export function useNotificationPrefs(): UseNotificationPrefsResult {
       body: JSON.stringify({ wallet }),
     });
     const result = await response.json().catch(() => null) as { sent?: number; failed?: number; attempted?: number; error?: string } | null;
+    // Production disables /debug/push-test — local SW notification still validates the UX path.
+    if (response.status === 404 || response.status === 403) {
+      const displayed = await showLocalTestNotification(registration, wallet);
+      return { sent: 0, failed: 0, attempted: 0, displayed, localOnly: true };
+    }
     if (!response.ok && response.status !== 207) {
       throw new Error(result?.error || `Push test failed (${response.status})`);
     }

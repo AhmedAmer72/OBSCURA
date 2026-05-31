@@ -48,7 +48,7 @@ export default function VaultLandingNav() {
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-brand opacity-60" />
               <span className="relative inline-flex size-1.5 rounded-full bg-brand" />
             </span>
-            <span className="font-mono uppercase tracking-wider">Arbitrum · Live</span>
+            <span className="font-mono uppercase tracking-wider">Arbitrum Sepolia · CoFHE Testnet</span>
           </span>
           <Link
             to="/pay"

@@ -18,6 +18,8 @@ npm install @obscura-fhe/mcp @obscura-fhe/sdk
 
 Requires Node.js 20+.
 
+**Network:** Arbitrum Sepolia (`chainId` **421614**). **FHE:** Fhenix CoFHE testnet only — mainnet blocked until CoFHE GA.
+
 ## Cursor configuration
 
 Add to `.cursor/mcp.json` (or project MCP settings):

@@ -2,7 +2,7 @@
 
 > **Document type:** Canonical Ecosystem Architecture Reference  
 > **Status:** CANONICAL · LIVE (Arbitrum Sepolia testnet production)  
-> **Version:** v1.2  
+> **Version:** v1.11  
 > **Network:** Arbitrum Sepolia · chainId `421614`  
 > **Cut date:** 2026-05-30  
 > **Audience:** Investors · Auditors · Engineers · Judges · Ecosystem partners  
@@ -847,16 +847,16 @@ flowchart TB
 
 ### 13.3 Frontend consumption
 
-- **Hook:** `useActivityFeed` — Supabase Realtime + 30s polling fallback
-- **Component:** `ActivityFeed` — product filter prop (`pay` | `credit` | `vote`)
-- **No REST `/activity` endpoint** — direct Supabase read by design
+- **Hook:** `useActivityFeed` — wallet session auth → `GET /activity/:wallet` via obscura-api; 30s polling fallback
+- **Component:** `ActivityFeed` — product filter prop (`pay` | `credit` | `vote`); prompts user to tap **Sign** in header when session missing
+- **Auth:** `WalletSessionProvider` + `fetchWithAppSession` — no direct Supabase reads for activity
 - **Privacy:** Vote filter includes Treasury/Rewards; Governor args sanitized
 
 ### 13.4 Query contract
 
 | Consumer | Access | Filter |
 |---|---|---|
-| ActivityFeed | Supabase anon client | `participants @> wallet` + event name set |
+| ActivityFeed | Obscura API (`X-Obscura-Signature` session headers) | `GET /activity/:wallet` + event name set |
 | Local receipts (Pay) | `useReceipts` localStorage | Wallet-scoped; not indexed |
 
 ---
@@ -888,7 +888,7 @@ flowchart LR
 | `DELETE` | `/subscribe` | Remove subscription |
 | `POST` | `/prefs` | Save notification preferences |
 | `GET` | `/prefs/:wallet` | Read preferences |
-| `POST` | `/debug/push-test` | Test push (5/min/IP) |
+| `POST` | `/debug/push-test` | Test push (dev only — **disabled in production**) |
 
 ### 14.3 Notification alias examples
 
@@ -1195,6 +1195,7 @@ IDLE → ENCRYPTING → COMPUTING → SENDING → SETTLING → READY → IDLE
 | Contact labels | Local-only plaintext |
 | Browser receipts | Wallet-scoped localStorage |
 | Push keys | Server-side; VAPID private key never in frontend |
+| App wallet session | 7-day EIP-191 signature in `localStorage` (`obscura.appSession.v2:{wallet}`); cleared on wallet change |
 | Passkey accounts | WebAuthn/P-256 via RIP-7212 precompile `0x100` |
 
 ### 19.3 Backend security
@@ -1207,6 +1208,7 @@ IDLE → ENCRYPTING → COMPUTING → SENDING → SETTLING → READY → IDLE
 | Debug push limit | 5 req/min/IP |
 | Secrets | Render dashboard only; `sync: false` in render.yaml |
 | Service role | Supabase writes via API/worker only |
+| Off-chain read auth | `AGENT_AUTH_LEGACY_PUBLIC=false` — legacy routes accept **Bearer agent token** OR **app wallet session** headers; Supabase anon SELECT denied (migration 004) |
 
 ### 19.4 Trust assumptions
 
@@ -1268,8 +1270,9 @@ flowchart TB
   PAY_C & CRED_C & VOTE_C -->|event logs| WK
   WK --> ACT & REP
   WK -->|Web Push| FE
-  ACT -->|Realtime| FE
-  REP --> API -->|GET /reputation| FE
+  ACT --> API
+  REP --> API
+  API -->|GET /activity /reputation /prefs| FE
   PREF & SUB --> API
   FE -->|signed txs| ONCHAIN
   FE --> LOCAL
@@ -1415,7 +1418,7 @@ flowchart TB
 | FHE | `@fhenixprotocol/cofhe-sdk` + `src/lib/fhe.ts` |
 | State | React hooks; no global FHE auto-init |
 | Notifications | Service worker + Sonner + Web Push |
-| Database reads | Supabase anon client |
+| Off-chain reads | Obscura API via 7-day wallet session (`WalletSessionProvider`, `fetchWithAppSession`); Supabase anon retained only for stealth scan helper |
 | Developer portal | `/docs` — typed content from [docs/portal/](docs/portal/) |
 | External integrators | `@obscura-fhe/sdk` — see (§39) |
 
@@ -1491,9 +1494,17 @@ Both expose `/health` for Render health checks and operational monitoring.
 | `/vapid-public-key` | GET | Web Push public key |
 | `/subscribe` | POST/DELETE | Push subscription management |
 | `/prefs` | POST | Save notification prefs |
-| `/prefs/:wallet` | GET | Read notification prefs |
-| `/debug/push-test` | POST | Push test (5/min/IP) |
-| `/reputation/:wallet` | GET | Aggregated reputation summary |
+| `/prefs/:wallet` | GET | Read notification prefs (app session or agent token when enforced) |
+| `/debug/push-test` | GET/POST | Test push (dev only — not registered when `NODE_ENV=production`) |
+| `/reputation/:wallet` | GET | Aggregated reputation summary (app session or agent token when enforced) |
+| `/activity/:wallet` | GET | Paginated activity feed (app session or agent token when enforced) |
+| `/agent/me` | GET | Validate Bearer agent token; return wallet + permissions |
+| `/agent/activity` | GET | Wallet-scoped activity (Bearer + `activity:read`) |
+| `/agent/reputation` | GET | Wallet-scoped reputation (Bearer + `reputation:read`) |
+| `/agent/prefs` | GET | Wallet-scoped notification prefs (Bearer + `notifications:read`) |
+| `/agent-tokens` | POST/GET/DELETE | Create, list, revoke agent tokens (EIP-191 wallet proof) |
+
+**Auth middleware:** `enforceWalletScopeOrLegacy()` on legacy wallet-param routes — accepts Bearer agent token (wallet must match path) **or** `X-Obscura-Signature` + `X-Obscura-Timestamp` app session when `AGENT_AUTH_LEGACY_PUBLIC=false`.
 
 Boot behavior: starts Supabase Realtime listener on `obscura_activity` INSERT for notification fallback dispatch.
 
@@ -1587,7 +1598,7 @@ flowchart TB
 
 ### 24.4 RLS posture
 
-Testnet: permissive SELECT on activity for development. Push subscriptions deny-all for anon clients. **Mainnet requirement:** wallet-scoped reads, API-mediated activity access, auth on Realtime channels.
+Testnet: migration `004_tighten_rls_agent_auth.sql` denies anon SELECT on activity + prefs in production. Push subscriptions deny-all for anon clients. **Mainnet requirement:** wallet-scoped reads via API only, auth on all off-chain data paths.
 
 ### 24.5 Realtime UX contract
 
@@ -2034,9 +2045,11 @@ flowchart TD
 | POST | `/subscribe` | — | All |
 | DELETE | `/subscribe` | — | All |
 | POST | `/prefs` | — | All |
-| GET | `/prefs/:wallet` | — | All |
-| POST | `/debug/push-test` | 5/min/IP | All |
-| GET | `/reputation/:wallet` | — | All |
+| GET | `/prefs/:wallet` | — | All | App session or agent token when `AGENT_AUTH_LEGACY_PUBLIC=false` |
+| POST | `/debug/push-test` | 5/min/IP | All | — |
+| GET | `/reputation/:wallet` | — | All | App session or agent token when enforced |
+| GET | `/activity/:wallet` | — | All | App session or agent token when enforced |
+| GET | `/agent/*` | — | MCP/SDK | Bearer `obsc_at_…` |
 
 ### 33.4 Worker health fields
 
@@ -2077,10 +2090,10 @@ flowchart TD
 | `VITE_OBSCURA_REWARDS_ADDRESS` | Vote | Rewards |
 | `VITE_OBSCURA_GOVERNOR_ADDRESS` | Vote | Governor |
 | `VITE_OBSCURA_TIMELOCK_ADDRESS` | Vote | Timelock |
-| `VITE_NOTIFICATIONS_URL` | All | API base |
+| `VITE_NOTIFICATIONS_URL` | All | API base (activity, reputation, prefs reads) |
 | `VITE_RELAY_URL` | Pay | UserOp relay |
-| `VITE_SUPABASE_URL` | All | Activity feed |
-| `VITE_SUPABASE_ANON_KEY` | All | Supabase read |
+| `VITE_SUPABASE_URL` | Pay (stealth scan) | Legacy stealth scan helper only — not activity feed |
+| `VITE_SUPABASE_ANON_KEY` | Pay (stealth scan) | Legacy stealth scan helper only |
 | `VITE_ALCHEMY_KEY` / `VITE_ARBITRUM_SEPOLIA_RPC` | All | RPC |
 | `VITE_SMART_ACCOUNT_FACTORY_ADDRESS` | Pay | Public mode |
 | `VITE_PAYMASTER_ADDRESS` | Pay | Public mode |
@@ -2096,6 +2109,12 @@ Credit market addresses loaded from `src/config/credit.ts` (includes canonical +
 | `VAPID_PRIVATE_KEY` | Web Push signing |
 | `RESEND_API_KEY` | Optional email |
 | `FRONTEND_URL` | CORS + deep links |
+| `APP_WALLET_SESSION_MAX_AGE_SEC` | App wallet session TTL — default **604800** (7 days) |
+| `AGENT_AUTH_LEGACY_PUBLIC` | `false` in production — legacy wallet-param routes require auth |
+| `WALLET_AUTH_REQUIRED` | Notification **writes** only (`POST /subscribe`, `POST /prefs`) — separate from app session |
+| `WALLET_AUTH_MAX_AGE_SEC` | Short-lived EIP-191 grace for notification writes — default **300** (not app session TTL) |
+| `AGENT_TOKEN_TTL_DAYS` | Agent token expiry — default **90** |
+| `AGENT_TOKEN_MAX_PER_WALLET` | Max active MCP tokens per wallet — default **5** |
 
 ### 34.3 Worker secrets (Render dashboard)
 
@@ -2721,9 +2740,9 @@ Vote contract: `0xe358776AfdbA95d7c9F040e6ef1f5A021aF91730`
 
 | Method | Returns | Backend |
 |---|---|---|
-| `listForWallet(wallet, options?)` | `Promise<ActivityListResult>` | Supabase `obscura_activity` |
+| `listForWallet(wallet, options?)` | `Promise<ActivityListResult>` | `GET /activity/:wallet` (Bearer agent token) or authenticated legacy path |
 | `getEventFilters()` | `ActivityEventFilterMap` | Mirrors frontend filters |
-| `isConfigured()` | `boolean` | True when URL + anon key set |
+| `isConfigured()` | `boolean` | True when API URL (+ agent token when `AGENT_AUTH_LEGACY_PUBLIC=false`) |
 
 #### NotificationsModule — `sdk.notifications`
 
@@ -2808,7 +2827,7 @@ When contracts redeploy, update `defaults.ts` and publish a patch SDK release.
 |---|---|---|
 | [basic-usage.ts](packages/sdk/examples/basic-usage.ts) | `npm run example:basic` | Combined smoke |
 | [reputation.ts](packages/sdk/examples/reputation.ts) | `npx tsx examples/reputation.ts [wallet]` | Reputation |
-| [activity.ts](packages/sdk/examples/activity.ts) | `npx tsx examples/activity.ts [wallet]` | Activity (needs anon key) |
+| [activity.ts](packages/sdk/examples/activity.ts) | `npx tsx examples/activity.ts [wallet]` | Activity (needs `OBSCURA_AGENT_TOKEN` when enforced) |
 | [notifications.ts](packages/sdk/examples/notifications.ts) | `npx tsx examples/notifications.ts [wallet]` | Notifications |
 | [pay.ts](packages/sdk/examples/pay.ts) | `npx tsx examples/pay.ts [wallet]` | Pay |
 | [credit.ts](packages/sdk/examples/credit.ts) | `npx tsx examples/credit.ts` | Credit |
@@ -2945,7 +2964,7 @@ sequenceDiagram
 | **Public MCP tools** | Chain RPC public reads (proposals, market utilization) — no token |
 | **Authenticated MCP tools** | Activity, reputation, balance handle — Bearer required |
 | **Forbidden** | Decrypt, permit, reveal, service-role, Supabase keys |
-| **Legacy API** | `/activity/:wallet` and `/reputation/:wallet` — public when `AGENT_AUTH_LEGACY_PUBLIC=true` (default); set `false` in production for full enforcement |
+| **Legacy API** | `/activity/:wallet`, `/reputation/:wallet`, `/prefs/:wallet` — public when `AGENT_AUTH_LEGACY_PUBLIC=true`; production uses `false` and accepts **app wallet session** OR **Bearer agent token** |
 
 #### Wallet ownership verification
 
@@ -3124,17 +3143,24 @@ sequenceDiagram
   participant API as obscura-api
   participant DB as obscura_agent_tokens
 
-  alt No Bearer
+  alt App frontend (legacy path)
+    Client->>API: GET /reputation/:wallet + X-Obscura-Signature
+    API->>API: verifyAppWalletSession()
+    API-->>Client: 200 wallet-scoped payload
+  else MCP /agent route without Bearer
     Client->>API: GET /agent/reputation
     API-->>Client: 401 Agent token required
-  else Valid Bearer
+  else MCP valid Bearer
     Client->>API: Authorization Bearer obsc_at_…
     API->>DB: SHA-256 lookup + expires_at + revoked_at
     DB-->>API: wallet + permissions
     API-->>Client: 200 wallet-scoped payload
-  else Cross-wallet legacy path
+  else Legacy path wrong wallet Bearer
     Client->>API: GET /reputation/0xOther + Bearer (wallet A)
     API-->>Client: 403 wallet mismatch
+  else Legacy path no auth (AGENT_AUTH_LEGACY_PUBLIC=false)
+    Client->>API: GET /reputation/:wallet (no headers)
+    API-->>Client: 401 Authentication required
   end
 ```
 
@@ -3143,7 +3169,7 @@ sequenceDiagram
 | Boundary | Guarantee |
 |---|---|
 | User MCP → API | Bearer resolves wallet; no wallet params on owner tools |
-| SDK/MCP legacy paths | 401 without token when `AGENT_AUTH_LEGACY_PUBLIC=false` |
+| SDK/MCP legacy paths | 401 without Bearer when `AGENT_AUTH_LEGACY_PUBLIC=false` (app frontend uses wallet session instead) |
 | Obscura app (reputation, activity, prefs read) | Wallet EIP-191 session → `/reputation/:wallet`, `/activity/:wallet`, `/prefs/:wallet` |
 | MCP / SDK agents | `OBSCURA_AGENT_TOKEN` → `/agent/*` |
 | Legacy wallet-param routes | Bearer must match path wallet; else 403 |
@@ -3178,30 +3204,43 @@ Script: `scripts/production-agent-auth-audit.mjs`
 
 | Test | Result |
 |---|---|
-| Legacy routes without token | **401** |
+| Legacy routes without auth | **401** (app session or agent token required) |
+| App session headers on legacy routes | **200** when signature valid and within 7 days |
 | `/agent/*` without token | **401** |
 | `/prefs/:wallet` without token | **401** (after API deploy) |
 | Unit tests (API, SDK, MCP) | **All pass** |
 
-##### Obscura app wallet session (v1.9 — 2026-05-29)
+##### Obscura app wallet session (v1.10 — 2026-05-29)
 
-Production Web3 session for in-app users — separate from MCP Agent Tokens.
+Production Web3 session for **in-app users** — separate from MCP Agent Tokens. Normal Obscura users never need `OBSCURA_AGENT_TOKEN`.
+
+#### Three authentication paths
+
+| Path | Who | Mechanism | Duration | Routes |
+|---|---|---|---|---|
+| **App wallet session** | Obscura frontend users | EIP-191 `Obscura App Session` + `X-Obscura-Signature` headers | **7 days** | `/activity/:wallet`, `/reputation/:wallet`, `/prefs/:wallet` |
+| **Agent token** | MCP / SDK / Cursor agents | `Authorization: Bearer obsc_at_…` | 90 days default | `/agent/*` |
+| **Notification write auth** | Push subscribe / prefs save | Legacy `Obscura API wallet auth` when `WALLET_AUTH_REQUIRED=true` | ~5 min | `POST /subscribe`, `POST /prefs` |
 
 ```mermaid
 sequenceDiagram
   participant User as Wallet (EOA)
-  participant App as Obscura Frontend
+  participant Nav as WalletConnect header
+  participant App as WalletSessionProvider
   participant LS as localStorage
   participant API as obscura-api
 
-  User->>App: Connect wallet
+  User->>Nav: Connect wallet
   App->>LS: read obscura.appSession.v2:{wallet}
   alt Valid 7-day session
     LS-->>App: signature + issuedAt
     App->>API: GET /reputation/:wallet + X-Obscura-Signature
     API-->>App: 200 data (no popup)
+    Nav-->>User: Show 7d badge
   else No / expired session
-    App->>User: Verify wallet modal (proactive)
+    Nav-->>User: Inline Sign button (pulsing)
+    App-->>User: Sonner toast (non-blocking)
+    User->>Nav: Tap Sign
     User->>App: Sign Obscura App Session (EIP-191)
     App->>LS: persist 7-day session
     App->>API: authenticated reads
@@ -3211,22 +3250,34 @@ sequenceDiagram
 | Property | App session | MCP Agent Token |
 |---|---|---|
 | Auth | EIP-191 `Obscura App Session` message | Bearer `obsc_at_…` |
-| Storage | `localStorage` (7 days) | MCP env / password manager |
-| Duration | **7 days** (`APP_WALLET_SESSION_MAX_AGE_SEC`) | 90 days default |
-| Refresh | Banner at T-24h; re-sign on expiry or wallet change | Rotate at `/docs/agents` |
+| Storage | `localStorage` key `obscura.appSession.v2:{wallet}` | MCP env / password manager |
+| Duration | **7 days** (`APP_WALLET_SESSION_MAX_AGE_SEC=604800`) | 90 days default |
+| Refresh UX | **Renew** button in header when &lt;24h remain; Sonner toast | Rotate at `/docs/agents` |
+| UI surface | `WalletConnect` → `WalletSessionAction` (Sign / Renew / 7d badge) | `/docs/agents` token manager |
 | Routes | `/reputation/:wallet`, `/activity/:wallet`, `/prefs/:wallet` | `/agent/*` |
 | Cross-tab | `storage` + `BroadcastChannel` sync | N/A |
+| Backend verify | `verifyAppWalletSession()` in `wallet-auth.ts` | `lookupAgentToken()` in `agent-auth.ts` |
 
-**UX guarantees:** Modal appears immediately after connect when no session exists — never after Activity/Reputation appears broken. Returning users with valid session load data with zero signature prompts.
+**UX guarantees (v1.10):** No blocking center modal. Sign control lives in the wallet header next to address/balance. Returning connected users see a one-time toast + pulsing **Sign** button — activity/reputation show inline “Tap Sign in header” until verified. Valid session → zero signature prompts for 7 days.
+
+**Request headers (app session):**
+
+| Header | Value |
+|---|---|
+| `X-Obscura-Signature` | EIP-191 signature over `Obscura App Session` message |
+| `X-Obscura-Timestamp` | `issuedAt` unix seconds (must match signed message) |
 
 ##### Frontend migration (complete)
 
-| Hook | Route | Status |
+| Component / hook | Route / behavior | Status |
 |---|---|---|
 | `useReputationSummary` | Wallet session → `/reputation/:wallet` | ✅ |
 | `useActivityFeed` | Wallet session → `/activity/:wallet` | ✅ |
 | `useNotificationPrefs` (read) | Wallet session → `/prefs/:wallet` | ✅ |
-| `WalletSessionProvider` | Proactive verify modal + 7-day localStorage | ✅ |
+| `WalletSessionProvider` | Session state, verify(), cross-tab sync | ✅ |
+| `WalletConnect` / `WalletSessionAction` | Inline Sign · Renew · 7d badge in nav | ✅ |
+| `WalletVerifyModal` | Removed — replaced by inline header UX | ✅ |
+| `WalletSessionRenewBanner` | Removed — Renew in header + toast | ✅ |
 
 ##### Security guarantees
 
@@ -3237,12 +3288,33 @@ sequenceDiagram
 | Legacy API wrong wallet Bearer | **403** |
 | Direct Supabase activity/prefs read (anon) | **Blocked** (after migration 004 applied) |
 
+##### Audit resolution (v1.11 — 2026-05-31)
+
+Production-readiness audit findings addressed in code:
+
+| Finding | Resolution | Deploy status |
+|---|---|---|
+| Unauthenticated `/debug/push-test` | Route registered only when `NODE_ENV !== "production"`; production returns **404** | **Redeploy obscura-api** |
+| `ObscuraVote._subtractTally` missing `FHE.allowThis` | Added after each `FHE.sub` | **Contract redeploy required** |
+| `ObscuraRewards.accrueReward` missing `FHE.allow` | Added `FHE.allow(encRewardBalance[msg.sender], msg.sender)` | **Contract redeploy required** |
+| Misleading "Live on Arbitrum" / fake TVL stats | Landing + README + docs updated to Arbitrum Sepolia + CoFHE testnet | **Redeploy frontend** |
+
+**Deployed contract addresses (unchanged until redeploy):**
+
+| Contract | Address | ACL fix on-chain? |
+|---|---|---|
+| `ObscuraVote` | `0xe358776AfdbA95d7c9F040e6ef1f5A021aF91730` | No — bytecode update requires new deploy |
+| `ObscuraRewards` | `0x435ea117404553A6868fbe728A7A284FCEd15BC2` | No — bytecode update requires new deploy |
+
+**ACL fixes cannot be applied without redeploy** — FHE ACL is enforced in contract bytecode; no proxy upgrade path exists for these contracts.
+
 ##### Remaining future work
 
 1. User-selectable token TTL (7d / 30d / 90d / never)
 2. Planned scopes: `pay:read`, `credit:read`, `vote:read`
 3. Apply migration `004_tighten_rls_agent_auth.sql` in Supabase Dashboard (required once per environment)
-4. Redeploy obscura-api for `/agent/prefs` + legacy prefs auth gate
+4. **Redeploy `ObscuraVote` + `ObscuraRewards`** with ACL fixes; update `VITE_OBSCURA_VOTE_ADDRESS` / `VITE_OBSCURA_REWARDS_ADDRESS` and worker vote indexer if addresses change
+5. Set `WALLET_AUTH_REQUIRED=true` for notification write hardening (optional)
 
 ##### Production readiness status
 
@@ -3252,13 +3324,22 @@ sequenceDiagram
 | MCP User profile | **Ready** |
 | SDK authenticated modules | **Ready** |
 | Docs / onboarding | **Ready** |
-| Obscura app off-chain reads | **Ready** (wallet connect + one-time sign per tab session) |
+| Obscura app off-chain reads | **Ready** (connect + one Sign per 7 days via header) |
 | Supabase RLS | **Ready** (migration 004 — apply in Dashboard) |
 | Notifications read API | **Ready** (`GET /agent/prefs`) |
 
 **Verdict:** MCP v1 and Obscura agent authentication are **production-ready** when `AGENT_AUTH_LEGACY_PUBLIC=false`, users configure `OBSCURA_AGENT_TOKEN`, and Supabase migration 004 is applied.
 
-**User setup:** Connect wallet in the Obscura app (one EIP-191 sign for activity/reputation). For MCP: `/docs/agents` → copy token → set `OBSCURA_AGENT_TOKEN` in IDE config.
+**User setup:** Connect wallet → tap **Sign** in header (one EIP-191 sign, valid 7 days) for activity/reputation. For MCP: `/docs/agents` → copy token → set `OBSCURA_AGENT_TOKEN` in IDE config.
+
+**Production Render API env (required):**
+
+```
+APP_WALLET_SESSION_MAX_AGE_SEC=604800
+AGENT_AUTH_LEGACY_PUBLIC=false
+WALLET_AUTH_REQUIRED=false
+WALLET_AUTH_MAX_AGE_SEC=300
+```
 
 **Developer docs:** `/docs/mcp` · `/docs/agents` · **Packages:** [npm @obscura-fhe/mcp](https://www.npmjs.com/package/@obscura-fhe/mcp) · [npm @obscura-fhe/sdk](https://www.npmjs.com/package/@obscura-fhe/sdk)
 
@@ -3270,7 +3351,7 @@ sequenceDiagram
 | CoFHE encrypt/decrypt | `FheProvider` inject | `@fhenixprotocol/cofhe-sdk` + `src/lib/fhe.ts` |
 | UI stepper / reveal UX | Not included | `useFHEStatus`, reveal-on-demand |
 | Transaction builders | ✅ `ContractCall` + `encodeCall` | Hooks call contracts directly |
-| Off-chain services | ✅ Obscura API (activity, reputation, notifications) | Obscura API via agent token (`/agent/*`) — no direct Supabase reads |
+| Off-chain services | ✅ Obscura API (activity, reputation, notifications) | Obscura API via **7-day wallet session** — MCP agent tokens not used in-app |
 
 ---
 
@@ -3278,10 +3359,12 @@ sequenceDiagram
 
 | Version | Date | Changes |
 |---|---|---|
+| v1.11 | 2026-05-31 | Audit fixes: `/debug/push-test` disabled in production; FHE ACL fixes in `ObscuraVote._subtractTally` + `ObscuraRewards.accrueReward` (source — redeploy pending); testnet messaging corrections across landing/README/docs. |
+| v1.10 | 2026-05-29 | Inline wallet Sign UX in header (`WalletSessionAction`); removed verify modal + renew banner; updated auth docs (three auth paths, env vars, API routes, no direct Supabase activity reads). |
 | v1.0 | 2026-05-29 | Initial canonical merge of Pay (`docs/pay_wave5.md`), Credit (`credit_wave5_protocol_bible_v1.md`), Vote (`vote_wave5_protocol_bible_v1.md` v1.3) into unified ecosystem architecture reference. 36 sections, institutional terminology, mermaid diagrams, complete registries. |
 | v1.1 | 2026-05-29 | Added §37 Ecosystem Scale (verified codebase counts) and §38 Why Obscura Is Technically Difficult; updated TOC and cross-references. |
 | v1.2 | 2026-05-30 | Added §39 Official TypeScript SDK (`@obscura-fhe/sdk` v1.0.1) — links, module API, requirements matrix, examples, full test/release validation; updated §37.1 scale counts and executive vision. |
-| v1.9 | 2026-05-29 | 7-day app wallet session: localStorage, proactive verify modal, WalletSessionProvider, APP_WALLET_SESSION_MAX_AGE_SEC; MCP agent tokens unchanged. |
+| v1.9 | 2026-05-29 | 7-day app wallet session: localStorage, `WalletSessionProvider`, `APP_WALLET_SESSION_MAX_AGE_SEC`; MCP agent tokens unchanged. UX refined in v1.10 (inline Sign). |
 | v1.8 | 2026-05-29 | Agent auth hardening complete: `GET /agent/prefs`, legacy prefs auth gate, RLS migration 004, API-only activity feed, `notifications:read` scope. |
 | v1.6 | 2026-05-30 | npm publish `@obscura-fhe/sdk@1.0.4` + `@obscura-fhe/mcp@1.0.4`; production agent-auth validation; `/docs/agents` UI copy-button and light-theme button fixes; MCP smoke-test script. |
 | v1.5 | 2026-05-30 | Agent Token authentication (v1.0.4): EIP-191 wallet proof · Bearer tokens · `/agent/*` routes · `/docs/agents` UI · MCP wallet-scoped tools without arbitrary address params. |

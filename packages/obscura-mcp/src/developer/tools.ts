@@ -38,7 +38,7 @@ const API_ROUTES = [
   { method: "GET", path: "/reputation/:wallet", auth: "bearer-or-legacy", rateLimit: "none" },
   { method: "GET", path: "/activity/:wallet", auth: "bearer-or-legacy", rateLimit: "none" },
   { method: "GET", path: "/prefs/:wallet", auth: "bearer-or-legacy", rateLimit: "none" },
-  { method: "GET/POST", path: "/debug/push-test", auth: "none", rateLimit: "5/min/IP" },
+  { method: "GET/POST", path: "/debug/push-test", auth: "dev only (disabled when NODE_ENV=production)", rateLimit: "5/min/IP" },
 ];
 
 const SANITIZE_RULES = [

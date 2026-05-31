@@ -54,7 +54,7 @@ export const ecosystemPage: DocPage = {
       type: "table",
       headers: ["Layer", "Service", "Role"],
       rows: [
-        ["Chain", "Arbitrum Sepolia + Fhenix CoFHE", "Encrypted state on EVM"],
+        ["Chain", "Arbitrum Sepolia + Fhenix CoFHE testnet", "Encrypted state on EVM (testnet only; mainnet requires CoFHE GA)"],
         ["Asset", "ocUSDC_Pay", "Canonical confidential USDC (6 dec)"],
         ["API", "obscura-api-n62v.onrender.com", "Reputation, activity, notifications, UserOp relay"],
         ["Worker", "obscura-worker-0ppj.onrender.com", "Indexer, reputation derive, push"],
@@ -80,7 +80,7 @@ export const quickStartPage: DocPage = {
       type: "callout",
       variant: "info",
       title: "What you need before starting",
-      text: "Reputation, activity, and notifications work with SDK defaults — no Supabase credentials. On-chain reads: Arbitrum Sepolia RPC (default provided). Encrypted writes: optional FheProvider. sendCall(): optional walletClient.",
+      text: "Reputation, activity, and notifications work with SDK defaults — no Supabase credentials. On-chain reads: Arbitrum Sepolia RPC (default provided). FHE writes/decrypts: Fhenix CoFHE testnet only (not mainnet). Encrypted writes: optional FheProvider. sendCall(): optional walletClient.",
     },
     {
       type: "heading",

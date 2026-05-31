@@ -119,6 +119,7 @@ contract ObscuraRewards is ObscuraPermissions {
         euint64 reward = FHE.asEuint64(REWARD_PER_VOTE_GWEI);
         encRewardBalance[msg.sender] = FHE.add(encRewardBalance[msg.sender], reward);
         FHE.allowThis(encRewardBalance[msg.sender]);
+        FHE.allow(encRewardBalance[msg.sender], msg.sender);
 
         // Plain internal accounting used for correct ETH payout (private storage)
         _totalAccruedGwei[msg.sender] += REWARD_PER_VOTE_GWEI;

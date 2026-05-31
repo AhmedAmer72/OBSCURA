@@ -63,6 +63,13 @@ async function main() {
     "legacy + /agent/prefs require auth",
   );
 
+  const debugPush = await fetchJson("/debug/push-test");
+  record(
+    "GET /debug/push-test disabled in production",
+    debugPush.status === 404,
+    `got ${debugPush.status}`,
+  );
+
   if (TOKEN) {
     const auth = { headers: { Authorization: `Bearer ${TOKEN}` } };
 

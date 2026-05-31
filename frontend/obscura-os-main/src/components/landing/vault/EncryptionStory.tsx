@@ -20,7 +20,7 @@ const STEPS = [
   },
   {
     title: "Public proofs, private values",
-    body: "Settlement is on Arbitrum. The math is verifiable, the numbers are yours. Privacy by mathematics, not by trust.",
+    body: "Settlement is on Arbitrum Sepolia. The math is verifiable, the numbers are yours. Privacy by mathematics, not by trust. Built on Fhenix CoFHE testnet.",
   },
 ];
 

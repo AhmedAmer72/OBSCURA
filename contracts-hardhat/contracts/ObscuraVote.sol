@@ -229,6 +229,7 @@ contract ObscuraVote is ObscuraPermissions {
             ebool wasMatch = FHE.eq(oldVote, FHE.asEuint64(uint256(i)));
             euint64 dec = FHE.select(wasMatch, oldWeightEnc, zero);
             tallies[_proposalId][i] = FHE.sub(tallies[_proposalId][i], dec);
+            FHE.allowThis(tallies[_proposalId][i]);
         }
     }
 

@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
 
 const STATS = [
-  { value: "$2.4B", label: "Encrypted value secured" },
-  { value: "142k", label: "Confidential transactions" },
-  { value: "25", label: "Audited contracts live" },
-  { value: "0", label: "Plaintext values exposed" },
+  { value: "25+", label: "Contracts on Arbitrum Sepolia" },
+  { value: "421614", label: "Testnet chain ID" },
+  { value: "FHE", label: "Every value encrypted via CoFHE" },
+  { value: "0", label: "Plaintext values on-chain" },
 ];
 
 export function Stats() {

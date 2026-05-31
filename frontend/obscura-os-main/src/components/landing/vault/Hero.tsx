@@ -36,7 +36,7 @@ export function Hero() {
           className="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-surface-elevated/70 backdrop-blur px-3 py-1.5 text-xs text-muted-foreground"
         >
           <ShieldCheck className="size-3.5 text-brand" />
-          <span>Audited by Trail of Bits · Live on Arbitrum</span>
+          <span>Arbitrum Sepolia · Built on Fhenix CoFHE Testnet</span>
         </motion.div>
 
         {/* Headline */}
